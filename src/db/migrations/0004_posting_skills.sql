@@ -1,0 +1,1 @@
+ALTER TABLE "postings" ADD COLUMN "skills" text[] DEFAULT '{}' NOT NULL;

@@ -1,0 +1,411 @@
+@import "tailwindcss";
+
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+/* ==========================================================================
+   design tokens — ported from docs/design-system.md ("ben*" / Arc Automations)
+   Deviations from the source doc are marked A11Y and are deliberate; see the
+   UI section of the plan. Contrast ratios below were measured, not estimated.
+   ========================================================================== */
+
+:root {
+  /* surfaces — a near-black stack, ~5% lightness steps so cards read as
+     raised without a single box-shadow */
+  --bg: #0a0a0b;
+  --bg-2: #0f0f11;
+  --surface: #141416;
+  --surface-2: #1a1a1d;
+
+  /* hairlines — translucent white so they inherit whatever sits behind */
+  --line: rgba(237, 237, 239, 0.09);
+  --line-strong: rgba(237, 237, 239, 0.18);
+
+  /* text */
+  --text: #ededef;   /* 16.93:1 on --bg — AAA */
+  --muted: #96969e;  /* 6.74:1 on --bg — AA  */
+
+  /* A11Y DEVIATION 1 — the source doc's --faint (#5c5c64) measures 2.62–2.99:1
+     across our surfaces, failing WCAG AA *and* AA-large. It is retained ONLY
+     for decoration (rules, the eyebrow tick). Any small text a user must read
+     — deadlines, timestamps, sponsorship — uses --faint-readable, which passes
+     AA on every surface in the stack (5.78 / 5.60 / 5.38 / 5.07:1, measured). */
+  --faint: #5c5c64;           /* DECORATION ONLY. Never put information here. */
+  --faint-readable: #8a8a93;  /* 5.78:1 on --bg — AA. Use for real content.  */
+
+  /* the one accent — signal orange. Exactly three strengths; do not invent
+     new opacities per component. */
+  --accent: #ff4d00;                      /* 5.95:1 on --bg — AA */
+  --accent-hot: #ff6b2b;                  /* hover */
+  --accent-lite: #ffa366;                 /* the "eye" pixel, soft highlights */
+  --accent-dim: rgba(255, 77, 0, 0.13);   /* fills, badges */
+  --accent-glow: rgba(255, 77, 0, 0.45);  /* box-shadow glows */
+
+  /* A11Y DEVIATION 2 — text ON an accent fill must be near-black. White on
+     #ff4d00 is 3.33:1 (FAILS AA); #0a0a0b on #ff4d00 is 5.95:1 (passes).
+     This is the most common way this palette gets implemented wrong. */
+  --on-accent: #0a0a0b;
+
+  /* status — NOT a second brand accent. The design system's one-accent rule is
+     honored by carrying status on non-hue channels (surface recession, opacity,
+     mono labels, filled-vs-hollow pixel markers). These two exist only for
+     genuinely semantic system moments (destructive confirm, hard error) and are
+     deliberately desaturated so they read as OS chrome, never as brand. */
+  --system-danger: #d98a80;
+  --system-ok: #8fb996;
+
+  --font-sans: "Space Grotesk Variable", "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-inout: cubic-bezier(0.76, 0, 0.24, 1);
+
+  --nav-h: 72px;
+  --gutter: clamp(20px, 4vw, 64px);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-faint-readable: var(--faint-readable);
+  --color-accent: var(--accent);
+  --color-accent-hot: var(--accent-hot);
+  --color-accent-lite: var(--accent-lite);
+  --color-accent-dim: var(--accent-dim);
+  --color-on-accent: var(--on-accent);
+  --color-system-danger: var(--system-danger);
+  --color-system-ok: var(--system-ok);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* square corners everywhere — rounded would break the pixel-art language */
+  --radius-none: 0px;
+}
+
+/* ==========================================================================
+   base
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+  /* the doc's square-corner rule, enforced globally so shadcn primitives
+     dropped in later inherit it rather than shipping their default radius */
+  border-radius: 0;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+/* ==========================================================================
+   type scale
+
+   The source doc only specifies display sizes (its smallest spec is a 3.1rem
+   hero). A data-dense product needs a small end the doc never defined — a feed
+   row is 13–15px, not 9.8rem. That scale is authored here.
+   ========================================================================== */
+
+.hero-title {
+  font-size: clamp(3.1rem, 11.4vw, 9.8rem);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.92;
+}
+
+.section-title {
+  font-size: clamp(2.2rem, 5.4vw, 4.4rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+}
+
+/* --- the dense end (product surfaces: feed, tracker, tables) --- */
+.t-lg   { font-size: 1.125rem; letter-spacing: -0.015em; line-height: 1.35; }
+.t-base { font-size: 0.9375rem; line-height: 1.5; }   /* 15px — feed row title */
+.t-sm   { font-size: 0.8125rem; line-height: 1.45; }  /* 13px — row secondary  */
+.t-xs   { font-size: 0.6875rem; line-height: 1.4; }   /* 11px — mono meta only */
+
+/* technical labels: timestamps, scores, slugs, freshness. This is what makes
+   the product read as "engineered" rather than "designed". */
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--faint-readable);
+}
+
+.mono-strong {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+/* the single most repeated typographic pattern in the source doc */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--faint-readable);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.eyebrow::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
+  flex: none;
+}
+
+/* lowercase is a CHROME treatment only. It is never applied to stored content
+   — company names, job titles, and contact names must render as authored.
+   "goldman sachs" reads as broken, and lowercasing a recipient's name in a
+   cold email costs the user credibility. */
+.chrome { text-transform: lowercase; }
+
+/* ==========================================================================
+   layout primitives
+   ========================================================================== */
+
+.wrap {
+  padding-inline: var(--gutter);
+  max-width: 1560px;
+  margin-inline: auto;
+}
+
+/* ==========================================================================
+   interaction
+   ========================================================================== */
+
+/* 1px press offset — "physically pressed", costs nothing, and is deliberately
+   the opposite motion language from the smooth entrances elsewhere */
+.press:hover { translate: 1px 1px; }
+
+.btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  padding: 12px 20px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); translate: 1px 1px; }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent); /* near-black, NOT white — see A11Y DEVIATION 2 */
+  font-weight: 500;
+}
+.btn-primary:hover { background: var(--accent-hot); border-color: var(--accent-hot); }
+
+/* form controls — one definition so the feed, onboarding and login forms
+   cannot drift apart. Square, hairline, surface-filled; the accent is spent
+   on focus and on the primary action, nowhere else. */
+
+.field {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  padding: 9px 11px;
+}
+.field::placeholder { color: var(--faint); }
+.field:hover { border-color: var(--muted); }
+
+/* native controls default to the OS light palette on a dark page */
+select.field,
+input[type="checkbox"],
+input[type="file"] {
+  color-scheme: dark;
+  accent-color: var(--accent);
+}
+
+.field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ==========================================================================
+   honest slots — the doc's §7 pattern, and the visual expression of this
+   product's core rule: if we don't have the real value, we do not render a
+   value. Never a fabricated score, never a guessed deadline.
+   ========================================================================== */
+
+.slot {
+  border: 1px dashed var(--line-strong);
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent, transparent 6px,
+    rgba(237, 237, 239, 0.03) 6px, rgba(237, 237, 239, 0.03) 12px
+  );
+  color: var(--faint-readable);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ==========================================================================
+   status — carried WITHOUT a second hue (see plan: one-accent conflict)
+   ========================================================================== */
+
+/* closed postings recede into the background rather than turning red */
+.is-closed { opacity: 0.42; background: var(--bg-2); }
+
+/* filled vs hollow square: on-language with the pixel motif, and readable
+   without relying on color at all — colorblind-safe by construction */
+.pip { width: 7px; height: 7px; display: inline-block; flex: none; }
+.pip-live { background: var(--accent); }
+.pip-closed { background: transparent; box-shadow: inset 0 0 0 1px var(--faint-readable); }
+
+/* ==========================================================================
+   focus — pixel-corner language instead of a browser default outline
+
+   FocusRing.tsx positions the brackets on real focusin/focusout events, so
+   the outline below only needs to cover the gap before that JS hydrates.
+   ========================================================================== */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.js-ready :focus-visible {
+  outline: none;
+}
+
+.focus-ring {
+  /* position is set inline per-instance — fixed inside the nav, absolute
+     (with a scroll offset baked in) everywhere else on this scrolling page */
+  pointer-events: none;
+  z-index: 9990;
+}
+.focus-ring i {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--accent);
+}
+.focus-ring i:nth-child(1) { top: 0; left: 0; border-right: none; border-bottom: none; }
+.focus-ring i:nth-child(2) { top: 0; right: 0; border-left: none; border-bottom: none; }
+.focus-ring i:nth-child(3) { bottom: 0; left: 0; border-right: none; border-top: none; }
+.focus-ring i:nth-child(4) { bottom: 0; right: 0; border-left: none; border-top: none; }
+
+/* ==========================================================================
+   custom cursor — small square, never a dot. Off for coarse pointers and
+   reduced-motion, so `cursor: none` never strands a touch or a11y user.
+   ========================================================================== */
+
+@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .js-ready,
+  .js-ready * {
+    cursor: none !important;
+  }
+}
+
+.cursor-square {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  border: 1px solid var(--bg);
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0; /* fades in on first real mousemove, not visible at (0,0) on load */
+}
+
+/* the trail rides between the background and the content */
+header,
+main,
+footer {
+  position: relative;
+  z-index: 2;
+}
+
+.cursor-trail {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0; /* hidden until the mouse first moves */
+}
+
+.cursor-trail span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--accent);
+  will-change: transform;
+}
+
+/* ==========================================================================
+   selection & scrollbar
+   ========================================================================== */
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) var(--bg);
+}
+::-webkit-scrollbar { width: 6px; height: 6px; background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--accent); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent-hot); }
+
+/* ==========================================================================
+   reduced motion — load-bearing, not optional polish
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .press:hover { translate: none; }
+
+  /* WarmGrid never mounts a canvas under reduced motion — this static tile
+     stands in for it so there's still texture, without any animation. */
+  body {
+    background-image: radial-gradient(rgba(255, 77, 0, 0.075) 1px, transparent 1.5px);
+    background-size: 28px 28px;
+  }
+}

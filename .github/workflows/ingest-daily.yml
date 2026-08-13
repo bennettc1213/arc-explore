@@ -1,0 +1,43 @@
+####
+# Tier B — daily registry discovery.
+#
+# Reads the Simplify repo for COMPANY NAMES ONLY and enrolls them, so Tier A
+# can poll their real boards. No listing content is stored: the repo carries no
+# license, and its listings measured 50% stale beyond 30 days. Taking the names
+# (facts) and pulling postings from each employer's own ATS is both the clean
+# path and the better data.
+####
+name: ingest-daily
+
+on:
+  schedule:
+    - cron: "17 7 * * *" # 07:17 UTC — off the hour, where scheduler load is lower
+  workflow_dispatch:
+    inputs:
+      maxNew:
+        description: "ceiling on new companies enrolled this run"
+        required: false
+        default: "400"
+
+concurrency:
+  group: ingest-daily
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: discover companies
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run ingest:daily -- --max-new ${{ github.event.inputs.maxNew || '400' }}

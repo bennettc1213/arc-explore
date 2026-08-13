@@ -1,0 +1,195 @@
+/**
+ * Profile shape, validation and the bridge into scoring.
+ *
+ * Kept free of database imports so it can be unit-tested without a connection —
+ * and so the form, the scorer and the store all agree on one definition of what
+ * a profile is.
+ */
+
+import { z } from "zod";
+
+import type { ScoreProfile } from "../score/fit";
+
+/* ------------------------------------------------------------------ *
+ * Options the UI offers
+ * ------------------------------------------------------------------ */
+
+export const WORK_AUTH_VALUES = ["us_citizen", "permanent_resident", "needs_sponsorship"] as const;
+export type WorkAuthValue = (typeof WORK_AUTH_VALUES)[number];
+
+export const WORK_AUTH_OPTIONS: ReadonlyArray<{ value: WorkAuthValue; label: string }> = [
+  { value: "us_citizen", label: "U.S. citizen" },
+  { value: "permanent_resident", label: "permanent resident" },
+  { value: "needs_sponsorship", label: "need sponsorship" },
+];
+
+/**
+ * Interest areas.
+ *
+ * These values are the field keys in `score/fit.ts` — the scorer matches a
+ * posting's title against the same taxonomy, so picking one here is what makes
+ * field scoring work for someone whose major does not imply their target
+ * (a math major aiming at software, say).
+ */
+export const INTEREST_VALUES = [
+  "software",
+  "data_ai",
+  "hardware",
+  "quant_finance",
+  "product",
+  "business",
+] as const;
+export type InterestValue = (typeof INTEREST_VALUES)[number];
+
+export const INTEREST_OPTIONS: ReadonlyArray<{ value: InterestValue; label: string }> = [
+  { value: "software", label: "software engineering" },
+  { value: "data_ai", label: "data / ai / ml" },
+  { value: "hardware", label: "hardware / embedded" },
+  { value: "quant_finance", label: "quant / finance" },
+  { value: "product", label: "product / design" },
+  { value: "business", label: "business / consulting" },
+];
+
+/* ------------------------------------------------------------------ *
+ * Validation
+ * ------------------------------------------------------------------ */
+
+/** Trims, then turns "" into null — an empty form field means "not stated",
+ *  and "not stated" must reach the scorer as null so the dimension is dropped
+ *  rather than scored as a miss. */
+const optionalText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .transform((s) => (s.length === 0 ? null : s))
+    .nullable();
+
+const currentYear = new Date().getFullYear();
+
+export const profileInputSchema = z.object({
+  displayName: optionalText(120),
+  school: optionalText(160),
+  major: optionalText(160),
+  gradYear: z
+    .union([z.string(), z.number()])
+    .transform((v) => (typeof v === "number" ? v : v.trim()))
+    .transform((v) => (v === "" ? null : Number(v)))
+    .nullable()
+    .refine(
+      (v) => v === null || (Number.isInteger(v) && v >= currentYear - 10 && v <= currentYear + 10),
+      { message: `graduation year should be between ${currentYear - 10} and ${currentYear + 10}` },
+    ),
+  gpa: z
+    .union([z.string(), z.number()])
+    .transform((v) => (typeof v === "number" ? v : v.trim()))
+    .transform((v) => (v === "" ? null : Number(v)))
+    .nullable()
+    .refine((v) => v === null || (Number.isFinite(v) && v >= 0 && v <= 4.5), {
+      message: "gpa should be between 0 and 4.5",
+    }),
+  workAuth: z
+    .string()
+    .transform((s) => s.trim())
+    .refine((s) => s === "" || (WORK_AUTH_VALUES as readonly string[]).includes(s), {
+      message: "unrecognised work authorization",
+    })
+    .transform((s) => (s === "" ? null : (s as WorkAuthValue)))
+    .nullable(),
+  targetVerticals: z.array(z.enum(INTEREST_VALUES)).max(6),
+  targetLocations: z.array(z.string().trim().min(1).max(80)).max(12),
+  openToRemote: z.boolean(),
+  portfolioUrl: optionalText(300).refine(
+    (v) => v === null || /^https?:\/\/\S+\.\S+/.test(v),
+    { message: "portfolio should be a full URL starting with http" },
+  ),
+});
+
+export type ProfileInput = z.infer<typeof profileInputSchema>;
+
+/** A stored profile: the validated input plus who it belongs to. */
+export interface UserProfile extends ProfileInput {
+  id: string;
+}
+
+/** Splits "San Francisco, New York" into distinct, trimmed entries. */
+export function parseLocations(raw: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of raw.split(",")) {
+    const t = part.trim();
+    if (!t) continue;
+    const key = t.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(t);
+  }
+  return out.slice(0, 12);
+}
+
+export const EMPTY_PROFILE_INPUT: ProfileInput = {
+  displayName: null,
+  school: null,
+  major: null,
+  gradYear: null,
+  gpa: null,
+  workAuth: null,
+  targetVerticals: [],
+  targetLocations: [],
+  openToRemote: true,
+  portfolioUrl: null,
+};
+
+/* ------------------------------------------------------------------ *
+ * Bridge to scoring
+ * ------------------------------------------------------------------ */
+
+/**
+ * The subset of a profile the fit scorer reads.
+ *
+ * Deliberately lossy — GPA, school and portfolio are stored for the cold-email
+ * generator (M4), and must never leak into a fit score. A 3.9 GPA does not make
+ * a posting fit better; claiming it did would be exactly the kind of invented
+ * signal this product is built to avoid.
+ */
+export function toScoreProfile(
+  profile: UserProfile | null,
+  /**
+   * Canonical skills from the user's resume, if they have uploaded one.
+   *
+   * Passed in rather than stored on the profile because it is derived: the
+   * resume is the source of truth, and re-deriving means a better extractor
+   * improves everyone's scores without a migration.
+   */
+  resumeSkills: string[] = [],
+): ScoreProfile {
+  if (!profile) {
+    return {
+      targetVerticals: [],
+      targetLocations: [],
+      openToRemote: true,
+      skills: resumeSkills,
+    };
+  }
+  return {
+    major: profile.major,
+    gradYear: profile.gradYear,
+    workAuth: profile.workAuth,
+    targetVerticals: profile.targetVerticals,
+    targetLocations: profile.targetLocations,
+    openToRemote: profile.openToRemote,
+    skills: resumeSkills,
+  };
+}
+
+/** True when at least one answer can actually move a score. */
+export function isProfileUsable(profile: UserProfile | null): boolean {
+  if (!profile) return false;
+  return Boolean(
+    profile.major ||
+      profile.gradYear ||
+      profile.workAuth ||
+      profile.targetVerticals.length > 0 ||
+      profile.targetLocations.length > 0,
+  );
+}

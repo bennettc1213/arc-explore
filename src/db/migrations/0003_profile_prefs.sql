@@ -1,0 +1,2 @@
+ALTER TABLE "profiles" ADD COLUMN "open_to_remote" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+ALTER TABLE "profiles" ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;

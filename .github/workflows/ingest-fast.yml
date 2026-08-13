@@ -1,0 +1,51 @@
+####
+# Tier A — poll every registered employer's own ATS.
+#
+# This is the freshness engine, and it only works as a loop: a posting present
+# in a response is verifiably live, and one that has vanished since the last
+# response is what sets `closed_at`. A single run can never close anything.
+#
+# GitHub Actions rather than a Vercel cron: Vercel functions cap at 60s/300s,
+# which will not survive a reconcile across a registry of hundreds of boards.
+####
+name: ingest-fast
+
+on:
+  schedule:
+    # Every 20 minutes. GitHub queues scheduled runs on a best-effort basis and
+    # can delay them under load, so the freshness claim in the UI is written
+    # against `last_seen_at` — what we actually observed — never against the
+    # cadence we intended.
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "boards to poll this run"
+        required: false
+        default: "1200"
+
+# A slow upstream must not let one run overlap the next and double-poll boards.
+concurrency:
+  group: ingest-fast
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    # Well under the 20-minute cadence; the script's own budget stops starting
+    # new boards at 10 minutes, so this ceiling should never be what fires.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: poll boards
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run ingest:fast -- --limit ${{ github.event.inputs.limit || '1200' }}
