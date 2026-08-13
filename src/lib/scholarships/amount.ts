@@ -7,17 +7,25 @@
  * are genuinely unparseable ("Varies — up to the full cost of tuition").
  */
 
-/**
- * Parse an award line into whole-dollar bounds.
- *
- * Order matters, the same lesson as the resume critique's date-range regex:
- * a range or "up to" has to be checked before a bare dollar figure, or "up
- * to $10,000" reads as an exact $10,000 rather than a ceiling. Anything that
- * doesn't match a known shape returns both null rather than guessing — a
- * wrong number here is worse than an honest blank, since a student would
- * filter on it.
- */
-const NONE = { min: null, max: null } as const;
+export interface ParsedAmount {
+  min: number | null;
+  max: number | null;
+  /**
+   * The source stated something monetary that we could not read.
+   *
+   * This is the difference between the two ways an amount ends up null, and
+   * they are not the same fact. "Varies" is the source declining to state a
+   * number — nothing is wrong and there is nothing to fix. "$,000" is the
+   * source stating a number we failed to parse, which means either their typo
+   * or our bug, and a human should look. Collapsing both into a bare null
+   * would bury every parser regression in the same silence as the honest
+   * blanks. Surfaced by `npm run ingest:status`.
+   */
+  needsReview: boolean;
+}
+
+/** Any `$` at all — the marker that the cell was *meant* to carry a figure. */
+const MONETARY_RE = /\$/;
 
 /**
  * Zero is never a real award, so it is never a real parse.
@@ -32,7 +40,25 @@ function positiveOrNull(n: number): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-export function parseAmount(raw: string): { min: number | null; max: number | null } {
+/**
+ * No bounds. Flags for review only when the raw text carried a `$`, so a
+ * source that simply says "Varies" never lands in the review queue.
+ */
+function none(raw: string): ParsedAmount {
+  return { min: null, max: null, needsReview: MONETARY_RE.test(raw) };
+}
+
+/**
+ * Parse an award line into whole-dollar bounds.
+ *
+ * Order matters, the same lesson as the resume critique's date-range regex:
+ * a range or "up to" has to be checked before a bare dollar figure, or "up
+ * to $10,000" reads as an exact $10,000 rather than a ceiling. Anything that
+ * doesn't match a known shape returns both null rather than guessing — a
+ * wrong number here is worse than an honest blank, since a student would
+ * filter on it.
+ */
+export function parseAmount(raw: string): ParsedAmount {
   const text = raw.replace(/,/g, "");
 
   // Second `$` is optional: UNL writes "$16,000-20,000".
@@ -42,14 +68,14 @@ export function parseAmount(raw: string): { min: number | null; max: number | nu
     const b = positiveOrNull(Number(range[2]));
     // A half-readable range is not a range. Both ends have to survive, or
     // we would publish a bound the source never stated.
-    if (a === null || b === null) return NONE;
-    return { min: Math.min(a, b), max: Math.max(a, b) };
+    if (a === null || b === null) return none(raw);
+    return { min: Math.min(a, b), max: Math.max(a, b), needsReview: false };
   }
 
   const upTo = text.match(/up to\s*\$(\d+)/i);
   if (upTo) {
     const max = positiveOrNull(Number(upTo[1]));
-    return max === null ? NONE : { min: null, max };
+    return max === null ? none(raw) : { min: null, max, needsReview: false };
   }
 
   // Exactly one figure means a stated amount. More than one means prose we
@@ -58,8 +84,8 @@ export function parseAmount(raw: string): { min: number | null; max: number | nu
   const dollarFigures = text.match(/\$(\d+)/g);
   if (dollarFigures && dollarFigures.length === 1) {
     const n = positiveOrNull(Number(dollarFigures[0].slice(1)));
-    return n === null ? NONE : { min: n, max: n };
+    return n === null ? none(raw) : { min: n, max: n, needsReview: false };
   }
 
-  return NONE;
+  return none(raw);
 }

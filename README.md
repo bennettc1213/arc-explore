@@ -120,20 +120,50 @@ Three things that were only visible by running it against the real sites:
   walking 8 pages takes ~50s, rows drift across page boundaries mid-crawl — measured on two
   identical back-to-back runs, that churned 2 listings out and 2 in, which then read
   downstream as scholarships *closing* with their deadlines still months away. Adding
-  `?order=title&sort=asc` makes the crawl reproducible; two consecutive scrapes now return
-  identical 264-row sets.
+  `?order=title&sort=asc` makes the crawl reproducible; two consecutive scrapes return
+  identical 264-row sets. **Not fully solved — see the known issue below.**
 - **Zero is never an award, so it is never a parse.** UNL has a row whose amount cell reads
   `$,000` — the leading digit is missing. Stripping the comma leaves a well-formed `$000`,
   and storing it asserts the scholarship pays nothing. `parseAmount` rejects non-positive
-  results outright; a typo has to come back null, not confident.
-- **Only close what is actually open.** `closeRemoved` filters on `closed_at is null`, or
-  every run re-closes the same absent rows, reports them as newly closed forever, and keeps
-  pushing `closed_at` forward past the date the listing really went away.
+  results outright; a typo has to come back null, not confident. It also distinguishes the
+  two ways an amount ends up null: a source that says "Varies" stated no figure and nothing
+  is wrong, while `$,000` is a figure we failed to read. Only the second sets
+  `amount_needs_review`, so a parser regression cannot hide among the honest blanks.
+- **Only close what is actually open, once.** `selectPostingsToClose` skips rows already
+  closed, or every run re-closes the same absent rows, reports them as newly closed forever,
+  and keeps pushing `closed_at` past the date the listing really went away. The closing
+  *decision* lives in `lib/scholarships/close.ts` as a pure function rather than inside a
+  `WHERE` clause, for the same reason `ingest/reconcile.ts` builds a plan before applying
+  one: a rule that only exists in SQL can only be tested against a live database, which in
+  practice means it is not tested. The upsert path has the same discipline — a listing the
+  source reports closed gets `coalesce(closed_at, now)`, so the first close date stands.
+
+### Known issue — the crawl still drops a row intermittently
+
+The stable sort was necessary but not sufficient. Measured 2026-08-13: three consecutive
+full scrapes returned 263, 263 and 264 listings. On the short runs a live scholarship was
+missing from the crawl, so `closeRemoved` closed it — both victims were verifiably on the
+page at the time, with deadlines in Nov 2026 and Feb 2027.
+
+It self-heals: the next run that does include the row sets `closed_at` back to null, and
+one of the two had already recovered by the following run. But between runs a live
+scholarship reads as closed, which is the exact failure this pipeline exists to avoid.
+The stamp-once fix above keeps the *symptom* honest — `closed_at` no longer drifts and the
+reported count settles to 0 — without addressing the drop itself.
+
+The fix is not more sort keys. It is requiring a listing to be absent from two consecutive
+scrapes before closing it, which needs a per-row absence counter. Not built.
 
 UNL aggregates *external* scholarships, and a large share are law-firm content-marketing
 awards — real, winnable, genuinely open, but not the same kind of thing as an endowed
 institutional fund. `sponsorName` records the awarding org exactly as stated so that
-difference stays visible rather than being flattened into an anonymous list.
+difference stays visible rather than being flattened into an anonymous list, and
+`is_content_marketing` (`lib/scholarships/classify.ts`) tags them at ingest: a legal-practice
+marker in the sponsor name, an award ceiling at or under $1,500, and no institutional marker
+that would exempt a law school or bar association. **126 of 314 rows currently qualify.**
+It is a tag, not a filter — nothing is hidden and nothing reads it yet. The scholarship Fit
+Score is where a down-rank weight belongs, and stamping the flag now means it is already on
+every row when that score gets built.
 
 Getting here took two rounds of verification before writing any scraper code, because the
 obvious targets all turned out to be dead ends: scholarships.com, niche.com and bold.org

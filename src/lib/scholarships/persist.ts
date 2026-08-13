@@ -11,11 +11,13 @@
  * all", not a diff against poll history.
  */
 
-import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { postingSources, postings } from "@/db/schema";
 import { canonicalHash, normalizeTitle } from "../ingest/normalize";
+import { isContentMarketing } from "./classify";
+import { selectPostingsToClose } from "./close";
 import type { ScholarshipListing } from "./types";
 
 export interface ScholarshipPersistResult {
@@ -52,6 +54,30 @@ export async function persistScholarships(
       });
       seenHashes.push(hash);
 
+      const contentMarketing = isContentMarketing({
+        sponsorName: l.sponsorName,
+        amountMin: l.amountMin,
+        amountMax: l.amountMax,
+      });
+
+      /**
+       * Stamp `closed_at` once, on the first run that saw it closed.
+       *
+       * Writing `now` unconditionally would move the timestamp forward on
+       * every run for as long as the listing stays closed, so "closed 3
+       * months ago" would render as "closed today" forever. `coalesce` keeps
+       * whatever the first close wrote. A source that flips a listing back to
+       * open (a new cycle) still clears it outright — that path is `null`.
+       */
+      // ISO string with an explicit cast, not the Date: a JS Date inside a
+      // raw `sql` fragment is bound by its `toString()`, which is a locale
+      // string ("Thu Aug 13 2026 ... Pacific Daylight Time") that Postgres
+      // rejects. The typed column paths below convert it properly; this one
+      // does not.
+      const closedAt = l.isOpen
+        ? null
+        : sql`coalesce(${postings.closedAt}, ${now.toISOString()}::timestamptz)`;
+
       const [row] = await tx
         .insert(postings)
         .values({
@@ -64,6 +90,8 @@ export async function persistScholarships(
           sponsorName: l.sponsorName,
           amountMin: l.amountMin,
           amountMax: l.amountMax,
+          amountNeedsReview: l.amountNeedsReview,
+          isContentMarketing: contentMarketing,
           eligibility: l.eligibility.length > 0 ? { criteria: l.eligibility } : null,
           deadlineAt: l.deadlineAt,
           // Set explicitly rather than relying on the column default: the
@@ -83,12 +111,12 @@ export async function persistScholarships(
             url: l.url,
             amountMin: l.amountMin,
             amountMax: l.amountMax,
+            amountNeedsReview: l.amountNeedsReview,
+            isContentMarketing: contentMarketing,
             eligibility: l.eligibility.length > 0 ? { criteria: l.eligibility } : null,
             deadlineAt: l.deadlineAt,
             lastSeenAt: now,
-            // A source that flips a listing back to open after a closed
-            // reading (a new cycle opening) has to be able to clear this.
-            closedAt: l.isOpen ? null : now,
+            closedAt,
           },
         })
         .returning({ id: postings.id, createdAt: postings.createdAt });
@@ -127,41 +155,20 @@ async function closeRemoved(
   seenHashes: string[],
   now: Date,
 ): Promise<number> {
-  const priorSources = await tx
-    .select({ postingId: postingSources.postingId })
-    .from(postingSources)
-    .where(eq(postingSources.source, source));
-  if (priorSources.length === 0) return 0;
-
-  const priorPostingIds = priorSources.map((r) => r.postingId);
-
-  // An empty scrape (the page returned nothing parseable) must not close
-  // every scholarship this source has ever recorded — that would read a
-  // transient fetch/parse failure as "every fund on the page shut down."
-  if (seenHashes.length === 0) return 0;
-
-  const conditions = [
-    inArray(postings.id, priorPostingIds),
-    notInArray(postings.canonicalHash, seenHashes),
-    eq(postings.kind, "scholarship"),
-    // Only rows still open. Without this the same absent listings are
-    // re-closed on every run and counted again, so the reported "closed"
-    // figure means "absent from the page" rather than "closed by this run" —
-    // a permanent non-zero number that reads as continuous churn and would
-    // also keep bumping closed_at away from the date it actually closed.
-    isNull(postings.closedAt),
-  ];
-
-  const toClose = await tx
-    .select({ id: postings.id })
+  const candidates = await tx
+    .select({
+      id: postings.id,
+      canonicalHash: postings.canonicalHash,
+      closedAt: postings.closedAt,
+    })
     .from(postings)
-    .where(and(...conditions));
-  if (toClose.length === 0) return 0;
+    .innerJoin(postingSources, eq(postingSources.postingId, postings.id))
+    .where(and(eq(postingSources.source, source), eq(postings.kind, "scholarship")));
 
-  await tx
-    .update(postings)
-    .set({ closedAt: now })
-    .where(inArray(postings.id, toClose.map((r) => r.id)));
+  const ids = selectPostingsToClose(candidates, seenHashes);
+  if (ids.length === 0) return 0;
 
-  return toClose.length;
+  await tx.update(postings).set({ closedAt: now }).where(inArray(postings.id, ids));
+
+  return ids.length;
 }

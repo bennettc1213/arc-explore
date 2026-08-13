@@ -103,7 +103,7 @@ export function parseListings(html: string, now: Date = new Date()): Scholarship
     if (!title || !url) continue; // no title or no way to apply — not usable
 
     const sponsor = htmlToText(titleCell.match(SPONSOR_RE)?.[1] ?? "");
-    const { min, max } = parseAmount(htmlToText(amountCell) ?? "");
+    const { min, max, needsReview } = parseAmount(htmlToText(amountCell) ?? "");
     const deadlineAt = parseDeadline(htmlToText(deadlineCell) ?? "");
 
     out.push({
@@ -120,6 +120,7 @@ export function parseListings(html: string, now: Date = new Date()): Scholarship
       sponsorName: sponsor || "University of Nebraska–Lincoln (listed)",
       amountMin: min,
       amountMax: max,
+      amountNeedsReview: needsReview,
       // UNL publishes no eligibility column; the detail lives on each
       // sponsor's own page. Empty rather than invented.
       eligibility: [],

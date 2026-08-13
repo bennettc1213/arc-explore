@@ -31,6 +31,10 @@ export interface ScholarshipListing {
    *  never guessed from a range we can't confidently read. */
   amountMin: number | null;
   amountMax: number | null;
+  /** The source stated a dollar figure we could not parse, as opposed to
+   *  stating none at all. Both leave the bounds null; only this one is a
+   *  defect worth a human look. See `parseAmount`. */
+  amountNeedsReview: boolean;
   /** Raw eligibility bullets/prose as the source states them. Kept as text
    *  rather than parsed into majors/GPA/etc. fields — we have not seen
    *  enough real listings yet to know the right structured shape, and a

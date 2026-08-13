@@ -138,6 +138,17 @@ export const postings = pgTable(
      *  never guessed. Equal min/max means an exact, stated amount. */
     amountMin: integer("amount_min"),
     amountMax: integer("amount_max"),
+    /** The source stated a dollar figure the parser could not read, as
+     *  opposed to stating none. Both leave the bounds null, but only this is
+     *  a defect — without the distinction every parser regression looks
+     *  exactly like an honest blank. Surfaced by `npm run ingest:status`. */
+    amountNeedsReview: boolean("amount_needs_review").notNull().default(false),
+    /** Small-award law-firm scholarships run for inbound links rather than
+     *  by an institution. A tag, never a filter: the row stays in the feed
+     *  and the scholarship Fit Score (Phase 02) decides what to do with it.
+     *  Stamped at ingest so the signal is already on every row when that
+     *  score is built. See `lib/scholarships/classify.ts`. */
+    isContentMarketing: boolean("is_content_marketing").notNull().default(false),
     /** Structured where we can confidently extract it (majors, minGpa,
      *  gradLevels, citizenship, states); absent fields are omitted, never
      *  invented, same rule as the resume parser. Kept as jsonb rather than

@@ -49,7 +49,14 @@ async function main() {
       count(*) filter (where closed_at is null)::int              as open,
       count(*) filter (where closed_at is not null)::int          as closed,
       count(*) filter (where amount_max is not null or amount_min is not null)::int as amount_known,
+      -- Not the inverse of amount_known: this counts only rows where the
+      -- source stated a figure we failed to parse. A source that says
+      -- "Varies" is not a defect. Anything above zero here is a parser bug
+      -- or a source typo, and someone should look at it.
+      count(*) filter (where amount_needs_review)::int            as amount_unparsed,
       count(*) filter (where deadline_at is not null)::int        as deadline_known,
+      -- Small-award law-firm link-building scholarships. Tagged, not hidden.
+      count(*) filter (where is_content_marketing)::int           as content_marketing,
       count(*) filter (where last_seen_at > now() - interval '14 days')::int as checked_2w
     from postings where kind = 'scholarship'`);
 
