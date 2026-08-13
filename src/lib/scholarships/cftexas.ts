@@ -16,6 +16,7 @@
 
 import { getText } from "../ingest/http";
 import { htmlToText } from "../ingest/html";
+import { parseAmount } from "./amount";
 import type { ScholarshipListing } from "./types";
 
 const PAGE_URL = "https://www.cftexas.org/scholarships/apply-for-scholarships/";
@@ -32,37 +33,6 @@ const ELIGIBILITY_BLOCK_RE =
 const DETAIL_URL_RE =
   /(https:\/\/www\.cftexas\.org\/scholarships\/apply-for-scholarships\/[a-z0-9-]+\/)" target="_blank">/i;
 const LIST_ITEM_RE = /<li>([\s\S]*?)<\/li>/g;
-
-/**
- * Parse an "up to $X", "$X-$Y", or flat "$X" award line into bounds.
- *
- * Order matters, the same lesson as the resume critique's date-range regex:
- * a range or "up to" has to be checked before a bare dollar figure, or "up
- * to $10,000" would be misread as an exact $10,000 rather than a ceiling.
- * Anything that doesn't match a known shape — "Varies", multi-figure prose —
- * returns both null rather than guessing.
- */
-export function parseAmount(raw: string): { min: number | null; max: number | null } {
-  const text = raw.replace(/,/g, "");
-
-  const range = text.match(/\$(\d+)\s*(?:-|–|—|to)\s*\$?(\d+)/i);
-  if (range) {
-    const a = Number(range[1]);
-    const b = Number(range[2]);
-    return { min: Math.min(a, b), max: Math.max(a, b) };
-  }
-
-  const upTo = text.match(/up to\s*\$(\d+)/i);
-  if (upTo) return { min: null, max: Number(upTo[1]) };
-
-  const dollarFigures = text.match(/\$(\d+)/g);
-  if (dollarFigures && dollarFigures.length === 1) {
-    const n = Number(dollarFigures[0].slice(1));
-    return { min: n, max: n };
-  }
-
-  return { min: null, max: null };
-}
 
 function parseDeadline(raw: string): Date | null {
   const trimmed = raw.trim();

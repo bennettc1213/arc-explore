@@ -23,6 +23,7 @@ npm run dev          # http://localhost:3000
 | `npm run db:audit` | assert every table is protected — see below |
 | `npm run ingest:fast` | Tier A — poll every registered employer's ATS |
 | `npm run ingest:daily` | Tier B — discover companies and enroll them |
+| `npm run ingest:scholarships` | scrape scholarship sources (`-- --source unl` for one) |
 | `npm run ingest:status` | is the corpus still moving? |
 | `npm run ingest:rederive` | re-run the detectors over stored JD text (dry run; `-- --apply`) |
 
@@ -99,14 +100,40 @@ Scripts close the database pool explicitly. postgres.js keeps sockets open, and 
 handle keeps Node alive — a job that does its work in six seconds and then sits until
 the runner's timeout looks, from CI, like a job that failed.
 
-**`ingest-scholarships`, weekly (Sundays).** Scrapes `lib/scholarships/`, currently one
-source — Communities Foundation of Texas. Not built on the internship Tier A machinery:
-there is no ATS underneath a scholarship page to poll every 20 minutes, and the source
-states open/closed on each listing directly, so there is nothing to infer from absence
-the way `closed_at` works for internships. `persistScholarships` upserts a full snapshot
-of the page and closes anything previously scraped from that source that is missing from
-the new one entirely — but never on an empty scrape, which reads as a broken parser, not
-every scholarship on the page closing at once.
+**`ingest-scholarships`, weekly (Sundays).** Scrapes `lib/scholarships/` — currently
+Communities Foundation of Texas (48 institutional funds) and University of
+Nebraska–Lincoln's external list (264, of which ~259 are open). Run one at a time with
+`npm run ingest:scholarships -- --source unl`.
+
+Not built on the internship Tier A machinery: there is no ATS underneath a scholarship
+page to poll every 20 minutes, and each source either states open/closed directly (CFT)
+or publishes a deadline to compare against (UNL), so there is nothing to infer from
+absence the way `closed_at` works for internships. `persistScholarships` upserts a full
+snapshot and closes anything previously scraped from that source that is missing from the
+new one — but never on an empty scrape, which reads as a broken parser rather than every
+scholarship on the page closing at once.
+
+Three things that were only visible by running it against the real sites:
+
+- **Paginate on an explicitly stable sort.** UNL's table defaults to ordering by deadline,
+  dozens of rows share a deadline, and ties are not ordered stably between requests. Since
+  walking 8 pages takes ~50s, rows drift across page boundaries mid-crawl — measured on two
+  identical back-to-back runs, that churned 2 listings out and 2 in, which then read
+  downstream as scholarships *closing* with their deadlines still months away. Adding
+  `?order=title&sort=asc` makes the crawl reproducible; two consecutive scrapes now return
+  identical 264-row sets.
+- **Zero is never an award, so it is never a parse.** UNL has a row whose amount cell reads
+  `$,000` — the leading digit is missing. Stripping the comma leaves a well-formed `$000`,
+  and storing it asserts the scholarship pays nothing. `parseAmount` rejects non-positive
+  results outright; a typo has to come back null, not confident.
+- **Only close what is actually open.** `closeRemoved` filters on `closed_at is null`, or
+  every run re-closes the same absent rows, reports them as newly closed forever, and keeps
+  pushing `closed_at` forward past the date the listing really went away.
+
+UNL aggregates *external* scholarships, and a large share are law-firm content-marketing
+awards — real, winnable, genuinely open, but not the same kind of thing as an endowed
+institutional fund. `sponsorName` records the awarding org exactly as stated so that
+difference stays visible rather than being flattened into an anonymous list.
 
 Getting here took two rounds of verification before writing any scraper code, because the
 obvious targets all turned out to be dead ends: scholarships.com, niche.com and bold.org
@@ -172,7 +199,7 @@ Our own connection is the table owner and bypasses RLS, so:
 
 ```
 src/lib/ingest/     Tier A ATS adapters, dedup, freshness reconcile
-src/lib/scholarships/ scraped sources (cftexas.ts), separate persist path — see Ingestion
+src/lib/scholarships/ scraped sources (cftexas, unl), separate persist path — see Ingestion
 src/lib/score/      fit (deterministic rules + reasons) and timing
 src/lib/profile/    profile shape, validation, store  (types.ts is DB-free and tested)
 src/lib/resume/     upload rules + Anthropic extraction  (types.ts is DB-free and tested)

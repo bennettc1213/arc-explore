@@ -11,7 +11,7 @@
  * all", not a diff against poll history.
  */
 
-import { and, eq, inArray, notInArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, notInArray } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { postingSources, postings } from "@/db/schema";
@@ -144,6 +144,12 @@ async function closeRemoved(
     inArray(postings.id, priorPostingIds),
     notInArray(postings.canonicalHash, seenHashes),
     eq(postings.kind, "scholarship"),
+    // Only rows still open. Without this the same absent listings are
+    // re-closed on every run and counted again, so the reported "closed"
+    // figure means "absent from the page" rather than "closed by this run" —
+    // a permanent non-zero number that reads as continuous churn and would
+    // also keep bumping closed_at away from the date it actually closed.
+    isNull(postings.closedAt),
   ];
 
   const toClose = await tx

@@ -12,7 +12,7 @@
  */
 
 /** Sources we scrape. Each gets its own module under this directory. */
-export type ScholarshipSource = "cftexas";
+export type ScholarshipSource = "cftexas" | "unl";
 
 export interface ScholarshipListing {
   source: ScholarshipSource;
