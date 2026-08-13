@@ -12,8 +12,8 @@ Notes in _italics_ record what was actually built and where it differs from the 
 
 - [x] Choose your stack — frontend framework, backend/API layer, database, hosting
   _Next.js 16 (App Router) · Supabase Postgres · Drizzle ORM · Vercel · GitHub Actions for cron._
-- [ ] Set up the GitHub repo and basic project structure
-  _**Structure done, version control is not.** `git log` reports no commits on `master`, zero tracked files, no remote. Every session of work exists on one disk with no history. This is the cheapest and highest-risk item on the whole board._
+- [~] Set up the GitHub repo and basic project structure
+  _Structure done and **now under version control** — `bba15c3` tracks 112 files, with `.env*` ignored and the tree verified free of credentials before it landed. **No GitHub remote yet**, so the history still lives on one disk; that push is yours to authorise._
 - [x] Design the database schema: users, profiles, opportunities, applications, saved items
   _12 tables. Row Level Security added in migration 0002 — before it, every table was readable **and writable** from the open internet via the public anon key._
 - [x] Build basic auth (sign up / log in)
