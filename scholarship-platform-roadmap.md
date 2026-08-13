@@ -24,10 +24,10 @@ Notes in _italics_ record what was actually built and where it differs from the 
   _Same decision. **These are aggregators** — we measured Simplify, an aggregator, at 50% stale beyond 30 days, which is why the pipeline polls employer ATS feeds directly. Their rows cannot carry the "confirmed live 5h ago" claim and must be visibly labelled differently._
 - [x] De-duplicate the combined internship feed by title, company, and posting date
   _`canonical_hash` over normalized company + title + location + term. Location and term rather than posting date: the same title genuinely runs as separate reqs per city, and Summer 2026 vs 2027 are different opportunities._
-- [ ] Build a scraper for an initial small set of 10–15 trusted scholarship sources
-  _**Not started. Zero scholarship coverage** — the largest gap between this roadmap and what exists._
-- [~] Normalize both feeds into one shared "opportunity" schema (title, org, deadline, amount/pay, eligibility, posted date, source URL)
-  _Internships normalized: title, org, deadline, posted date and source URL all exist. **No `amount` field, no eligibility columns** — both are scholarship-shaped and land with that work._
+- [~] Build a scraper for an initial small set of 10–15 trusted scholarship sources
+  _**1 of the target 10–15, live: Communities Foundation of Texas, 48 scholarships.** Verified before writing any code, in two rounds: the obvious "trusted 10-15" candidates (scholarships.com, niche.com, bold.org, CareerOneStop) are either contractually banned, actively WAF-blocked, or structurally empty behind a gated portal. University/foundation financial-aid pages are what actually worked — `ingest-scholarships` weekly, see README. Two more identified and verified accessible (UNL, UNR) but not yet wired up._
+- [x] Normalize both feeds into one shared "opportunity" schema (title, org, deadline, amount/pay, eligibility, posted date, source URL)
+  _`postings.kind` discriminates the two verticals in one table, per this line's own intent. Added `amount_min`/`amount_max`, `eligibility` (jsonb), `sponsor_name` (for rows with no `organizations` link), `freshness_tier` (`live_polled` vs `periodic_check` — the honesty distinction Adzuna/Muse/RemoteOK will need too, not just scholarships). Migration `0005`, applied._
 - [x] Set up a scheduled refresh job so listings update daily, not just on first import
   _`ingest-fast` every 20 min (all four ATS adapters), `ingest-daily` for company discovery. Needs the `DATABASE_URL` repo secret to run in CI._
 - [~] Build a simple internal admin view to spot-check the scraped data for accuracy

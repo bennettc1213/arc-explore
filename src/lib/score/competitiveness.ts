@@ -74,18 +74,18 @@ export async function resumeCompetitiveness(
               ) >= least(cardinality(skills), ${SATURATION})
       )::int as strong
     from postings
-    where closed_at is null and cardinality(skills) > 0`);
+    where closed_at is null and kind = 'internship' and cardinality(skills) > 0`);
 
   const gaps = await db.execute<CountRow>(sql`
     select s as skill, count(*)::int as n
     from postings, unnest(skills) as s
-    where closed_at is null and not (s = any(${mine}::text[]))
+    where closed_at is null and kind = 'internship' and not (s = any(${mine}::text[]))
     group by s order by n desc limit 6`);
 
   const strongest = await db.execute<CountRow>(sql`
     select s as skill, count(*)::int as n
     from postings, unnest(skills) as s
-    where closed_at is null and s = any(${mine}::text[])
+    where closed_at is null and kind = 'internship' and s = any(${mine}::text[])
     group by s order by n desc limit 6`);
 
   const row = totals[0];

@@ -14,6 +14,7 @@
     "db:audit": "tsx scripts/db-audit.ts",
     "ingest:fast": "tsx scripts/ingest-fast.ts",
     "ingest:daily": "tsx scripts/ingest-daily.ts",
+    "ingest:scholarships": "tsx scripts/ingest-scholarships.ts",
     "ingest:status": "tsx scripts/ingest-status.ts",
     "ingest:rederive": "tsx scripts/ingest-rederive.ts",
     "check": "npm run typecheck && npm run lint && npm test"

@@ -81,11 +81,19 @@ export async function getFeed(
   if (filters.term) conditions.push(eq(postings.term, filters.term));
   if (filters.remoteOnly) conditions.push(eq(postings.isRemote, true));
 
+  // Scholarship rows share this table but not this scorer — scoreFit reads
+  // term/workAuth/degrees the way an internship posting fills them, and a
+  // scholarship Fit Score does not exist yet. Scope this feed to internships
+  // until it does, rather than mis-score whatever lands in `postings` next.
+  conditions.push(eq(postings.kind, "internship"));
+
   const rows = await db
     .select({
       id: postings.id,
       title: postings.title,
-      company: organizations.name,
+      // Scholarship rows can have no orgId (see schema.ts) — coalesce to the
+      // sponsor name scraped off the source page instead of dropping the row.
+      company: sql<string>`coalesce(${organizations.name}, ${postings.sponsorName})`,
       url: postings.url,
       locations: postings.locations,
       isRemote: postings.isRemote,
@@ -102,7 +110,7 @@ export async function getFeed(
       deadlineAt: postings.deadlineAt,
     })
     .from(postings)
-    .innerJoin(organizations, eq(postings.orgId, organizations.id))
+    .leftJoin(organizations, eq(postings.orgId, organizations.id))
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(postings.firstSeenAt))
     .limit(filters.limit ?? 500);
@@ -156,7 +164,8 @@ export async function getFeedStats(): Promise<FeedStats> {
       newToday: sql<number>`count(*) filter (where ${postings.firstSeenAt} > ${dayAgo}::timestamptz)::int`,
       withUnknownTerm: sql<number>`count(*) filter (where ${postings.term} is null)::int`,
     })
-    .from(postings);
+    .from(postings)
+    .where(eq(postings.kind, "internship"));
 
   return row;
 }
@@ -166,6 +175,6 @@ export async function getAvailableTerms(): Promise<string[]> {
   const rows = await db
     .selectDistinct({ term: postings.term })
     .from(postings)
-    .where(isNull(postings.closedAt));
+    .where(and(isNull(postings.closedAt), eq(postings.kind, "internship")));
   return rows.map((r) => r.term).filter((t): t is string => Boolean(t)).sort();
 }

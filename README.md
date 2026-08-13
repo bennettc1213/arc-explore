@@ -64,7 +64,7 @@ Auth is magic-link only. Two settings have to be right or sign-in links fail:
 
 ## Ingestion
 
-Two scheduled workflows in `.github/workflows/`. Both need one repo secret:
+Three scheduled workflows in `.github/workflows/`. All three need one repo secret:
 **`DATABASE_URL`** (Settings → Secrets and variables → Actions).
 
 **`ingest-fast`, every 20 minutes.** Polls each registered company's own ATS —
@@ -98,6 +98,35 @@ Three things in `runTierA` are load-bearing and easy to get wrong:
 Scripts close the database pool explicitly. postgres.js keeps sockets open, and an open
 handle keeps Node alive — a job that does its work in six seconds and then sits until
 the runner's timeout looks, from CI, like a job that failed.
+
+**`ingest-scholarships`, weekly (Sundays).** Scrapes `lib/scholarships/`, currently one
+source — Communities Foundation of Texas. Not built on the internship Tier A machinery:
+there is no ATS underneath a scholarship page to poll every 20 minutes, and the source
+states open/closed on each listing directly, so there is nothing to infer from absence
+the way `closed_at` works for internships. `persistScholarships` upserts a full snapshot
+of the page and closes anything previously scraped from that source that is missing from
+the new one entirely — but never on an empty scrape, which reads as a broken parser, not
+every scholarship on the page closing at once.
+
+Getting here took two rounds of verification before writing any scraper code, because the
+obvious targets all turned out to be dead ends: scholarships.com, niche.com and bold.org
+all carry explicit contractual scraping bans (checked their actual ToS text, not assumed
+one); CareerOneStop's Scholarship Finder — rated the best free scholarship source going
+in — sits behind a site-wide WAF that 403s every request including `robots.txt`; most
+state financial-aid-agency pages turned out to be navigation hubs pointing at gated
+portals, structurally empty despite being legally the cleanest category on paper.
+University/foundation aid-office pages were the ones that actually worked — open
+`robots.txt`, server-rendered HTML, real data. CFT's page currently reads **0 open, 48
+closed**: not a bug, its funds run on a spring deadline and this was scraped in August.
+
+`postings.freshness_tier` exists for exactly this case. A scholarship or an
+aggregator-sourced internship (Adzuna, Muse, RemoteOK, once built) cannot honestly carry
+the "confirmed live Xh ago" copy that Tier A earns by polling every 20 minutes — the tier
+is `periodic_check`, and the UI owes it different, weaker copy. `postings.kind` keeps the
+two verticals in one shared table, per the roadmap's own design intent for a combined
+feed, without letting a scholarship get scored by the internship-shaped `scoreFit` — every
+existing feed/competitiveness query is explicitly scoped to `kind = 'internship'` until a
+scholarship Fit Score exists to score the other kind with.
 
 ### Derived fields
 
@@ -143,6 +172,7 @@ Our own connection is the table owner and bypasses RLS, so:
 
 ```
 src/lib/ingest/     Tier A ATS adapters, dedup, freshness reconcile
+src/lib/scholarships/ scraped sources (cftexas.ts), separate persist path — see Ingestion
 src/lib/score/      fit (deterministic rules + reasons) and timing
 src/lib/profile/    profile shape, validation, store  (types.ts is DB-free and tested)
 src/lib/resume/     upload rules + Anthropic extraction  (types.ts is DB-free and tested)

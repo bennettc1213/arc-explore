@@ -82,15 +82,40 @@ export const organizations = pgTable(
  * Postings — canonical, deduped
  * ------------------------------------------------------------------ */
 
+/** What kind of opportunity a row is. One shared table, per the roadmap's own
+ *  design intent — a combined browse/search feed needs one list to query, not
+ *  a union of two. */
+export const POSTING_KINDS = ["internship", "scholarship"] as const;
+export type PostingKind = (typeof POSTING_KINDS)[number];
+
+/**
+ * How confident the freshness claim on a row is allowed to be, driven by how
+ * often we actually reverify it — not by kind. An Adzuna-sourced internship
+ * and a scraped scholarship are the same case: neither can carry "confirmed
+ * live Xh ago", because neither is polled the way Tier A polls an ATS.
+ *  - live_polled: Tier A, sub-hour ATS polling. "Confirmed live Xh ago" is true.
+ *  - periodic_check: reverified on a slower loop (daily/weekly scrape,
+ *    aggregator pull). Renders as "checked as of <date>".
+ *  - unverified_static: imported once, no recheck loop yet.
+ */
+export const FRESHNESS_TIERS = ["live_polled", "periodic_check", "unverified_static"] as const;
+export type FreshnessTier = (typeof FRESHNESS_TIERS)[number];
+
 export const postings = pgTable(
   "postings",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    orgId: uuid("org_id")
+    /** Null for scholarships scraped from a page that lists many sponsors —
+     *  there is no single employer to poll, so there is nothing to link to
+     *  the ATS-oriented `organizations` registry. Use `sponsorName` instead. */
+    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "cascade" }),
+    kind: text("kind").$type<PostingKind>().notNull().default("internship"),
+    freshnessTier: text("freshness_tier")
+      .$type<FreshnessTier>()
       .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
+      .default("live_polled"),
 
-    /** Stable dedup key: normalized company + title + location + term. */
+    /** Stable dedup key: normalized company/sponsor + title + location + term. */
     canonicalHash: text("canonical_hash").notNull(),
 
     /** Employer-authored strings. Rendered as-is, never lowercased. */
@@ -98,13 +123,28 @@ export const postings = pgTable(
     normalizedTitle: text("normalized_title").notNull(),
     /** Canonical apply URL, tracking params stripped. */
     url: text("url").notNull(),
+    /** Awarding org as named on the source page, for rows with no `orgId` —
+     *  a scraped scholarship page lists many sponsors, not one employer. */
+    sponsorName: text("sponsor_name"),
 
     locations: text("locations").array().notNull().default([]),
     isRemote: boolean("is_remote").notNull().default(false),
-    /** e.g. "Summer 2027". */
+    /** e.g. "Summer 2027" for internships, an academic year for scholarships. */
     term: text("term"),
     category: text("category"),
     degrees: text("degrees").array().notNull().default([]),
+
+    /** Scholarship dollar value. Both null means "amount varies" or unstated —
+     *  never guessed. Equal min/max means an exact, stated amount. */
+    amountMin: integer("amount_min"),
+    amountMax: integer("amount_max"),
+    /** Structured where we can confidently extract it (majors, minGpa,
+     *  gradLevels, citizenship, states); absent fields are omitted, never
+     *  invented, same rule as the resume parser. Kept as jsonb rather than
+     *  fixed columns because we have not yet seen enough real scraped
+     *  listings to know the right shape — see resumes.parsed for the same
+     *  unknown-at-the-boundary pattern. */
+    eligibility: jsonb("eligibility"),
 
     /** Derived from JD text — the source `sponsorship` field is 98% "Other". */
     workAuth: text("work_auth"),
@@ -143,6 +183,10 @@ export const postings = pgTable(
     index("posting_org_idx").on(t.orgId),
     index("posting_open_idx").on(t.closedAt, t.firstSeenAt),
     index("posting_term_idx").on(t.term),
+    // Every existing query (the internship feed, competitiveness) implicitly
+    // assumed one kind. This is what lets a scholarship feed query scope
+    // itself out of the way without a table scan.
+    index("posting_kind_idx").on(t.kind),
   ],
 );
 

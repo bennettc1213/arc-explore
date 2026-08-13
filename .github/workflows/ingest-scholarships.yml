@@ -1,0 +1,38 @@
+####
+# Scholarship ingestion — scraped sources, checked weekly.
+#
+# Not the Tier A cadence: there is no ATS underneath a scholarship page to
+# poll every 20 minutes, and CFT's own listings move on a semester scale, not
+# a minute-to-minute one. A weekly check is honest about how fresh this data
+# actually is — see freshness_tier on postings ("periodic_check", not
+# "live_polled") and the UI copy it drives.
+####
+name: ingest-scholarships
+
+on:
+  schedule:
+    - cron: "9 8 * * 0" # Sundays 08:09 UTC — off the hour, low scheduler load
+  workflow_dispatch: {}
+
+concurrency:
+  group: ingest-scholarships
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: scrape scholarships
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run ingest:scholarships

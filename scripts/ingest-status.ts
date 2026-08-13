@@ -27,6 +27,10 @@ async function main() {
       count(*) filter (where last_polled_at > now() - interval '1 hour')::int as polled_last_hour
     from organizations`);
 
+  // Scoped to kind = 'internship': term/work-auth/description coverage are
+  // internship-specific concepts, always null for a scholarship row, and
+  // blending the two kinds would read as internship detection quietly
+  // getting worse every time a scholarship scrape adds rows.
   const [posts] = await db.execute<Row>(sql`
     select
       count(*)::int                                             as total,
@@ -37,7 +41,17 @@ async function main() {
       count(*) filter (where term is not null)::int              as term_known,
       count(*) filter (where work_auth is not null)::int         as work_auth_known,
       count(*) filter (where description_text is not null)::int  as described
-    from postings`);
+    from postings where kind = 'internship'`);
+
+  const [scholarships] = await db.execute<Row>(sql`
+    select
+      count(*)::int                                              as total,
+      count(*) filter (where closed_at is null)::int              as open,
+      count(*) filter (where closed_at is not null)::int          as closed,
+      count(*) filter (where amount_max is not null or amount_min is not null)::int as amount_known,
+      count(*) filter (where deadline_at is not null)::int        as deadline_known,
+      count(*) filter (where last_seen_at > now() - interval '14 days')::int as checked_2w
+    from postings where kind = 'scholarship'`);
 
   const runs = await db.execute<Row>(sql`
     select tier, source, started_at, finished_at,
@@ -50,7 +64,8 @@ async function main() {
   };
 
   show("organizations", orgs);
-  show("postings", posts);
+  show("postings (internships)", posts);
+  show("postings (scholarships)", scholarships);
 
   console.log("\nrecent runs");
   if (runs.length === 0) {

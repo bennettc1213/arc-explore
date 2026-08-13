@@ -114,6 +114,64 @@ export async function getJson<T = unknown>(
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
+export interface GetTextOptions {
+  timeoutMs?: number;
+  attempts?: number;
+  signal?: AbortSignal;
+}
+
+/**
+ * GET raw text (HTML pages, not a JSON API) with the same retry/backoff and
+ * identifying User-Agent as {@link getJson}. No conditional-request support —
+ * the scraped pages this hits do not send a meaningful ETag, unlike the ATS
+ * boards `getJson` polls every 20 minutes.
+ */
+export async function getText(url: string, opts: GetTextOptions = {}): Promise<string> {
+  const { timeoutMs = 30_000, attempts = 3, signal } = opts;
+
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const onAbort = () => controller.abort();
+    signal?.addEventListener("abort", onAbort, { once: true });
+
+    try {
+      const res = await fetch(url, {
+        headers: { Accept: "text/html", "User-Agent": USER_AGENT },
+        signal: controller.signal,
+        redirect: "follow",
+      });
+
+      if (!res.ok) {
+        if (!RETRYABLE_STATUS.has(res.status)) throw new HttpError(res.status, url);
+        const retryAfter = Number(res.headers.get("retry-after"));
+        const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
+          ? retryAfter * 1000
+          : 2 ** attempt * 500;
+        lastErr = new HttpError(res.status, url);
+        if (attempt < attempts) {
+          await sleep(waitMs);
+          continue;
+        }
+        throw lastErr;
+      }
+
+      return await res.text();
+    } catch (err) {
+      lastErr = err;
+      if (err instanceof HttpError && !RETRYABLE_STATUS.has(err.status)) throw err;
+      if (attempt >= attempts) throw err;
+      await sleep(2 ** attempt * 500);
+    } finally {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
 /**
  * Run tasks with bounded concurrency. Keeps us from opening 650 sockets at once
  * and from hammering any single host.
