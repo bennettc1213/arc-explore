@@ -1,0 +1,63 @@
+####
+# Deadline reminders.
+#
+# THIS WORKFLOW SENDS REAL EMAIL TO REAL PEOPLE. It is the only job in this
+# repo that does something outside our own database, and it cannot be undone by
+# re-running it.
+#
+# It fails safe. `RESEND_API_KEY` is a repository secret, so until that secret
+# exists the send throws and nothing leaves — adding it is the deliberate act
+# that switches reminders on. Run `npm run reminders` locally first: with no
+# `--send` it prints exactly what it would deliver and mails nothing.
+#
+# Daily, not hourly. The windows are 14 / 7 / 1 days out, so a second run in
+# the same day could only ever find the same reminders it already sent and
+# recorded — and the recording is what stops that being an email a day.
+####
+name: reminders
+
+on:
+  schedule:
+    - cron: "23 13 * * *" # 13:23 UTC — mid-morning US, off the hour
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: "print what would be sent without sending it"
+        type: boolean
+        required: false
+        default: true
+
+concurrency:
+  # Two overlapping runs would each read the same already-sent set before
+  # either had written its receipts. The unique index would catch the duplicate
+  # row, but only after the second email had already gone out.
+  group: reminders
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: send deadline reminders
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REMINDER_FROM_EMAIL: ${{ secrets.REMINDER_FROM_EMAIL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+        # A manual run defaults to a dry run; the schedule always sends.
+        run: |
+          if [ "${{ github.event.inputs.dryRun }}" = "true" ]; then
+            npm run reminders
+          else
+            npm run reminders -- --send
+          fi
