@@ -6,6 +6,9 @@ import { saveResumeAction, type ResumeEditState } from "@/app/resume/actions";
 import { parseBulletsInput, parseSkillsInput } from "@/lib/resume/edit";
 import type { ParsedResume } from "@/lib/resume/types";
 
+import { PrintButton } from "./PrintButton";
+import { ResumeSheet } from "./ResumeSheet";
+
 /**
  * The resume editor.
  *
@@ -95,8 +98,15 @@ export function ResumeEditor({ initial }: { initial: ParsedResume }) {
       projects: r.projects.map((p, i) => (i === index ? { ...p, ...patch } : p)),
     }));
 
+  // The sheet renders from the same state the fields write to, so what prints
+  // is what is on screen — including edits not yet saved. Same contract as the
+  // cover letter: the document a student sends can never be a stale copy of
+  // the one they were just looking at.
+  const preview = collect();
+
   return (
-    <form onSubmit={onSubmit}>
+    <>
+    <form onSubmit={onSubmit} className="print-hide">
       <section style={{ marginBottom: 32 }}>
         <div className="eyebrow chrome" style={{ marginBottom: 12 }}>
           01 — contact + education
@@ -259,6 +269,7 @@ export function ResumeEditor({ initial }: { initial: ParsedResume }) {
         <button type="submit" className="btn btn-primary press" disabled={isPending}>
           {isPending ? "saving…" : "save resume"}
         </button>
+        <PrintButton label="print / save as PDF" />
         {state.status === "saved" && <span className="mono">saved</span>}
         {state.status === "error" && (
           <span className="mono" style={{ color: "var(--accent)" }}>
@@ -267,6 +278,14 @@ export function ResumeEditor({ initial }: { initial: ParsedResume }) {
         )}
       </div>
     </form>
+
+    <div className="print-hide eyebrow chrome" style={{ marginTop: 40, marginBottom: 12 }}>
+      05 — what prints
+    </div>
+    <div style={{ marginBottom: 8 }}>
+      <ResumeSheet resume={preview} />
+    </div>
+    </>
   );
 }
 

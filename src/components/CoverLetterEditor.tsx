@@ -14,7 +14,7 @@ import {
   type CoverLetterDraft,
 } from "@/lib/cover-letter/types";
 
-import { PrintLetterButton } from "./PrintLetterButton";
+import { PrintButton } from "./PrintButton";
 
 const INITIAL: LetterActionState = { status: "idle" };
 
@@ -199,7 +199,7 @@ export function CoverLetterEditor({
             </button>
           </form>
 
-          <PrintLetterButton />
+          <PrintButton />
           {saved && (
             <span className="mono" style={{ color: "var(--accent)" }}>
               saved

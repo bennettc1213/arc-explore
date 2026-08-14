@@ -451,9 +451,90 @@ html {
   color: #55555c;
 }
 
+/* --------------------------------------------------------------------------
+   The resume as a document.
+
+   One column, real text, ordinary headings — not a style choice. The critique
+   engine's only honest ATS claim is that *we* are a machine that read this
+   document, and its corollary is that layout is what destroys machine
+   readability: text boxes, columns and images are exactly what it tells a
+   student to remove. A renderer that reintroduced them would fail the advice
+   we give.
+   ========================================================================== */
+.resume-sheet {
+  background: #fdfdf8;
+  color: #101013;
+  padding: 56px 64px;
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  max-width: 820px;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+.resume-name {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+.resume-contact {
+  color: #55555c;
+  font-size: 0.875rem;
+  margin-bottom: 22px;
+}
+.resume-section-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #c9c9c0;
+  padding-bottom: 4px;
+  margin: 20px 0 10px;
+}
+.resume-entry {
+  margin-bottom: 14px;
+}
+.resume-entry-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-weight: 600;
+}
+.resume-entry-meta {
+  color: #55555c;
+  font-size: 0.875rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.resume-sheet ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+.resume-sheet li {
+  margin-bottom: 3px;
+}
+
 @media print {
   /* screen-only chrome: editor, buttons, page furniture */
   .print-hide {
+    display: none !important;
+  }
+
+  /*
+   * Site furniture, hidden by element rather than by class.
+   *
+   * The nav and footer live in the root layout, so no page can mark them —
+   * and until this rule existed every printed cover letter carried the site
+   * navigation across the top and the footer underneath it. A document you
+   * send to an employer cannot have our header on it.
+   *
+   * `body > header` and `body > footer` are the layout's own, and are
+   * specific enough not to touch a `<header>` a page uses inside its sheet.
+   */
+  body > header,
+  body > footer,
+  canvas {
     display: none !important;
   }
 
@@ -470,7 +551,8 @@ html {
   }
 
   /* the sheet loses its app-chrome treatment and becomes the document */
-  .letter-sheet {
+  .letter-sheet,
+  .resume-sheet {
     box-shadow: none !important;
     border: none !important;
     padding: 0 !important;
@@ -478,7 +560,16 @@ html {
     background: #ffffff !important;
     color: #000000 !important;
   }
-  .letter-contact {
+  .letter-contact,
+  .resume-contact {
     color: #333333 !important;
+  }
+
+  /* An entry split across a page break reads as two half-jobs. */
+  .resume-entry {
+    break-inside: avoid;
+  }
+  .resume-section-title {
+    break-after: avoid;
   }
 }

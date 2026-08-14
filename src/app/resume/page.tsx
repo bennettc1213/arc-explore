@@ -21,7 +21,7 @@ export default async function ResumePage() {
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
-      <header style={{ marginBottom: 32 }}>
+      <header className="print-hide" style={{ marginBottom: 32 }}>
         <div className="eyebrow chrome">resume</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>
           what your resume <span style={{ color: "var(--accent)" }}>actually says</span>
@@ -36,7 +36,7 @@ export default async function ResumePage() {
       {resume ? (
         <>
           <div
-            className="flex flex-wrap items-center justify-between gap-4 border"
+            className="print-hide flex flex-wrap items-center justify-between gap-4 border"
             style={{ borderColor: "var(--line-strong)", padding: "14px 18px", marginBottom: 28 }}
           >
             <div>
@@ -53,13 +53,13 @@ export default async function ResumePage() {
             </Link>
           </div>
 
-          {/* Said plainly because the gap is real until export ships: edits move
-              our scores immediately, but the PDF an employer receives is still
-              the file that was uploaded. */}
-          <div className="slot" style={{ marginBottom: 28, padding: "14px 16px" }}>
+          {/* The uploaded file is still whatever it was; what changed is that
+              there is now a way to produce a document from the corrected
+              structure instead of being stuck with it. */}
+          <div className="slot print-hide" style={{ marginBottom: 28, padding: "14px 16px" }}>
             <span>
-              edits change what we score and what cover letters may assert — they do not change
-              the PDF you uploaded. download is not built yet
+              edits change what we score and what cover letters may assert. they do not alter the
+              file you uploaded — print the sheet below to get a document that matches
             </span>
           </div>
 
