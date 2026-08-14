@@ -32,7 +32,7 @@
  * a trailing period is already a word boundary.
  */
 const LEGAL_RE =
-  /\b(?:law|laws|lawyer|lawyers|attorney|attorneys|legal|esq|esquire|llp|pllc)\b|\bp\.c\./i;
+  /\b(?:law|laws|lawyer|lawyers|attorney|attorneys|legal|esq|esquire|llp|lpa|pllc)\b|\bp\.c\./i;
 
 /**
  * Institutional markers that override the legal one.

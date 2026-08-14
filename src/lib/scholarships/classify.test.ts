@@ -14,6 +14,7 @@ describe("isContentMarketing", () => {
     assert.equal(at("Bronx Injury Lawyers P.C.", 500), true);
     assert.equal(at("Kush Arora Criminal Defense Attorney", 1000), true);
     assert.equal(at("Levin & Nalbandyan LLP", 1000), true);
+    assert.equal(at("Schaffer & Associates LPA", 1000), true);
     assert.equal(at("The Bihm Firm, PLLC", 1000), true);
     assert.equal(at("Kingbird Legal", 1000), true);
   });

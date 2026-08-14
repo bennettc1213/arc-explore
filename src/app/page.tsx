@@ -4,7 +4,7 @@ import { Mascot } from "@/components/chrome/Mascot";
 import { PostingRow } from "@/components/PostingRow";
 import { statusesForPostings } from "@/lib/applications/store";
 import { getSessionUser } from "@/lib/auth";
-import { getAvailableTerms, getFeed, getFeedStats } from "@/lib/feed";
+import { getAvailableTerms, getFeed, getFeedStats, type DeadlineFilter } from "@/lib/feed";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 import {
@@ -145,10 +145,22 @@ export default async function FeedPage({
   const term = typeof sp.term === "string" && sp.term ? sp.term : null;
   const remoteOnly = sp.remoteOnly === "1";
   const includeClosed = sp.includeClosed === "1";
+  const kind = sp.kind === "internship" || sp.kind === "scholarship" ? sp.kind : null;
+
+  const deadline: DeadlineFilter | null =
+    sp.deadline === "set" || sp.deadline === "30" || sp.deadline === "60" || sp.deadline === "90"
+      ? sp.deadline
+      : null;
+
+  const minAmountRaw = Number(sp.minAmount);
+  const minAmount = Number.isFinite(minAmountRaw) && minAmountRaw > 0 ? minAmountRaw : null;
+
+  const rawLocation = typeof sp.location === "string" ? sp.location.trim() : "";
+  const location = rawLocation ? rawLocation : null;
 
   const [items, stats, terms] = await Promise.all([
-    getFeed(profile, { term, remoteOnly, includeClosed, hideBlocked: false }),
-    getFeedStats(),
+    getFeed(profile, { term, remoteOnly, includeClosed, hideBlocked: false, kind, deadline, minAmount, location }),
+    getFeedStats(kind),
     getAvailableTerms(),
   ]);
 
@@ -162,13 +174,13 @@ export default async function FeedPage({
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
       <header style={{ marginBottom: 40 }}>
-        <div className="eyebrow chrome">01 — internships</div>
+        <div className="eyebrow chrome">01 — internships + scholarships</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>
-          every internship we can <span style={{ color: "var(--accent)" }}>verify is live</span>
+          every opportunity we can <span style={{ color: "var(--accent)" }}>verify is live</span>
         </h1>
         <p className="t-base" style={{ color: "var(--muted)", maxWidth: "58ch", marginTop: 14 }}>
-          Sourced by polling each employer&apos;s own applicant-tracking system, not an
-          aggregator. Every row shows when we last confirmed it on their board.
+          Internships by polling each employer&apos;s own applicant-tracking system, scholarships
+          by weekly scrapes of the sources we trust. Every row says when we last confirmed it.
         </p>
       </header>
 
@@ -257,7 +269,50 @@ export default async function FeedPage({
           </>
         )}
 
-        <div className={`flex flex-wrap items-center gap-5 ${user ? "" : "mt-5"}`}>
+        <div className={`grid gap-4 md:grid-cols-4 ${user ? "" : "mt-5"}`}>
+          <label className="field-row">
+            <span className="mono chrome">kind</span>
+            <select className="field" name="kind" defaultValue={kind ?? ""}>
+              <option value="">internships + scholarships</option>
+              <option value="internship">internships</option>
+              <option value="scholarship">scholarships</option>
+            </select>
+          </label>
+
+          <label className="field-row">
+            <span className="mono chrome">deadline</span>
+            <select className="field" name="deadline" defaultValue={deadline ?? ""}>
+              <option value="">any</option>
+              <option value="set">has a deadline</option>
+              <option value="30">closing within 30 days</option>
+              <option value="60">closing within 60 days</option>
+              <option value="90">closing within 90 days</option>
+            </select>
+          </label>
+
+          <label className="field-row">
+            <span className="mono chrome">min award</span>
+            <select className="field" name="minAmount" defaultValue={minAmount ?? ""}>
+              <option value="">any</option>
+              <option value="1000">$1,000+</option>
+              <option value="2500">$2,500+</option>
+              <option value="5000">$5,000+</option>
+              <option value="10000">$10,000+</option>
+            </select>
+          </label>
+
+          <label className="field-row">
+            <span className="mono chrome">location</span>
+            <input
+              className="field"
+              name="location"
+              defaultValue={location ?? ""}
+              placeholder="New York"
+            />
+          </label>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-5">
           <label className="mono chrome flex items-center gap-2">
             <input type="checkbox" name="remoteOnly" value="1" defaultChecked={remoteOnly} />
             remote only

@@ -1,7 +1,41 @@
+import Link from "next/link";
+
 import type { ApplicationStatus } from "@/db/schema";
 import type { FeedItem } from "@/lib/feed";
 
 import { TrackButton } from "./TrackButton";
+
+/** "$1,000", "$1,000–$2,500", or null when the amount is unstated. */
+function formatAmount(min: number | null, max: number | null): string | null {
+  if (min !== null && max !== null && min !== max) {
+    return `$${min.toLocaleString("en-US")}–$${max.toLocaleString("en-US")}`;
+  }
+  const value = min ?? max;
+  return value === null ? null : `$${value.toLocaleString("en-US")}`;
+}
+
+function formatDate(d: Date): string {
+  return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+}
+
+/**
+ * Freshness phrasing, honest per tier.
+ *
+ * "confirmed live Xh ago" is only true for postings we poll every 20 minutes.
+ * Scholarships are checked on a slower loop and must say "checked as of <date>"
+ * instead — the same date, a weaker claim (see the `freshness_tier` schema
+ * comment). Closed rows always report the close.
+ */
+function livenessLabel(item: FeedItem): string {
+  if (item.closedAt) return item.timing.liveness;
+  if (item.freshnessTier === "periodic_check") {
+    return `checked as of ${formatDate(item.lastSeenAt)}`;
+  }
+  if (item.freshnessTier === "unverified_static") {
+    return `imported ${formatDate(item.lastSeenAt)}, not re-checked`;
+  }
+  return item.timing.liveness;
+}
 
 /**
  * One posting in the feed.
@@ -96,7 +130,7 @@ export function PostingRow({
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2">
             <span className={closed || blocked ? "pip pip-closed" : "pip pip-live"} aria-hidden />
-            <span className="mono">{item.timing.liveness}</span>
+            <span className="mono">{livenessLabel(item)}</span>
             {blocked && !closed && (
               <span className="mono" style={{ color: "var(--accent-lite)" }}>
                 · you are not eligible
@@ -109,37 +143,60 @@ export function PostingRow({
             )}
           </div>
 
-          {/* Employer-authored text — never transformed. */}
+          {/* Employer-authored text — never transformed. The title links to the
+              detail page (score, eligibility, cover letter); the company line
+              carries the external apply link so the feed still reaches the
+              source in one hop. */}
           <h3 className="t-base" style={{ fontWeight: 600, letterSpacing: "-0.01em" }}>
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href={`/listing/${item.id}`}
               className="press"
               style={{ color: "var(--text)", textDecoration: "none" }}
             >
               {item.title}
-            </a>
+            </Link>
           </h3>
 
           <div className="t-sm mt-1" style={{ color: "var(--muted)" }}>
+            {item.kind === "scholarship" && (
+              <span className="mono" style={{ color: "var(--accent-lite)" }}>
+                scholarship ·{" "}
+              </span>
+            )}
             {item.company}
             {item.locations.length > 0 && (
               <> · {item.locations.slice(0, 3).join(" / ")}</>
             )}
             {item.isRemote && <> · remote</>}
+            {" "}
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mono press"
+              style={{ color: "var(--faint-readable)", fontSize: "0.85em" }}
+              title="Open the original posting"
+            >
+              apply ↗
+            </a>
           </div>
+
+          {item.kind === "scholarship" && item.eligibility.length > 0 && (
+            <div className="mono t-sm mt-1" style={{ color: "var(--muted)" }}>
+              eligibility: {item.eligibility.slice(0, 2).join(" · ")}
+            </div>
+          )}
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {item.term ? (
               <span className="mono" style={{ color: "var(--faint-readable)" }}>
                 {item.term}
               </span>
-            ) : (
+            ) : item.kind === "internship" ? (
               <span className="slot" style={{ padding: "3px 8px" }}>
                 term not stated
               </span>
-            )}
+            ) : null}
 
             {item.workAuth === "citizenship_required" && (
               <span className="mono" style={{ color: "var(--accent-lite)" }}>
@@ -154,6 +211,37 @@ export function PostingRow({
             {item.workAuth === "sponsorship_offered" && (
               <span className="mono" style={{ color: "var(--accent-lite)" }}>
                 sponsors visas
+              </span>
+            )}
+
+            {item.deadlineAt && (
+              <span className="mono" style={{ color: "var(--faint-readable)" }}>
+                due {formatDate(item.deadlineAt)}
+              </span>
+            )}
+
+            {item.kind === "scholarship" &&
+              !item.deadlineAt &&
+              !item.isContentMarketing && (
+                <span className="slot" style={{ padding: "3px 8px" }}>
+                  no deadline stated
+                </span>
+              )}
+
+            {item.kind === "scholarship" &&
+              (item.amountMin != null || item.amountMax != null ? (
+                <span className="mono" style={{ color: "var(--text)" }}>
+                  {formatAmount(item.amountMin, item.amountMax)}
+                </span>
+              ) : (
+                <span className="slot" style={{ padding: "3px 8px" }}>
+                  {item.amountNeedsReview ? "amount unreadable" : "amount not stated"}
+                </span>
+              ))}
+
+            {item.kind === "scholarship" && item.isContentMarketing && (
+              <span className="mono" style={{ color: "var(--faint-readable)" }}>
+                content marketing
               </span>
             )}
           </div>

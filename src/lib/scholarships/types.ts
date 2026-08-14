@@ -11,8 +11,14 @@
  * as the job-posting side.
  */
 
-/** Sources we scrape. Each gets its own module under this directory. */
-export type ScholarshipSource = "cftexas" | "unl";
+/** Sources we scrape. Each gets its own module under this directory.
+ *  `scholarshipscom` and `scholarshipportal` share one module (`parse.ts`)
+ *  because both are served by the same Parse API key. */
+export type ScholarshipSource =
+  | "cftexas"
+  | "unl"
+  | "scholarshipscom"
+  | "scholarshipportal";
 
 export interface ScholarshipListing {
   source: ScholarshipSource;

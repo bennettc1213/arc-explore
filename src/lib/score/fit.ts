@@ -61,7 +61,7 @@ export interface ScoreReason {
   /** Short label for the UI chip. */
   label: string;
   /** Which dimension produced this. */
-  dimension: "work_auth" | "term" | "field" | "location" | "skills";
+  dimension: "work_auth" | "term" | "field" | "location" | "skills" | "award" | "competition";
   /** "good" raises the score, "bad" lowers it, "unknown" is informational. */
   kind: "good" | "bad" | "unknown";
   /** One-line human explanation. */
@@ -113,10 +113,21 @@ const FIELDS = {
 
 type FieldKey = keyof typeof FIELDS;
 
-/** Maps a stated major onto the fields it plausibly leads to. */
+/** The fields a field taxonomy member can live under. */
+export type { FieldKey };
+
+/**
+ * Maps a stated major onto the fields it plausibly leads to.
+ *
+ * Degree-language only: every alternative names a field of study, not a role.
+ * That is what lets this pattern set double as the scholarship field matcher —
+ * scholarship titles and eligibility criteria say "computer science", not
+ * "backend engineer". `\bcs\b` is word-bounded on both sides because `cs\b`
+ * alone matched the trailing "cs" inside "Omics", "Physics" and "Mechanics".
+ */
 const MAJOR_TO_FIELDS: Array<{ re: RegExp; fields: FieldKey[] }> = [
-  { re: /computer science|cs\b|software|computer engineering/i, fields: ["software", "data_ai"] },
-  { re: /data science|statistics|machine learning|artificial intelligence/i, fields: ["data_ai", "software"] },
+  { re: /computer science|\bcs\b|software|computer engineering|cyber[- ]?security/i, fields: ["software", "data_ai"] },
+  { re: /data science|statistics|machine learning|artificial intelligence|\bai\b/i, fields: ["data_ai", "software"] },
   { re: /electrical|mechanical|aerospace|robotics|biomedical engineering|materials/i, fields: ["hardware"] },
   { re: /math|physics/i, fields: ["quant_finance", "data_ai"] },
   { re: /finance|accounting|economics/i, fields: ["quant_finance", "business"] },
@@ -125,7 +136,48 @@ const MAJOR_TO_FIELDS: Array<{ re: RegExp; fields: FieldKey[] }> = [
   { re: /political science|public policy|law|sociology|psychology/i, fields: ["business"] },
 ];
 
-function fieldsForProfile(p: ScoreProfile): FieldKey[] {
+/**
+ * Fields named in free text — a title, an eligibility criteria line, a major.
+ *
+ * Matches both the role-title regexes and the major patterns: "computer
+ * science" is not in the role regexes (they name jobs, not degrees), yet it is
+ * the most common thing a scholarship eligibility line says. The scholarship
+ * Fit Score feeds eligibility text through this; the internship scorer keeps
+ * using it on the title only.
+ */
+export function fieldsFromText(text: string): FieldKey[] {
+  const out = new Set<FieldKey>();
+
+  for (const key of Object.keys(FIELDS) as FieldKey[]) {
+    if (FIELDS[key].test(text)) out.add(key);
+  }
+  for (const { re, fields } of MAJOR_TO_FIELDS) {
+    if (re.test(text)) fields.forEach((f) => out.add(f));
+  }
+  return [...out];
+}
+
+/**
+ * Fields named by degree-language in free text — the `MAJOR_TO_FIELDS`
+ * patterns only, never the role-title regexes.
+ *
+ * A role word ("security", "systems", "web") is a field marker in a job title
+ * but noise in scholarship prose: "The Social Security Disability Advocacy
+ * Scholarship" is not an infosec award. Scholarship titles, sponsors and
+ * eligibility criteria state *degree* words — "computer science", "mechanical
+ * engineering" — which is exactly what these patterns match, so this is the
+ * variant the scholarship Fit Score feeds text through.
+ */
+export function fieldsFromDegreeLanguage(text: string): FieldKey[] {
+  const out = new Set<FieldKey>();
+
+  for (const { re, fields } of MAJOR_TO_FIELDS) {
+    if (re.test(text)) fields.forEach((f) => out.add(f));
+  }
+  return [...out];
+}
+
+export function fieldsForProfile(p: ScoreProfile): FieldKey[] {
   const out = new Set<FieldKey>();
 
   for (const v of p.targetVerticals ?? []) {
@@ -144,7 +196,7 @@ function fieldsForProfile(p: ScoreProfile): FieldKey[] {
 function fieldsForPosting(posting: ScorePosting): FieldKey[] {
   // Title only. Descriptions mention every adjacent discipline and would make
   // nearly every posting match nearly every field.
-  return (Object.keys(FIELDS) as FieldKey[]).filter((k) => FIELDS[k].test(posting.title));
+  return fieldsFromText(posting.title);
 }
 
 /* ------------------------------------------------------------------ *

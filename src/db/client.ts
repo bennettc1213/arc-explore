@@ -13,10 +13,18 @@ if (!process.env.DATABASE_URL) {
  * `prepare: false` is required against Supabase's Transaction Pooler — it
  * multiplexes connections across clients, so a prepared statement can outlive
  * the physical connection it was created on.
+ *
+ * `idle_timeout` matters for the same pooler: it drops connections that sit
+ * idle past ~60s, and a slow crawl (the scholarship sources fetch for a
+ * minute or two before their first write) leaves the pooled socket stale, so
+ * the first post-fetch query dies with CONNECTION_CLOSED. Recycling idle
+ * connections ourselves keeps the pooler's kill from ever being the thing we
+ * hit.
  */
 const queryClient = postgres(process.env.DATABASE_URL, {
   prepare: false,
   ssl: "require",
+  idle_timeout: 55,
 });
 
 export const db = drizzle(queryClient, { schema });

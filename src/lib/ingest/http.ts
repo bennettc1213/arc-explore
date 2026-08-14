@@ -29,6 +29,8 @@ export interface GetJsonOptions {
   /** Total attempts including the first. */
   attempts?: number;
   signal?: AbortSignal;
+  /** Extra request headers, merged over the defaults (e.g. X-API-Key for keyed APIs). */
+  headers?: Record<string, string>;
 }
 
 export interface GetJsonResult<T> {
@@ -47,13 +49,16 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * GET JSON with conditional-request support, bounded retries and exponential
- * backoff. Honors `Retry-After` when a host sends one.
+ * backoff. Honors `Retry-After` when a host sends one — capped at a minute:
+ * a farther reset means "try again on another day", not "sleep until then",
+ * and sleeping for hours inside a poll cycle would look like a hung job to
+ * the runner that kills it.
  */
 export async function getJson<T = unknown>(
   url: string,
   opts: GetJsonOptions = {},
 ): Promise<GetJsonResult<T>> {
-  const { etag, timeoutMs = 30_000, attempts = 3, signal } = opts;
+  const { etag, timeoutMs = 30_000, attempts = 3, signal, headers: extraHeaders } = opts;
 
   let lastErr: unknown;
   for (let attempt = 1; attempt <= attempts; attempt++) {
@@ -66,6 +71,7 @@ export async function getJson<T = unknown>(
       const headers: Record<string, string> = {
         Accept: "application/json",
         "User-Agent": USER_AGENT,
+        ...extraHeaders,
       };
       if (etag) headers["If-None-Match"] = etag;
 
@@ -82,7 +88,7 @@ export async function getJson<T = unknown>(
         }
         const retryAfter = Number(res.headers.get("retry-after"));
         const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
-          ? retryAfter * 1000
+          ? Math.min(retryAfter * 1000, 60_000)
           : 2 ** attempt * 500;
         lastErr = new HttpError(res.status, url);
         if (attempt < attempts) {

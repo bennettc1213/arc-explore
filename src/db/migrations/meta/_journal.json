@@ -50,6 +50,13 @@
       "when": 1786662202174,
       "tag": "0006_real_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786686285011,
+      "tag": "0007_peaceful_nemesis",
+      "breakpoints": true
     }
   ]
 }

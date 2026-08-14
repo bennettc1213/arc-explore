@@ -35,4 +35,5 @@ jobs:
       - name: scrape scholarships
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PARSE_API_KEY: ${{ secrets.PARSE_API_KEY }}
         run: npm run ingest:scholarships

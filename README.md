@@ -38,8 +38,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=    # public by design; RLS is what protects data
 SUPABASE_SERVICE_ROLE_KEY=        # admin scripts only, never in the request path
 ANTHROPIC_API_KEY=                # JD + resume parsing, cold-email drafting
 RESEND_API_KEY=                   # alerts (M5)
+PARSE_API_KEY=                    # Parse scraping API — Scholarships.com + ScholarshipPortal sources
+PARSE_SCHOLARSHIPS_COM_BASE_URL=  # parse.bot scraper endpoint for scholarships.com
+PARSE_SCHOLARSHIPPORTAL_BASE_URL= # parse.bot scraper endpoint for scholarhipportal.com
 NEXT_PUBLIC_SITE_URL=             # optional locally; set it in production
 ```
+
+`PARSE_API_KEY` is sent as `X-API-Key`. The Parse API is metered at **100 credits/day**
+(burst 30, refill 5/min); both scholarship scrapes together use ~35 — plenty for the
+weekly run, but a second run the same day can exhaust the window. `getJson` caps the
+`Retry-After` sleep at 60s and a surviving 429 fails the source loudly instead of hanging.
 
 `NEXT_PUBLIC_SITE_URL` matters in production: without it, callback URLs are built from
 the request's `Host` header, which a client controls.
@@ -65,8 +73,9 @@ Auth is magic-link only. Two settings have to be right or sign-in links fail:
 
 ## Ingestion
 
-Three scheduled workflows in `.github/workflows/`. All three need one repo secret:
-**`DATABASE_URL`** (Settings → Secrets and variables → Actions).
+Three scheduled workflows in `.github/workflows/`. All three need the repo secret
+**`DATABASE_URL`** (Settings → Secrets and variables → Actions); `ingest-scholarships`
+additionally needs **`PARSE_API_KEY`**.
 
 **`ingest-fast`, every 20 minutes.** Polls each registered company's own ATS —
 Greenhouse, Ashby, Lever, SmartRecruiters — and reconciles against what we hold.
@@ -101,9 +110,10 @@ handle keeps Node alive — a job that does its work in six seconds and then sit
 the runner's timeout looks, from CI, like a job that failed.
 
 **`ingest-scholarships`, weekly (Sundays).** Scrapes `lib/scholarships/` — currently
-Communities Foundation of Texas (48 institutional funds) and University of
-Nebraska–Lincoln's external list (264, of which ~259 are open). Run one at a time with
-`npm run ingest:scholarships -- --source unl`.
+Communities Foundation of Texas (48 institutional funds), University of Nebraska–Lincoln's
+external list (264, of which ~259 are open), Scholarships.com (1559 US listings across 8
+curated directory sections), and ScholarshipPortal (3666 US bachelor's listings). Run one
+at a time with `npm run ingest:scholarships -- --source unl`.
 
 Not built on the internship Tier A machinery: there is no ATS underneath a scholarship
 page to poll every 20 minutes, and each source either states open/closed directly (CFT)
@@ -166,15 +176,33 @@ Score is where a down-rank weight belongs, and stamping the flag now means it is
 every row when that score gets built.
 
 Getting here took two rounds of verification before writing any scraper code, because the
-obvious targets all turned out to be dead ends: scholarships.com, niche.com and bold.org
-all carry explicit contractual scraping bans (checked their actual ToS text, not assumed
-one); CareerOneStop's Scholarship Finder — rated the best free scholarship source going
-in — sits behind a site-wide WAF that 403s every request including `robots.txt`; most
-state financial-aid-agency pages turned out to be navigation hubs pointing at gated
-portals, structurally empty despite being legally the cleanest category on paper.
-University/foundation aid-office pages were the ones that actually worked — open
-`robots.txt`, server-rendered HTML, real data. CFT's page currently reads **0 open, 48
-closed**: not a bug, its funds run on a spring deadline and this was scraped in August.
+obvious targets all turned out to be dead ends on the direct-scrape path: scholarships.com,
+niche.com and bold.org all carry explicit contractual scraping bans (checked their actual
+ToS text, not assumed one); CareerOneStop's Scholarship Finder — rated the best free
+scholarship source going in — sits behind a site-wide WAF that 403s every request
+including `robots.txt`; most state financial-aid-agency pages turned out to be navigation
+hubs pointing at gated portals, structurally empty despite being legally the cleanest
+category on paper. University/foundation aid-office pages were the ones that actually
+worked — open `robots.txt`, server-rendered HTML, real data. CFT's page currently reads
+**0 open, 48 closed**: not a bug, its funds run on a spring deadline and this was scraped
+in August.
+
+**Two of the banned sites came back through the Parse scraping API** (`lib/scholarships/parse.ts`),
+a licensed third-party wrapper that holds its own access agreements, so the ToS bans never
+change hands. Both sources are structurally thinner than the direct-scrape ones:
+Scholarships.com's listing feed is **name/URL only** — no sponsor, amount, or deadline —
+so `mapScholarshipsCom` leaves those null and `isOpen` true (never closed by the source),
+and the award figures in some titles are deliberately ignored rather than parsed as a
+stale amount. ScholarshipPortal returns richer rows (a sponsor, an amount cell, a deadline
+text like "18 Dec 2026"), but the amount lives in free-text description only and is parsed
+with `parseAmount`, so a EUR-denominated grant correctly stays null instead of reading as
+dollars; `sourceId` is `${id}::${slug}` to survive slugs reusing ids across countries.
+Persisting these feeds exposed two load-bearing fixes: **`idle_timeout: 55`** on the db
+client (Supabase's Transaction Pooler silently drops connections idle ~60s, and a crawl
+fetches for a minute or two before its first write) and **`persistScholarships` batching
+at 500 rows/chunk** — a single sequential 3,000-row upsert blew the pooler connection
+(`write CONNECTION_CLOSED aws-0-us-west-2.pooler.supabase.com:6543`), while chunked
+upserts and a single batched `postingSources` insert complete cleanly.
 
 `postings.freshness_tier` exists for exactly this case. A scholarship or an
 aggregator-sourced internship (Adzuna, Muse, RemoteOK, once built) cannot honestly carry
@@ -229,7 +257,7 @@ Our own connection is the table owner and bypasses RLS, so:
 
 ```
 src/lib/ingest/     Tier A ATS adapters, dedup, freshness reconcile
-src/lib/scholarships/ scraped sources (cftexas, unl), separate persist path — see Ingestion
+src/lib/scholarships/ scraped sources (cftexas, unl, parse: scholarshipscom + scholarshipportal), separate persist path — see Ingestion
 src/lib/score/      fit (deterministic rules + reasons) and timing
 src/lib/profile/    profile shape, validation, store  (types.ts is DB-free and tested)
 src/lib/resume/     upload rules + Anthropic extraction  (types.ts is DB-free and tested)

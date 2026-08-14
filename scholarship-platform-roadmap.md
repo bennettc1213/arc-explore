@@ -25,7 +25,7 @@ Notes in _italics_ record what was actually built and where it differs from the 
 - [x] De-duplicate the combined internship feed by title, company, and posting date
   _`canonical_hash` over normalized company + title + location + term. Location and term rather than posting date: the same title genuinely runs as separate reqs per city, and Summer 2026 vs 2027 are different opportunities._
 - [~] Build a scraper for an initial small set of 10–15 trusted scholarship sources
-  _**2 of the target 10–15, live: 312 scholarships** — Communities Foundation of Texas (48 endowed institutional funds, all past-deadline right now) and University of Nebraska–Lincoln's external list (264, ~259 genuinely open). Verified before writing any code: the obvious "trusted 10-15" candidates (scholarships.com, niche.com, bold.org, CareerOneStop) are either contractually banned, actively WAF-blocked, or structurally empty behind a gated portal. University/foundation financial-aid pages are what actually worked. UNR is verified accessible and next. See README for the bugs only a live run surfaced — unstable pagination faking closures, a source typo parsing as a confident $0, and re-closing already-closed rows. **Open issue:** the crawl still intermittently drops a row (263/263/264 across three consecutive scrapes), which closes a live scholarship until the next run picks it up again; the real fix is requiring absence from two consecutive scrapes, not another sort key. Rows now also carry `amount_needs_review` (source stated a figure we could not parse, as distinct from stating none) and `is_content_marketing` (small-award law-firm link-building scholarships — 126 of 314, tagged not filtered, for the scholarship Fit Score to weigh later)._
+  _**4 of the target 10–15, wired: 312 → 5,537 live** — Communities Foundation of Texas (48 endowed institutional funds, all past-deadline right now), University of Nebraska–Lincoln's external list (264, ~259 genuinely open), Scholarships.com (1559 US listings across 8 curated directory sections, live-verified), and ScholarshipPortal (3666 US bachelor's listings, fetch verified, persist pending a re-run after the Parse daily quota reset). Verified before writing any code: the direct-scrape candidates (scholarships.com, niche.com, bold.org, CareerOneStop) are contractually banned, WAF-blocked, or structurally empty behind a gated portal — so Scholarships.com and ScholarshipPortal were brought in through the **Parse scraping API**, a licensed wrapper, instead of being scraped directly (`lib/scholarships/parse.ts`; metered at 100 credits/day). University/foundation financial-aid pages are what actually worked direct. See README for the bugs only a live run surfaced — unstable pagination faking closures, a source typo parsing as a confident $0, re-closing already-closed rows, Supabase pooler dropping connections mid-persist (fixed with `idle_timeout: 55` and batched upserts), and an uncapped `Retry-After` sleep that made a 429 hang for hours (now capped at 60s). **Open issue:** the UNL crawl still intermittently drops a row (263/263/264 across three consecutive scrapes), which closes a live scholarship until the next run picks it up again; the real fix is requiring absence from two consecutive scrapes, not another sort key. Rows now also carry `amount_needs_review` (source stated a figure we could not parse, as distinct from stating none) and `is_content_marketing` (small-award law-firm link-building scholarships — 126 of 314, tagged not filtered, for the scholarship Fit Score to weigh later)._
 - [x] Normalize both feeds into one shared "opportunity" schema (title, org, deadline, amount/pay, eligibility, posted date, source URL)
   _`postings.kind` discriminates the two verticals in one table, per this line's own intent. Added `amount_min`/`amount_max`, `eligibility` (jsonb), `sponsor_name` (for rows with no `organizations` link), `freshness_tier` (`live_polled` vs `periodic_check` — the honesty distinction Adzuna/Muse/RemoteOK will need too, not just scholarships). Migration `0005`, applied._
 - [x] Set up a scheduled refresh job so listings update daily, not just on first import
@@ -37,12 +37,13 @@ Notes in _italics_ record what was actually built and where it differs from the 
 *One profile, one feed, one honest score. This is the actual product — everything else layers on top of it.*
 
 - [x] Build the student profile intake form (major, GPA, grad year, location, interests, eligibility flags)
-- [~] Build the combined browse/search feed — scholarships and internships together, one list
-  _One list, internships only. **No text search yet.**_
-- [~] Add filters: deadline, amount/pay, category, location, remote
-  _Term, remote and show-closed only. Deadline, amount, category and location filters are missing._
-- [ ] Design the scholarship Fit Score formula (eligibility match, competition-level heuristic, essay/effort required)
-- [ ] Implement the scholarship Fit Score and show it on every listing
+- [x] Build the combined browse/search feed — scholarships and internships together, one list
+  _One shared `postings` table, one feed, one rank. `getFeed` returns both kinds and the in-memory ranking runs before the limit so one kind cannot crowd out the other. **No text search yet.**_
+- [x] Add filters: deadline, amount/pay, category, location, remote
+  _`kind`, `deadline` (days out), `minAmount`, and `location` added; term, remote and show-closed existed. Category is the one specified filter still missing._
+- [x] Design the scholarship Fit Score formula (eligibility match, competition-level heuristic, essay/effort required)
+- [x] Implement the scholarship Fit Score and show it on every listing
+  _Three dimensions: field (35, degree-language match over title/sponsor/eligibility), award (35, tiered by stated amount), competition (30, the `is_content_marketing` tag). Unknown is dropped, never a miss, same contract as the internship score._
 - [x] Design the internship Fit Score approach (skills/keyword match against the listing description)
 - [x] Implement the internship Fit Score and show it on every listing
   _Five weighted dimensions: work authorization, term, field, location, skills. Unknown dimensions are dropped from the average, never scored as a miss._
@@ -76,11 +77,14 @@ Notes in _italics_ record what was actually built and where it differs from the 
   _**Blocked on you.** The line says "the logic you provide" and that logic has not landed yet — paste it in and this becomes buildable. Without it there is nothing here that the critique engine does not already do._
 - [ ] Add Smart Resume PDF export
   _Follows the converter. Note this and "resume export" above are the same renderer, built once._
-- [ ] Build a cover letter editor tied to a specific listing, pulling in the org/role name and key requirements automatically
-- [ ] Generate a first-draft cover letter grounded in the actual resume-to-listing match data, not generic filler
-  _The anti-fabrication rule from the cold-email module applies here verbatim and is non-negotiable: the generator may assert only facts present in the parsed resume, and must emit a literal `[YOUR SPECIFIC DETAIL: …]` slot for anything it wants but does not have._
-- [ ] Let the student edit and regenerate individual paragraphs instead of accepting one opaque draft
-- [ ] Add cover letter PDF export
+- [x] Build a cover letter editor tied to a specific listing, pulling in the org/role name and key requirements automatically
+  _`/listing/[id]` with the full posting facts, the "why this score" breakdown, and the coverage gap line; the editor renders the same grounded context the Fit Score uses._
+- [x] Generate a first-draft cover letter grounded in the actual resume-to-listing match data, not generic filler
+  _`src/lib/cover-letter/` — context builder (candidate facts, posting facts, ranked evidence, honest gaps) plus the generator. The anti-fabrication rule from the cold-email module applies here verbatim: the model may assert only facts present in the parsed resume or profile, and must emit a literal `[YOUR SPECIFIC DETAIL: …]` slot for anything it wants but does not have. Slots are re-derived from the text deterministically (`slotsFromText`), so a model that ignores the field still leaves visible gaps, never invented facts._
+- [x] Let the student edit and regenerate individual paragraphs instead of accepting one opaque draft
+  _Per-paragraph textareas with a rewrite button (single-paragraph regeneration), a save form, and a start-over. `cover_letters` table: one row per (user, posting), paragraphs jsonb, unique index._
+- [x] Add cover letter PDF export
+  _Print stylesheet in `globals.css` + a print button: the `.letter-sheet` renders from editor state, so print always matches the edits on screen. Paper is the honest destination — no DOM-to-image dependency._
 
 ## Phase 04 — Professional Profiles
 *Standing assets outside the platform, built to the same no-slop standard as everything else here.*
@@ -135,9 +139,9 @@ Notes in _italics_ record what was actually built and where it differs from the 
 
 ## What to do next
 
-1. **Commit the repo.** Minutes of work, and right now a single mistake loses everything.
-2. **Scholarship ingestion** (Phase 01). The product is named for it and has none. It needs its own schema fields (amount, essay required, eligibility) and its own Fit Score, because there is no ATS equivalent to poll — freshness will be weaker there and has to be labelled honestly.
-3. **Feed search and the missing filters** (Phase 02). Cheap, and the feed is now large enough that browsing alone is getting unwieldy.
+1. **Commit the repo.** Minutes of work, and right now a single mistake loses everything. (Phase 02's feed, filters and both Fit Scores are built and verified; only the quota-gated ScholarshipPortal/Scholarships.com persist run and the commit itself remain.)
+2. **Scholarship ingestion** (Phase 01). Underway — 4 of the target 10–15 sources are wired (CFT, UNL, Scholarships.com, ScholarshipPortal, the last two through the Parse scraping API; see line 28). Freshness on scholarship rows is labelled honestly via `freshness_tier`.
+3. **Feed search** (Phase 02). The one specified filter still missing is `category`; a text search is the other gap, and the feed is now large enough that browsing alone is getting unwieldy.
 4. **Cover letters** (Phase 03). The match data they need to be grounded in already exists.
 5. **Aggregator sources** (Phase 01) — Adzuna first, labelled unverified.
 

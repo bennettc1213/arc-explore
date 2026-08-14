@@ -44,8 +44,9 @@ export async function persistScholarships(
     let updated = 0;
     const now = new Date();
     const seenHashes: string[] = [];
+    const idByHash = new Map<string, string>();
 
-    for (const l of listings) {
+    const rows = listings.map((l) => {
       const hash = canonicalHash({
         companyName: l.sponsorName,
         title: l.title,
@@ -60,83 +61,100 @@ export async function persistScholarships(
         amountMax: l.amountMax,
       });
 
-      /**
-       * Stamp `closed_at` once, on the first run that saw it closed.
-       *
-       * Writing `now` unconditionally would move the timestamp forward on
-       * every run for as long as the listing stays closed, so "closed 3
-       * months ago" would render as "closed today" forever. `coalesce` keeps
-       * whatever the first close wrote. A source that flips a listing back to
-       * open (a new cycle) still clears it outright — that path is `null`.
-       */
-      // ISO string with an explicit cast, not the Date: a JS Date inside a
-      // raw `sql` fragment is bound by its `toString()`, which is a locale
-      // string ("Thu Aug 13 2026 ... Pacific Daylight Time") that Postgres
-      // rejects. The typed column paths below convert it properly; this one
-      // does not.
-      const closedAt = l.isOpen
-        ? null
-        : sql`coalesce(${postings.closedAt}, ${now.toISOString()}::timestamptz)`;
+      return {
+        hash,
+        listing: l,
+        contentMarketing,
+        closedAt: l.isOpen ? null : now,
+      };
+    });
 
-      const [row] = await tx
+    // Batching matters here: a scholarship source's snapshot can be thousands
+    // of rows, and thousands of sequential upserts inside one transaction is
+    // how a Supabase pooler connection gets dropped mid-write (we watched it
+    // happen). Chunked so a batch never brushes Postgres's 65,535-parameter
+    // ceiling — at 17 columns that means ≤ ~3,500 rows per statement, and
+    // 500 keeps plenty of headroom.
+    const POSTINGS_BATCH = 500;
+
+    const processChunk = async (chunk: typeof rows) => {
+      const returned = await tx
         .insert(postings)
-        .values({
-          kind: "scholarship",
-          freshnessTier: "periodic_check",
-          canonicalHash: hash,
-          title: l.title,
-          normalizedTitle: normalizeTitle(l.title),
-          url: l.url,
-          sponsorName: l.sponsorName,
-          amountMin: l.amountMin,
-          amountMax: l.amountMax,
-          amountNeedsReview: l.amountNeedsReview,
-          isContentMarketing: contentMarketing,
-          eligibility: l.eligibility.length > 0 ? { criteria: l.eligibility } : null,
-          deadlineAt: l.deadlineAt,
-          // Set explicitly rather than relying on the column default: the
-          // insert-vs-update check below compares this against `now`, and a
-          // DB-side `now()` would be a different clock capture than this
-          // JS Date, so equality could never hold even on a genuine insert.
-          createdAt: now,
-          firstSeenAt: now,
-          lastSeenAt: now,
-          closedAt: l.isOpen ? null : now,
-        })
+        .values(
+          chunk.map((r) => ({
+            kind: "scholarship" as const,
+            freshnessTier: "periodic_check" as const,
+            canonicalHash: r.hash,
+            title: r.listing.title,
+            normalizedTitle: normalizeTitle(r.listing.title),
+            url: r.listing.url,
+            sponsorName: r.listing.sponsorName,
+            amountMin: r.listing.amountMin,
+            amountMax: r.listing.amountMax,
+            amountNeedsReview: r.listing.amountNeedsReview,
+            isContentMarketing: r.contentMarketing,
+            eligibility:
+              r.listing.eligibility.length > 0 ? { criteria: r.listing.eligibility } : null,
+            deadlineAt: r.listing.deadlineAt,
+            createdAt: now,
+            firstSeenAt: now,
+            lastSeenAt: now,
+            closedAt: r.closedAt,
+          })),
+        )
         .onConflictDoUpdate({
           target: postings.canonicalHash,
           set: {
-            title: l.title,
-            normalizedTitle: normalizeTitle(l.title),
-            url: l.url,
-            amountMin: l.amountMin,
-            amountMax: l.amountMax,
-            amountNeedsReview: l.amountNeedsReview,
-            isContentMarketing: contentMarketing,
-            eligibility: l.eligibility.length > 0 ? { criteria: l.eligibility } : null,
-            deadlineAt: l.deadlineAt,
+            title: sql`excluded.title`,
+            normalizedTitle: sql`excluded.normalized_title`,
+            url: sql`excluded.url`,
+            amountMin: sql`excluded.amount_min`,
+            amountMax: sql`excluded.amount_max`,
+            amountNeedsReview: sql`excluded.amount_needs_review`,
+            isContentMarketing: sql`excluded.is_content_marketing`,
+            eligibility: sql`excluded.eligibility`,
+            deadlineAt: sql`excluded.deadline_at`,
             lastSeenAt: now,
-            closedAt,
+            // The open/closed intent is on the incoming row, not on what the
+            // table already holds. An open listing must clear any previous
+            // close outright (a new cycle); a closed one keeps its first close
+            // time rather than re-stamping "closed today" forever. `excluded`
+            // is null for open rows and `now` for closed ones, so CASE is what
+            // distinguishes the two — coalesce alone would freeze an open row
+            // shut on the first run that saw it closed.
+            closedAt: sql`case when excluded.closed_at is null then null
+                                else coalesce(postings.closed_at, excluded.closed_at) end`,
           },
         })
-        .returning({ id: postings.id, createdAt: postings.createdAt });
+        .returning({ id: postings.id, canonicalHash: postings.canonicalHash, createdAt: postings.createdAt });
 
-      if (row.createdAt.getTime() === now.getTime()) inserted++;
-      else updated++;
+      for (const row of returned) {
+        if (row.createdAt.getTime() === now.getTime()) inserted++;
+        else updated++;
+        idByHash.set(row.canonicalHash, row.id);
+      }
+    };
 
+    for (let i = 0; i < rows.length; i += POSTINGS_BATCH) {
+      await processChunk(rows.slice(i, i + POSTINGS_BATCH));
+    }
+
+    if (rows.length > 0) {
       await tx
         .insert(postingSources)
-        .values({
-          postingId: row.id,
-          source,
-          sourceId: l.sourceId,
-          sourceUrl: l.url,
-          firstSeenAt: now,
-          lastSeenAt: now,
-        })
+        .values(
+          rows.map((r) => ({
+            postingId: idByHash.get(r.hash)!,
+            source,
+            sourceId: r.listing.sourceId,
+            sourceUrl: r.listing.url,
+            firstSeenAt: now,
+            lastSeenAt: now,
+          })),
+        )
         .onConflictDoUpdate({
           target: [postingSources.source, postingSources.sourceId],
-          set: { lastSeenAt: now, postingId: row.id },
+          set: { lastSeenAt: now, postingId: sql`excluded.posting_id` },
         });
     }
 

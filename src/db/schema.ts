@@ -271,6 +271,40 @@ export const resumes = pgTable(
 );
 
 /* ------------------------------------------------------------------ *
+ * Cover letters — the Phase 03 submission material, grounded in the
+ * same resume + profile + match data as the Fit Score.
+ * ------------------------------------------------------------------ */
+
+export const coverLetters = pgTable(
+  "cover_letters",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    postingId: uuid("posting_id")
+      .notNull()
+      .references(() => postings.id, { onDelete: "cascade" }),
+    /** Ordered, editable paragraphs — one regenerable unit each. Shape is
+     *  validated on read by `lib/cover-letter/types.ts` (jsonb, so an older
+     *  draft degrades field-by-field instead of breaking the page). */
+    paragraphs: jsonb("paragraphs")
+      .$type<Array<{ id: string; role: string; text: string }>>()
+      .notNull(),
+    /** `[YOUR SPECIFIC DETAIL: …]` slots the generator emitted because it had
+     *  no real fact to assert. Derived from paragraph text, surfaced as honest
+     *  gaps — the same rule as `outreach_drafts.unfilled_slots`. */
+    unfilledSlots: text("unfilled_slots").array().notNull().default([]),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("cover_letter_user_posting_unique").on(t.userId, t.postingId),
+    index("cover_letter_user_idx").on(t.userId),
+  ],
+);
+
+/* ------------------------------------------------------------------ *
  * Matching
  * ------------------------------------------------------------------ */
 
