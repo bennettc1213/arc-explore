@@ -17,6 +17,7 @@ import * as parse from "../src/lib/scholarships/parse";
 import * as unl from "../src/lib/scholarships/unl";
 import { persistScholarships } from "../src/lib/scholarships/persist";
 import type { ScholarshipSource } from "../src/lib/scholarships/types";
+import { describeError } from "../src/lib/ingest/errors";
 import { finishRun, startRun } from "../src/lib/ingest/runs";
 
 interface Source {
@@ -76,15 +77,19 @@ async function runSource(source: Source): Promise<boolean> {
     );
     return true;
   } catch (err) {
+    // describeError, not err.message: a failed bulk insert's message is the
+    // whole statement plus every bound parameter, and the part that says what
+    // actually broke is on err.cause. See lib/ingest/errors.ts.
+    const error = describeError(err);
     await finishRun(runId, {
       orgsPolled: 0,
       postingsSeen: 0,
       postingsNew: 0,
       postingsClosed: 0,
       errors: 1,
-      detail: { source: source.name, error: err instanceof Error ? err.message : String(err) },
+      detail: { source: source.name, error },
     });
-    console.error(`${source.name}: FAILED — ${err instanceof Error ? err.message : String(err)}`);
+    console.error(`${source.name}: FAILED — ${error}`);
     return false;
   }
 }

@@ -81,9 +81,15 @@ async function parseGetJson<T>(url: string): Promise<T> {
     return res.data as T;
   } catch (err) {
     if (err instanceof HttpError && err.status === 429) {
+      // Deliberately does not name the reset window. The documented free tier
+      // is 200 credits/month (see the module header), so telling an operator
+      // to "wait for the daily reset" would send them back tomorrow to burn
+      // more of a budget that may not refill until the month turns. State the
+      // fact — the credits are gone — and let them check the account.
       throw new Error(
-        `Parse API rate-limited (HTTP 429) after retries — daily credit quota likely exhausted. ` +
-          `The run cannot proceed until the daily window resets.`,
+        `Parse API rate-limited (HTTP 429) after retries — credit quota exhausted. ` +
+          `Check the Parse account's remaining credits before re-running: a full ` +
+          `ScholarshipPortal crawl costs ~19 of the free tier's 200/month.`,
         { cause: err },
       );
     }

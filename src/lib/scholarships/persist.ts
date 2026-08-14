@@ -75,6 +75,10 @@ export async function persistScholarships(
     // happen). Chunked so a batch never brushes Postgres's 65,535-parameter
     // ceiling — at 17 columns that means ≤ ~3,500 rows per statement, and
     // 500 keeps plenty of headroom.
+    //
+    // Governs both writes below. The `posting_sources` insert went unbatched
+    // until 2026-08-14 and sent every row in one statement, which is the same
+    // failure shape this constant exists to prevent.
     const POSTINGS_BATCH = 500;
 
     const processChunk = async (chunk: typeof rows) => {
@@ -139,11 +143,17 @@ export async function persistScholarships(
       await processChunk(rows.slice(i, i + POSTINGS_BATCH));
     }
 
-    if (rows.length > 0) {
+    // Batched for exactly the reason the postings upsert above is, which this
+    // statement was originally missed out of: it grows with the snapshot, and
+    // a source like ScholarshipPortal hands us thousands of rows at once. One
+    // statement carrying every row is the shape that got a pooler connection
+    // dropped mid-write.
+    for (let i = 0; i < rows.length; i += POSTINGS_BATCH) {
+      const chunk = rows.slice(i, i + POSTINGS_BATCH);
       await tx
         .insert(postingSources)
         .values(
-          rows.map((r) => ({
+          chunk.map((r) => ({
             postingId: idByHash.get(r.hash)!,
             source,
             sourceId: r.listing.sourceId,

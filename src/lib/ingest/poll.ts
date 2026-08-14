@@ -6,6 +6,7 @@
  * adapters stay dumb and the reconcile logic stays pure.
  */
 
+import { describeError } from "./errors";
 import { mapLimit } from "./http";
 import { classifyOpportunity } from "./normalize";
 import {
@@ -180,7 +181,10 @@ export async function pollOrg(
     const outcome = await persistPoll(org.id, enriched, totalOnBoard, etag);
     return { ok: true, outcome };
   } catch (e) {
-    const error = e instanceof Error ? e.message : String(e);
+    // Bounded and cause-aware: this string goes straight into
+    // organizations.last_poll_error, and a failed bulk write's raw message is
+    // the entire statement plus its parameters. See lib/ingest/errors.ts.
+    const error = describeError(e);
     await recordPollFailure(org.id, error);
     return { ok: false, error };
   }
