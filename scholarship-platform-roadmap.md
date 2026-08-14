@@ -61,7 +61,8 @@ Notes in _italics_ record what was actually built and where it differs from the 
 ## Phase 03 — Resume & Cover Letters
 *Every material a student submits with an application, grounded in the same match data as the Fit Score, not generated in a vacuum.*
 
-- [ ] Build the resume editor (education, experience, skills, projects)
+- [x] Build the resume editor (education, experience, skills, projects)
+  _`/resume` — edits the structure the parser produced, which is what every score and both generators actually read. Posted as one JSON payload rather than index-encoded form names (`experiences.0.role`), because deleting the second of three rows leaves a hole that server-side reindexing has to paper over; the server still validates against the same `parsedResumeSchema` the parser's output goes through, so an edit cannot put anything in the column the parser could not have — including its 60-skill and 20-experience caps. Cleared fields become **null, never `""` or `0`**: `Number("")` is 0, and a GPA stored as 0.0 reads as a real and very bad GPA rather than an absent one. Skills and bullets stay raw text while typing and split only on submit, or a student cannot type a comma. **The provenance note in `resume/types.ts` was rewritten rather than left to rot:** it said a parsed resume records only what the document says, which an editor breaks. The rule was always about *us* not inventing facts, not about a person correcting our reading of their own life — the generators still assert only what is present in the structure, with the student vouching for it instead of an extractor. **Not verified end-to-end:** auth is magic-link only, so the signed-out redirect and the decode logic are tested but the rendered editor has not been driven with a real session._
 - [~] Add resume import — upload an existing PDF/DOCX, or paste from LinkedIn
   _PDF and plain text. DOCX is a zip of XML we cannot read without another dependency — the UI says so rather than failing oddly. No LinkedIn paste._
 - [x] Parse resume content into structured fields the matching engine can read
@@ -71,6 +72,7 @@ Notes in _italics_ record what was actually built and where it differs from the 
 - [x] Add a keyword-gap view per internship listing — what is missing vs. that posting
   _Shown on every row. Rendered even with no resume, worded as "this role names…" rather than "not on your resume" — there is nothing to be missing from yet._
 - [ ] Add resume export (PDF/DOCX download)
+  _Now the most valuable unbuilt thing in this phase, and the editor is why. Until it ships there is a real gap the `/resume` page states outright rather than hiding: edits move our scores and what a cover letter may assert, but the PDF an employer receives is still the uploaded file. The renderer already exists in spirit — cover letters print via a stylesheet on `.letter-sheet` with no DOM-to-image dependency, and the same approach applied to the parsed structure is this line and the Smart Resume export both._
 - [x] Add an overall resume competitiveness summary, not just a per-listing score
   _On `/profile`: roles sharing a skill, roles matched, and the top gaps ranked by how many more roles each would put in reach._
 - [x] Build a resume critique engine — score an uploaded resume on ATS compatibility, section completeness, and quantified-achievement usage

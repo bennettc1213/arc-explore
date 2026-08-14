@@ -30,6 +30,9 @@ export async function Nav() {
               <Link href="/tracker" className="mono chrome press" style={{ color: "var(--accent)" }}>
                 tracker
               </Link>
+              <Link href="/resume" className="mono chrome press" style={{ color: "var(--accent)" }}>
+                resume
+              </Link>
               <Link href="/profile" className="mono chrome press" style={{ color: "var(--accent)" }}>
                 profile
               </Link>

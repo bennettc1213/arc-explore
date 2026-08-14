@@ -4,11 +4,20 @@
  * Free of network and database imports so every rule here is unit-testable
  * without an API key.
  *
- * THE RULE THAT GOVERNS THIS FILE: a parsed resume records only what the
- * document actually says. Anything absent stays null. The cold-email generator
- * (M4) is allowed to assert facts from this structure and nothing else, so a
- * value invented here becomes a lie in an email that goes to a real recruiter.
- * That is the single worst failure this product can have.
+ * THE RULE THAT GOVERNS THIS FILE: nothing may put a fact into this structure
+ * that its source did not state. For the parser that means the document and
+ * only the document — anything absent stays null. The cold-email generator
+ * (M4) and the cover-letter generator are allowed to assert facts from this
+ * structure and nothing else, so a value invented here becomes a lie in a
+ * message that goes to a real recruiter. That is the single worst failure this
+ * product can have.
+ *
+ * A student editing their own resume (`edit.ts`, `/resume`) is the one other
+ * writer, and it does not weaken the rule. The constraint is on *us* inventing
+ * facts, not on a person correcting our reading of their life — a skill the
+ * PDF omitted is theirs to add. What matters downstream is unchanged: the
+ * generators may still assert only what is present here, with the student
+ * rather than an extractor vouching for it.
  */
 
 import { z } from "zod";

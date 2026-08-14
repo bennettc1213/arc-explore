@@ -1,8 +1,9 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { profiles, resumes } from "@/db/schema";
 
+import type { ParsedResume } from "../resume/types";
 import type { ProfileInput, UserProfile, WorkAuthValue, InterestValue } from "./types";
 
 /**
@@ -108,4 +109,32 @@ export async function getLatestResume(userId: string): Promise<StoredResume | nu
     .limit(1);
 
   return row ?? null;
+}
+
+/**
+ * Replace the structured content of a resume the user owns.
+ *
+ * Scoped by `userId` as well as `id` for the reason at the top of this file:
+ * our connection bypasses RLS, so an id alone would let anyone who guessed a
+ * uuid overwrite someone else's resume. The filter is the access check.
+ *
+ * `rawText` is deliberately left alone. It is the document as uploaded, and
+ * it is what a re-parse would run against — overwriting it with edited
+ * structure would destroy the only copy of the original we hold.
+ *
+ * Returns false when no row matched, which the caller surfaces rather than
+ * reporting a save that did not happen.
+ */
+export async function saveParsedResume(
+  userId: string,
+  resumeId: string,
+  parsed: ParsedResume,
+): Promise<boolean> {
+  const updated = await db
+    .update(resumes)
+    .set({ parsed })
+    .where(and(eq(resumes.id, resumeId), eq(resumes.userId, userId)))
+    .returning({ id: resumes.id });
+
+  return updated.length > 0;
 }
