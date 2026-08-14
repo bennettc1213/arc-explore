@@ -41,3 +41,21 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npm run ingest:daily -- --max-new ${{ github.event.inputs.maxNew || '400' }}
+
+      # Federal student openings. Daily rather than on the 20-minute loop:
+      # announcements carry an explicit closing date and do not churn the way a
+      # startup's board does, and one API call for the whole government is not
+      # something to make 72 times a day. That cadence is why these rows are
+      # written as `periodic_check` — they render "checked as of <date>", not
+      # "confirmed live". Moving this step to ingest-fast is what would earn
+      # the stronger claim.
+      #
+      # `if: always()` so a USAJobs outage cannot mask the discovery result
+      # above it, and vice versa — they share nothing but a schedule.
+      - name: ingest usajobs
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          USAJOBS_API_KEY: ${{ secrets.USAJOBS_API_KEY }}
+          USAJOBS_USER_AGENT: ${{ secrets.USAJOBS_USER_AGENT }}
+        run: npm run ingest:usajobs

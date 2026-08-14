@@ -210,8 +210,21 @@ export function normalizeLocations(raw: (string | null | undefined)[]): string[]
  * `\bintern\b` deliberately does not match "internal" or "international",
  * because the word boundary requires a non-word char after "intern".
  */
+/**
+ * `student trainee` / `student volunteer` / `student research assistant` are
+ * the U.S. federal naming convention, added alongside the existing regional
+ * entries ("industrial placement" is British, "práctica" Spanish) for the same
+ * reason: the opportunity is an internship, the employer just does not use the
+ * word. OPM titles a Pathways Internship Program position "Student Trainee
+ * (Administrative)", and on the live USAJobs student scope only 1 of the 22
+ * genuine student postings contained "intern" at all.
+ *
+ * Each is a two-word phrase rather than a bare noun, deliberately. "Trainee"
+ * alone matches "Management Trainee", a permanent job, and "student" alone
+ * matches any posting that mentions students.
+ */
 const INTERNSHIP_RE =
-  /\b(intern|interns|internship|internships|co-?op|summer analyst|industrial placement|placement student|student placement|práctica)\b/i;
+  /\b(intern|interns|internship|internships|co-?op|summer analyst|industrial placement|placement student|student placement|práctica|student trainee|student volunteer|student research assistant)\b/i;
 
 const NEW_GRAD_RE =
   /\b(new grad|new graduate|university grad|recent graduate|entry[- ]level|campus hire|graduate (program|programme|analyst|scheme)|early career|rotational program)\b/i;

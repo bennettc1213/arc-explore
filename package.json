@@ -15,6 +15,7 @@
     "ingest:fast": "tsx scripts/ingest-fast.ts",
     "ingest:daily": "tsx scripts/ingest-daily.ts",
     "ingest:scholarships": "tsx scripts/ingest-scholarships.ts",
+    "ingest:usajobs": "tsx scripts/ingest-usajobs.ts",
     "ingest:status": "tsx scripts/ingest-status.ts",
     "ingest:rederive": "tsx scripts/ingest-rederive.ts",
     "ingest:retag": "tsx scripts/backfill-content-marketing.ts",

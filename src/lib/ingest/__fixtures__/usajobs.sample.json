@@ -1,0 +1,1988 @@
+{
+  "SearchResult": {
+    "SearchResultCount": 7,
+    "SearchResultCountAll": 7,
+    "SearchResultItems": [
+      {
+        "MatchedObjectDescriptor": {
+          "PositionID": "DHA-FY25/26-GS-PCIP-1-JSC",
+          "PositionTitle": "Student Trainee",
+          "PositionURI": "https://www.usajobs.gov:443/job/846866000",
+          "ApplyURI": [
+            "https://www.usajobs.gov:443/job/846866000"
+          ],
+          "PositionLocationDisplay": "Multiple Locations",
+          "PositionLocation": [
+            {
+              "LocationName": "Clear AFB, Alaska",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Alaska",
+              "CityName": "Clear AFB, Alaska",
+              "Longitude": -149.03,
+              "Latitude": 64.3684
+            },
+            {
+              "LocationName": "Eielson AFB, Alaska",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Alaska",
+              "CityName": "Eielson AFB, Alaska",
+              "Longitude": -147.05869,
+              "Latitude": 64.67567
+            },
+            {
+              "LocationName": "Elmendorf AFB, Alaska",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Alaska",
+              "CityName": "Elmendorf AFB, Alaska",
+              "Longitude": -149.81961,
+              "Latitude": 61.275845
+            },
+            {
+              "LocationName": "Fort Richardson, Alaska",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Alaska",
+              "CityName": "Fort Richardson, Alaska",
+              "Longitude": -149.59924,
+              "Latitude": 61.258915
+            },
+            {
+              "LocationName": "Gunter AFB, Alabama",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Alabama",
+              "CityName": "Gunter AFB, Alabama",
+              "Longitude": -86.2444,
+              "Latitude": 32.4077
+            },
+            {
+              "LocationName": "Maxwell AFB, Alabama",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Alabama",
+              "CityName": "Maxwell AFB, Alabama",
+              "Longitude": -86.3577,
+              "Latitude": 32.3834
+            },
+            {
+              "LocationName": "Little Rock AFB, Arkansas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Arkansas",
+              "CityName": "Little Rock AFB, Arkansas",
+              "Longitude": -92.14686,
+              "Latitude": 34.91159
+            },
+            {
+              "LocationName": "Davis Monthan AFB, Arizona",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Arizona",
+              "CityName": "Davis Monthan AFB, Arizona",
+              "Longitude": -110.84954,
+              "Latitude": 32.156605
+            },
+            {
+              "LocationName": "Davis Monthan AFB, Arizona",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Arizona",
+              "CityName": "Davis Monthan AFB, Arizona",
+              "Longitude": -110.8475,
+              "Latitude": 32.1566
+            },
+            {
+              "LocationName": "Luke AFB, Arizona",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Arizona",
+              "CityName": "Luke AFB, Arizona",
+              "Longitude": -112.36177,
+              "Latitude": 33.53527
+            },
+            {
+              "LocationName": "Beale AFB, California",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "California",
+              "CityName": "Beale AFB, California",
+              "Longitude": -121.3373,
+              "Latitude": 39.0943
+            },
+            {
+              "LocationName": "Edwards AFB, California",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "California",
+              "CityName": "Edwards AFB, California",
+              "Longitude": -117.8332,
+              "Latitude": 34.8898
+            },
+            {
+              "LocationName": "Los Angeles, California",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "California",
+              "CityName": "Los Angeles, California",
+              "Longitude": -118.245,
+              "Latitude": 34.0535
+            },
+            {
+              "LocationName": "Travis AFB, California",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "California",
+              "CityName": "Travis AFB, California",
+              "Longitude": -121.9318,
+              "Latitude": 38.2633
+            },
+            {
+              "LocationName": "Vandenberg AFB, California",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "California",
+              "CityName": "Vandenberg AFB, California",
+              "Longitude": -120.54249,
+              "Latitude": 34.75468
+            },
+            {
+              "LocationName": "Air Force Academy, Colorado",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Colorado",
+              "CityName": "Air Force Academy, Colorado",
+              "Longitude": -104.85452,
+              "Latitude": 38.99115
+            },
+            {
+              "LocationName": "Buckley AFB, Colorado",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Colorado",
+              "CityName": "Buckley AFB, Colorado",
+              "Longitude": -104.76261,
+              "Latitude": 39.70392
+            },
+            {
+              "LocationName": "Colorado City, Colorado",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Colorado",
+              "CityName": "Colorado City, Colorado",
+              "Longitude": -104.83602,
+              "Latitude": 37.945038
+            },
+            {
+              "LocationName": "Colorado Springs, Colorado",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Colorado",
+              "CityName": "Colorado Springs, Colorado",
+              "Longitude": -104.82173,
+              "Latitude": 38.83311
+            },
+            {
+              "LocationName": "Peterson AFB, Colorado",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Colorado",
+              "CityName": "Peterson AFB, Colorado",
+              "Longitude": -104.7071,
+              "Latitude": 38.8279
+            },
+            {
+              "LocationName": "Schriever AFB, Colorado",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Colorado",
+              "CityName": "Schriever AFB, Colorado",
+              "Longitude": -104.52668,
+              "Latitude": 38.801945
+            },
+            {
+              "LocationName": "Joint Base Anacostia-Bolling, District of Columbia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "District of Columbia",
+              "CityName": "Joint Base Anacostia-Bolling, District of Columbia",
+              "Longitude": -77.01735,
+              "Latitude": 38.83941
+            },
+            {
+              "LocationName": "Dover AFB, Delaware",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Delaware",
+              "CityName": "Dover AFB, Delaware",
+              "Longitude": -75.4701,
+              "Latitude": 39.1274
+            },
+            {
+              "LocationName": "Cape Canaveral, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Cape Canaveral, Florida",
+              "Longitude": -80.6049,
+              "Latitude": 28.3846
+            },
+            {
+              "LocationName": "Cape Canaveral AFS, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Cape Canaveral AFS, Florida",
+              "Longitude": -80.5678,
+              "Latitude": 28.5071
+            },
+            {
+              "LocationName": "Eglin AFB, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Eglin AFB, Florida",
+              "Longitude": -86.5552,
+              "Latitude": 30.4654
+            },
+            {
+              "LocationName": "Eglin AFB, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Eglin AFB, Florida",
+              "Longitude": -86.5552,
+              "Latitude": 30.4654
+            },
+            {
+              "LocationName": "Hurlburt Field, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Hurlburt Field, Florida",
+              "Longitude": -86.6988,
+              "Latitude": 30.4303
+            },
+            {
+              "LocationName": "MacDill AFB, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "MacDill AFB, Florida",
+              "Longitude": -82.5033,
+              "Latitude": 27.8446
+            },
+            {
+              "LocationName": "Patrick AFB, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Patrick AFB, Florida",
+              "Longitude": -80.60844,
+              "Latitude": 28.242105
+            },
+            {
+              "LocationName": "Tyndall AFB, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Tyndall AFB, Florida",
+              "Longitude": -85.5674,
+              "Latitude": 30.049
+            },
+            {
+              "LocationName": "Moody AFB, Georgia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Georgia",
+              "CityName": "Moody AFB, Georgia",
+              "Longitude": -83.192825,
+              "Latitude": 30.967764
+            },
+            {
+              "LocationName": "Robins AFB, Georgia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Georgia",
+              "CityName": "Robins AFB, Georgia",
+              "Longitude": -83.5919,
+              "Latitude": 32.64
+            },
+            {
+              "LocationName": "Hickam AFB, Hawaii",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Hawaii",
+              "CityName": "Hickam AFB, Hawaii",
+              "Longitude": -157.93474,
+              "Latitude": 21.317465
+            },
+            {
+              "LocationName": "Pearl Harbor, Hawaii",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Hawaii",
+              "CityName": "Pearl Harbor, Hawaii",
+              "Longitude": -157.975,
+              "Latitude": 21.3439
+            },
+            {
+              "LocationName": "Pearl Harbor Naval Base, Oahu, Hawaii",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Hawaii",
+              "CityName": "Pearl Harbor Naval Base, Oahu, Hawaii",
+              "Longitude": -157.9795,
+              "Latitude": 21.381945
+            },
+            {
+              "LocationName": "Mountain Home AFB, Idaho",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Idaho",
+              "CityName": "Mountain Home AFB, Idaho",
+              "Longitude": -115.86732,
+              "Latitude": 43.049644
+            },
+            {
+              "LocationName": "Scott AFB, Illinois",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Illinois",
+              "CityName": "Scott AFB, Illinois",
+              "Longitude": -89.8714,
+              "Latitude": 38.5483
+            },
+            {
+              "LocationName": "Grissom AFB, Indiana",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Indiana",
+              "CityName": "Grissom AFB, Indiana",
+              "Longitude": -86.15,
+              "Latitude": 40.668026
+            },
+            {
+              "LocationName": "McConnell AFB, Kansas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Kansas",
+              "CityName": "McConnell AFB, Kansas",
+              "Longitude": -97.26118,
+              "Latitude": 37.622684
+            },
+            {
+              "LocationName": "Barksdale AFB, Louisiana",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Louisiana",
+              "CityName": "Barksdale AFB, Louisiana",
+              "Longitude": -93.6116,
+              "Latitude": 32.49727
+            },
+            {
+              "LocationName": "Boston, Massachusetts",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Massachusetts",
+              "CityName": "Boston, Massachusetts",
+              "Longitude": -71.0567,
+              "Latitude": 42.358635
+            },
+            {
+              "LocationName": "Hanscom AFB, Massachusetts",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Massachusetts",
+              "CityName": "Hanscom AFB, Massachusetts",
+              "Longitude": -71.2763,
+              "Latitude": 42.4587
+            },
+            {
+              "LocationName": "Andrews AFB, Maryland",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Maryland",
+              "CityName": "Andrews AFB, Maryland",
+              "Longitude": -76.8765,
+              "Latitude": 38.8054
+            },
+            {
+              "LocationName": "Fort Meade, Maryland",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Maryland",
+              "CityName": "Fort Meade, Maryland",
+              "Longitude": -76.7419,
+              "Latitude": 39.1014
+            },
+            {
+              "LocationName": "Fort Meade Naval Facilities, Maryland",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Maryland",
+              "CityName": "Fort Meade Naval Facilities, Maryland",
+              "Longitude": -76.74326,
+              "Latitude": 39.108887
+            },
+            {
+              "LocationName": "Linthicum Heights, Maryland",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Maryland",
+              "CityName": "Linthicum Heights, Maryland",
+              "Longitude": -76.66,
+              "Latitude": 39.2015
+            },
+            {
+              "LocationName": "White Oak, Maryland",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Maryland",
+              "CityName": "White Oak, Maryland",
+              "Longitude": -76.99311,
+              "Latitude": 39.047928
+            },
+            {
+              "LocationName": "Saint Louis, Missouri",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Missouri",
+              "CityName": "Saint Louis, Missouri",
+              "Longitude": -90.19952,
+              "Latitude": 38.62774
+            },
+            {
+              "LocationName": "Saint Louis County, Missouri",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Missouri",
+              "CityName": "Saint Louis County, Missouri",
+              "Longitude": -90.44297,
+              "Latitude": 38.6407
+            },
+            {
+              "LocationName": "Whiteman AFB, Missouri",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Missouri",
+              "CityName": "Whiteman AFB, Missouri",
+              "Longitude": -93.572,
+              "Latitude": 38.7401
+            },
+            {
+              "LocationName": "Columbus AFB, Mississippi",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Mississippi",
+              "CityName": "Columbus AFB, Mississippi",
+              "Longitude": -88.4415,
+              "Latitude": 33.6382
+            },
+            {
+              "LocationName": "Keesler AFB, Mississippi",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Mississippi",
+              "CityName": "Keesler AFB, Mississippi",
+              "Longitude": -88.92272,
+              "Latitude": 30.40913
+            },
+            {
+              "LocationName": "Malmstrom AFB, Montana",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Montana",
+              "CityName": "Malmstrom AFB, Montana",
+              "Longitude": -111.18402,
+              "Latitude": 47.504684
+            },
+            {
+              "LocationName": "Seymour Johnson AFB, North Carolina",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "North Carolina",
+              "CityName": "Seymour Johnson AFB, North Carolina",
+              "Longitude": -77.96784,
+              "Latitude": 35.348747
+            },
+            {
+              "LocationName": "Grand Forks AFB, North Dakota",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "North Dakota",
+              "CityName": "Grand Forks AFB, North Dakota",
+              "Longitude": -97.33716,
+              "Latitude": 47.9616
+            },
+            {
+              "LocationName": "Minot AFB, North Dakota",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "North Dakota",
+              "CityName": "Minot AFB, North Dakota",
+              "Longitude": -101.352,
+              "Latitude": 48.419
+            },
+            {
+              "LocationName": "Offutt AFB, Nebraska",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Nebraska",
+              "CityName": "Offutt AFB, Nebraska",
+              "Longitude": -95.9223,
+              "Latitude": 41.1203
+            },
+            {
+              "LocationName": "Omaha, Nebraska",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Nebraska",
+              "CityName": "Omaha, Nebraska",
+              "Longitude": -95.94007,
+              "Latitude": 41.26067
+            },
+            {
+              "LocationName": "Joint Base McGuire-Dix-Lakehurst, New Jersey",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New Jersey",
+              "CityName": "Joint Base McGuire-Dix-Lakehurst, New Jersey",
+              "Longitude": -74.5891,
+              "Latitude": 40.0216
+            },
+            {
+              "LocationName": "Joint Base McGuire-Dix-Lakehurst, New Jersey",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New Jersey",
+              "CityName": "Joint Base McGuire-Dix-Lakehurst, New Jersey",
+              "Longitude": -74.5891,
+              "Latitude": 40.0216
+            },
+            {
+              "LocationName": "McGuire AFB, New Jersey",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New Jersey",
+              "CityName": "McGuire AFB, New Jersey",
+              "Longitude": -74.589096,
+              "Latitude": 40.021614
+            },
+            {
+              "LocationName": "Cannon AFB, New Mexico",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New Mexico",
+              "CityName": "Cannon AFB, New Mexico",
+              "Longitude": -103.316,
+              "Latitude": 34.3853
+            },
+            {
+              "LocationName": "Holloman AFB, New Mexico",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New Mexico",
+              "CityName": "Holloman AFB, New Mexico",
+              "Longitude": -106.10064,
+              "Latitude": 32.84768
+            },
+            {
+              "LocationName": "Kirtland, New Mexico",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New Mexico",
+              "CityName": "Kirtland, New Mexico",
+              "Longitude": -108.36098,
+              "Latitude": 36.734035
+            },
+            {
+              "LocationName": "Kirtland AFB, New Mexico",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New Mexico",
+              "CityName": "Kirtland AFB, New Mexico",
+              "Longitude": -106.545,
+              "Latitude": 35.0583
+            },
+            {
+              "LocationName": "Nellis AFB, Nevada",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Nevada",
+              "CityName": "Nellis AFB, Nevada",
+              "Longitude": -114.996,
+              "Latitude": 36.2363
+            },
+            {
+              "LocationName": "Rome, New York",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New York",
+              "CityName": "Rome, New York",
+              "Longitude": -75.45336,
+              "Latitude": 43.215168
+            },
+            {
+              "LocationName": "Wright-Patterson AFB, Ohio",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Ohio",
+              "CityName": "Wright-Patterson AFB, Ohio",
+              "Longitude": -84.05,
+              "Latitude": 39.8333
+            },
+            {
+              "LocationName": "Wright-Patterson AFB, Ohio",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Ohio",
+              "CityName": "Wright-Patterson AFB, Ohio",
+              "Longitude": -84.05,
+              "Latitude": 39.8333
+            },
+            {
+              "LocationName": "Altus AFB, Oklahoma",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Oklahoma",
+              "CityName": "Altus AFB, Oklahoma",
+              "Longitude": -99.27909,
+              "Latitude": 34.66338
+            },
+            {
+              "LocationName": "Tinker AFB, Oklahoma",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Oklahoma",
+              "CityName": "Tinker AFB, Oklahoma",
+              "Longitude": -97.3894,
+              "Latitude": 35.422
+            },
+            {
+              "LocationName": "Vance AFB, Oklahoma",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Oklahoma",
+              "CityName": "Vance AFB, Oklahoma",
+              "Longitude": -97.90917,
+              "Latitude": 36.337227
+            },
+            {
+              "LocationName": "Charleston AFB, South Carolina",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "South Carolina",
+              "CityName": "Charleston AFB, South Carolina",
+              "Longitude": -80.04993,
+              "Latitude": 32.896954
+            },
+            {
+              "LocationName": "Charleston Naval Center, South Carolina",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "South Carolina",
+              "CityName": "Charleston Naval Center, South Carolina",
+              "Longitude": -81.16373,
+              "Latitude": 33.836082
+            },
+            {
+              "LocationName": "Shaw AFB, South Carolina",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "South Carolina",
+              "CityName": "Shaw AFB, South Carolina",
+              "Longitude": -80.4677,
+              "Latitude": 33.9741
+            },
+            {
+              "LocationName": "Pennington County, South Dakota",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "South Dakota",
+              "CityName": "Pennington County, South Dakota",
+              "Longitude": -102.82383,
+              "Latitude": 44.00374
+            },
+            {
+              "LocationName": "Arnold AFB, Tennessee",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Tennessee",
+              "CityName": "Arnold AFB, Tennessee",
+              "Longitude": -86.0858,
+              "Latitude": 35.3925
+            },
+            {
+              "LocationName": "Austin, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Austin, Texas",
+              "Longitude": -97.743,
+              "Latitude": 30.2676
+            },
+            {
+              "LocationName": "Dyess AFB, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Dyess AFB, Texas",
+              "Longitude": -99.83814,
+              "Latitude": 32.421364
+            },
+            {
+              "LocationName": "Fort Sam Houston, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Fort Sam Houston, Texas",
+              "Longitude": -98.4489,
+              "Latitude": 29.4491
+            },
+            {
+              "LocationName": "Goodfellow AFB, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Goodfellow AFB, Texas",
+              "Longitude": -100.40798,
+              "Latitude": 31.342018
+            },
+            {
+              "LocationName": "Lackland AFB, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Lackland AFB, Texas",
+              "Longitude": -98.6181,
+              "Latitude": 29.3861
+            },
+            {
+              "LocationName": "Laughlin AFB, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Laughlin AFB, Texas",
+              "Longitude": -100.79517,
+              "Latitude": 29.354046
+            },
+            {
+              "LocationName": "Randolph AFB, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Randolph AFB, Texas",
+              "Longitude": -98.2775,
+              "Latitude": 29.5275
+            },
+            {
+              "LocationName": "San Antonio, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "San Antonio, Texas",
+              "Longitude": -98.49462,
+              "Latitude": 29.42449
+            },
+            {
+              "LocationName": "Sheppard AFB, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Sheppard AFB, Texas",
+              "Longitude": -98.50469,
+              "Latitude": 33.974045
+            },
+            {
+              "LocationName": "Hill AFB, Utah",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Utah",
+              "CityName": "Hill AFB, Utah",
+              "Longitude": -111.9896,
+              "Latitude": 41.1251
+            },
+            {
+              "LocationName": "Arlington, Virginia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Virginia",
+              "CityName": "Arlington, Virginia",
+              "Longitude": -77.086296,
+              "Latitude": 38.89051
+            },
+            {
+              "LocationName": "Arlington County, Virginia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Virginia",
+              "CityName": "Arlington County, Virginia",
+              "Longitude": -77.10124,
+              "Latitude": 38.87868
+            },
+            {
+              "LocationName": "Dahlgren, Virginia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Virginia",
+              "CityName": "Dahlgren, Virginia",
+              "Longitude": -77.0468,
+              "Latitude": 38.331
+            },
+            {
+              "LocationName": "Hampton County, Virginia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Virginia",
+              "CityName": "Hampton County, Virginia",
+              "Longitude": -76.31963,
+              "Latitude": 37.01771
+            },
+            {
+              "LocationName": "Langley AFB, Virginia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Virginia",
+              "CityName": "Langley AFB, Virginia",
+              "Longitude": -76.3667,
+              "Latitude": 37.0771
+            },
+            {
+              "LocationName": "Pentagon, Arlington, Virginia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Virginia",
+              "CityName": "Pentagon, Arlington, Virginia",
+              "Longitude": -77.06204,
+              "Latitude": 38.86163
+            },
+            {
+              "LocationName": "Fairchild AFB, Washington",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Washington",
+              "CityName": "Fairchild AFB, Washington",
+              "Longitude": -117.6556,
+              "Latitude": 47.615
+            },
+            {
+              "LocationName": "Warren AFB, Wyoming",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Wyoming",
+              "CityName": "Warren AFB, Wyoming",
+              "Longitude": -104.86086,
+              "Latitude": 41.155052
+            }
+          ],
+          "OrganizationName": "Air Force Civilian Career Training",
+          "DepartmentName": "Department of the Air Force",
+          "SubAgency": "Civilian Talent Readiness Directorate",
+          "JobCategory": [
+            {
+              "Name": "General Student Trainee",
+              "Code": "0099"
+            }
+          ],
+          "JobGrade": [
+            {
+              "Code": "GS"
+            }
+          ],
+          "PositionSchedule": [
+            {
+              "Name": "",
+              "Code": "1"
+            }
+          ],
+          "PositionOfferingType": [
+            {
+              "Name": "",
+              "Code": "15317"
+            }
+          ],
+          "QualificationSummary": "The Air Force Civilian Service is pleased to announce the Air Force Premier College Summer Intern Program. Students in their junior year of a full-time baccalaureate program will be able to apply for ",
+          "PositionRemuneration": [
+            {
+              "MinimumRange": "36825",
+              "MaximumRange": "52426",
+              "RateIntervalCode": "PA",
+              "Description": "Per Year"
+            }
+          ],
+          "PositionStartDate": "2025-09-29T00:00:00.0000",
+          "PositionEndDate": "2026-08-31T23:59:59.9970",
+          "PublicationStartDate": "2025-09-29T00:00:00.0000",
+          "ApplicationCloseDate": "2026-08-31T23:59:59.9970",
+          "UserArea": {
+            "Details": {
+              "JobSummary": "The Air Force Civilian Service is pleased to announce the Air Force College Premier Summer Intern Program. Students in their junior year of a full-time baccalaureate program will be able to apply for a full-time paid summer internship lasting 10-12 weeks during the summer session prior to their seni",
+              "WhoMayApply": {
+                "Name": "",
+                "Code": ""
+              },
+              "LowGrade": "4",
+              "HighGrade": "5",
+              "PromotionPotential": "None",
+              "SubAgencyName": "Civilian Talent Readiness Directorate",
+              "OrganizationCodes": "AF/AF1Y",
+              "Relocation": "False",
+              "HiringPath": [
+                "student"
+              ],
+              "HiringPathDisplay": [
+                "Students"
+              ],
+              "MCOTags": [],
+              "TotalOpenings": "Few",
+              "TravelCode": "1",
+              "ApplyOnlineUrl": "https://apply.usastaffing.gov/Application/Apply",
+              "DetailStatusUrl": "https://apply.usastaffing.gov/Application/ApplicationStatus",
+              "BenefitsUrl": "https://www.usajobs.gov/Help/working-in-government/benefits/",
+              "WithinArea": "False",
+              "CommuteDistance": "0",
+              "ServiceType": "01",
+              "AnnouncementClosingType": "01",
+              "AgencyContactEmail": "DO.NOT.EMAIL@CALL.ONLY",
+              "AgencyContactPhone": "1-800-525-0102",
+              "SecurityClearance": "Secret",
+              "DrugTestRequired": "False",
+              "PositionSensitivitiy": "Noncritical-Sensitive (NCS)/Moderate Risk",
+              "AdjudicationType": [
+                "Suitability/Fitness"
+              ],
+              "TeleworkEligible": false,
+              "RemoteIndicator": false,
+              "FinancialDisclosure": false,
+              "BargainingUnitStatus": false
+            },
+            "IsRadialSearch": false
+          },
+          "AnnouncementClosingType": "01"
+        }
+      },
+      {
+        "MatchedObjectDescriptor": {
+          "PositionID": "26-CLD-13016943-IN",
+          "PositionTitle": "Student Trainee( Administrative)",
+          "PositionURI": "https://www.usajobs.gov:443/job/877697600",
+          "ApplyURI": [
+            "https://www.usajobs.gov:443/job/877697600"
+          ],
+          "PositionLocationDisplay": "Multiple Locations",
+          "PositionLocation": [
+            {
+              "LocationName": "Washington, District of Columbia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "District of Columbia",
+              "CityName": "Washington, District of Columbia",
+              "Longitude": -77.032,
+              "Latitude": 38.8904
+            },
+            {
+              "LocationName": "Macon, Georgia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Georgia",
+              "CityName": "Macon, Georgia",
+              "Longitude": -83.62758,
+              "Latitude": 32.839684
+            },
+            {
+              "LocationName": "Kansas City, Missouri",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Missouri",
+              "CityName": "Kansas City, Missouri",
+              "Longitude": -94.58306,
+              "Latitude": 39.10296
+            },
+            {
+              "LocationName": "Boyers, Pennsylvania",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Pennsylvania",
+              "CityName": "Boyers, Pennsylvania",
+              "Longitude": -79.89917,
+              "Latitude": 41.108505
+            },
+            {
+              "LocationName": "East Butler, Pennsylvania",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Pennsylvania",
+              "CityName": "East Butler, Pennsylvania",
+              "Longitude": -79.84725,
+              "Latitude": 40.87826
+            },
+            {
+              "LocationName": "Philadelphia, Pennsylvania",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Pennsylvania",
+              "CityName": "Philadelphia, Pennsylvania",
+              "Longitude": -75.16237,
+              "Latitude": 39.95227
+            },
+            {
+              "LocationName": "Norfolk, Virginia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Virginia",
+              "CityName": "Norfolk, Virginia",
+              "Longitude": -76.28507,
+              "Latitude": 36.846825
+            }
+          ],
+          "OrganizationName": "Office of Personnel Management",
+          "DepartmentName": "Other Agencies and Independent Organizations",
+          "JobCategory": [
+            {
+              "Name": "Administration And Office Support Student Trainee",
+              "Code": "0399"
+            }
+          ],
+          "JobGrade": [
+            {
+              "Code": "GS"
+            }
+          ],
+          "PositionSchedule": [
+            {
+              "Name": "",
+              "Code": "6"
+            }
+          ],
+          "PositionOfferingType": [
+            {
+              "Name": "",
+              "Code": "15327"
+            }
+          ],
+          "QualificationSummary": "Your application will be considered for the highest grade for which you qualify.You must meet the education requirements detailed below by the close of the vacancy. GS-4 Completion of two academic yea",
+          "PositionRemuneration": [
+            {
+              "MinimumRange": "17.45",
+              "MaximumRange": "29.03",
+              "RateIntervalCode": "PH",
+              "Description": "Per Hour"
+            }
+          ],
+          "PositionStartDate": "2026-07-23T00:00:00.0000",
+          "PositionEndDate": "2026-08-14T23:59:59.9970",
+          "PublicationStartDate": "2026-07-23T00:00:00.0000",
+          "ApplicationCloseDate": "2026-08-14T23:59:59.9970",
+          "UserArea": {
+            "Details": {
+              "JobSummary": "The Office of Personnel Management (OPM) invites students to apply to our Intern positions. The ideal candidates are current Certificate Program, Undergraduate or Graduate students who demonstrate innovation and self-initiative. You will have an opportunity to train and develop your skills in career",
+              "WhoMayApply": {
+                "Name": "",
+                "Code": ""
+              },
+              "LowGrade": "4",
+              "HighGrade": "5",
+              "PromotionPotential": "5",
+              "OrganizationCodes": "OT/OM00",
+              "Relocation": "False",
+              "HiringPath": [
+                "student"
+              ],
+              "HiringPathDisplay": [
+                "Students"
+              ],
+              "MCOTags": [
+                "Early Career Talent",
+                "Pooled Hiring"
+              ],
+              "TotalOpenings": "few",
+              "TravelCode": "0",
+              "ApplyOnlineUrl": "https://apply.usastaffing.gov/Application/Apply",
+              "DetailStatusUrl": "https://apply.usastaffing.gov/Application/ApplicationStatus",
+              "BenefitsUrl": "https://www.opm.gov/healthcare-insurance/Guide-Me/New-Prospective-Employees/",
+              "WithinArea": "False",
+              "CommuteDistance": "0",
+              "ServiceType": "02",
+              "AnnouncementClosingType": "03",
+              "AnnouncementClosingTypeOption": "200",
+              "AgencyContactEmail": "jobs@opm.gov",
+              "AgencyContactPhone": "202-606-9321",
+              "SecurityClearance": "Not Required",
+              "DrugTestRequired": "False",
+              "PositionSensitivitiy": "Moderate Risk (MR)",
+              "AdjudicationType": [
+                "Credentialing",
+                "Suitability/Fitness"
+              ],
+              "TeleworkEligible": true,
+              "RemoteIndicator": false,
+              "FinancialDisclosure": false,
+              "BargainingUnitStatus": false
+            },
+            "IsRadialSearch": false
+          },
+          "AnnouncementClosingType": "03",
+          "AnnouncementClosingTypeOption": "200"
+        }
+      },
+      {
+        "MatchedObjectDescriptor": {
+          "PositionID": "HCO-26-DE-12865764",
+          "PositionTitle": "Student Volunteer",
+          "PositionURI": "https://www.usajobs.gov:443/job/855084200",
+          "ApplyURI": [
+            "https://www.usajobs.gov:443/job/855084200"
+          ],
+          "PositionLocationDisplay": "Washington, District of Columbia",
+          "PositionLocation": [
+            {
+              "LocationName": "Washington, District of Columbia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "District of Columbia",
+              "CityName": "Washington, District of Columbia",
+              "Longitude": -77.032,
+              "Latitude": 38.8904
+            }
+          ],
+          "OrganizationName": "Government Accountability Office",
+          "DepartmentName": "Legislative Branch",
+          "SubAgency": "Multiple Offices",
+          "JobCategory": [
+            {
+              "Name": "General Student Trainee",
+              "Code": "0099"
+            }
+          ],
+          "JobGrade": [
+            {
+              "Code": "GS"
+            }
+          ],
+          "PositionSchedule": [
+            {
+              "Name": "",
+              "Code": "6"
+            }
+          ],
+          "PositionOfferingType": [
+            {
+              "Name": "",
+              "Code": "15318"
+            }
+          ],
+          "QualificationSummary": "In addition to the Key Requirements listed in this vacancy announcement, the Student Volunteer must also posses the following qualities: Ability to work well in a team environment Ability to communica",
+          "PositionRemuneration": [
+            {
+              "MinimumRange": "0",
+              "MaximumRange": "0",
+              "RateIntervalCode": "WC",
+              "Description": "Without Compensation"
+            }
+          ],
+          "PositionStartDate": "2026-01-22T00:00:00.0000",
+          "PositionEndDate": "2026-12-31T23:59:59.9970",
+          "PublicationStartDate": "2026-01-22T00:00:00.0000",
+          "ApplicationCloseDate": "2026-12-31T23:59:59.9970",
+          "UserArea": {
+            "Details": {
+              "JobSummary": "The U.S. Government Accountability Office (GAO) is an independent, nonpartisan agency that works for Congress. We accomplish our mission by providing objective and reliable information and analysis to the Congress, to federal agencies, and to the public, and recommending improvements, when appropria",
+              "WhoMayApply": {
+                "Name": "",
+                "Code": ""
+              },
+              "LowGrade": "00",
+              "HighGrade": "00",
+              "PromotionPotential": "None",
+              "SubAgencyName": "Multiple Offices",
+              "OrganizationCodes": "LL/LG00",
+              "Relocation": "False",
+              "HiringPath": [
+                "student"
+              ],
+              "HiringPathDisplay": [
+                "Students"
+              ],
+              "MCOTags": [],
+              "TotalOpenings": "Few",
+              "TravelCode": "0",
+              "ApplyOnlineUrl": "https://apply.usastaffing.gov/Application/Apply",
+              "DetailStatusUrl": "https://apply.usastaffing.gov/Application/ApplicationStatus",
+              "BenefitsUrl": "https://www.gao.gov/about/careers/benefits",
+              "WithinArea": "False",
+              "CommuteDistance": "0",
+              "ServiceType": "02",
+              "AnnouncementClosingType": "01",
+              "AgencyContactEmail": "GAORecruitment@gao.gov",
+              "SecurityClearance": "Not Required",
+              "DrugTestRequired": "False",
+              "AdjudicationType": [],
+              "TeleworkEligible": true,
+              "RemoteIndicator": false,
+              "FinancialDisclosure": false,
+              "BargainingUnitStatus": false
+            },
+            "IsRadialSearch": false
+          },
+          "AnnouncementClosingType": "01"
+        }
+      },
+      {
+        "MatchedObjectDescriptor": {
+          "PositionID": "DE-12955820-26-AB",
+          "PositionTitle": "Graduate Student Research Assistant",
+          "PositionURI": "https://www.usajobs.gov:443/job/869474800",
+          "ApplyURI": [
+            "https://www.usajobs.gov:443/job/869474800"
+          ],
+          "PositionLocationDisplay": "Anywhere in the U.S. (remote job)",
+          "PositionLocation": [
+            {
+              "LocationName": "Anywhere in the U.S. (remote job), United States",
+              "CountryCode": "United States",
+              "CityName": "Anywhere in the U.S. (remote job), United States",
+              "Longitude": 0,
+              "Latitude": 0
+            }
+          ],
+          "OrganizationName": "Judicial Branch Headquarters",
+          "DepartmentName": "Judicial Branch",
+          "SubAgency": "The Federal Judicial Center",
+          "JobCategory": [
+            {
+              "Name": "Operations Research",
+              "Code": "1515"
+            }
+          ],
+          "JobGrade": [
+            {
+              "Code": "AD"
+            }
+          ],
+          "PositionSchedule": [
+            {
+              "Name": "12-39 hours per week",
+              "Code": "2"
+            }
+          ],
+          "PositionOfferingType": [
+            {
+              "Name": "Fall, Spring, or Summer semester",
+              "Code": "15318"
+            }
+          ],
+          "QualificationSummary": "Currently enrolled and seeking a graduate degree in a social or behavioral science discipline such as psychology, sociology, or political science at an accredited educational institution, on a full-ti",
+          "PositionRemuneration": [
+            {
+              "MinimumRange": "21.36",
+              "MaximumRange": "24.04",
+              "RateIntervalCode": "PH",
+              "Description": "Per Hour"
+            }
+          ],
+          "PositionStartDate": "2026-05-27T00:00:00.0000",
+          "PositionEndDate": "2027-05-26T23:59:59.9970",
+          "PublicationStartDate": "2026-05-27T00:00:00.0000",
+          "ApplicationCloseDate": "2027-05-26T23:59:59.9970",
+          "UserArea": {
+            "Details": {
+              "JobSummary": "The Federal Judicial Center (Center) is the federal courts' agency for research and continuing education. Congress established the Center in 1967 as a separate organization within the federal judicial system at the request of the Judicial Conference of the United States. A nine-member board, chaired",
+              "WhoMayApply": {
+                "Name": "",
+                "Code": ""
+              },
+              "LowGrade": "00",
+              "HighGrade": "00",
+              "PromotionPotential": "None",
+              "SubAgencyName": "The Federal Judicial Center",
+              "OrganizationCodes": "JL/JL00",
+              "Relocation": "False",
+              "HiringPath": [
+                "student"
+              ],
+              "HiringPathDisplay": [
+                "Students"
+              ],
+              "MCOTags": [],
+              "TotalOpenings": "Few",
+              "TravelCode": "0",
+              "WithinArea": "False",
+              "CommuteDistance": "0",
+              "ServiceType": "02",
+              "AnnouncementClosingType": "01",
+              "AgencyContactEmail": "ResearchHiring@fjc.gov",
+              "SecurityClearance": "Not Required",
+              "DrugTestRequired": "False",
+              "AdjudicationType": [],
+              "TeleworkEligible": false,
+              "RemoteIndicator": true,
+              "FinancialDisclosure": false,
+              "BargainingUnitStatus": false
+            },
+            "IsRadialSearch": false
+          },
+          "AnnouncementClosingType": "01"
+        }
+      },
+      {
+        "MatchedObjectDescriptor": {
+          "PositionID": "K-26-DHA-12806875-MDL",
+          "PositionTitle": "PSYCHOLOGIST",
+          "PositionURI": "https://www.usajobs.gov:443/job/846774400",
+          "ApplyURI": [
+            "https://www.usajobs.gov:443/job/846774400"
+          ],
+          "PositionLocationDisplay": "Multiple Locations",
+          "PositionLocation": [
+            {
+              "LocationName": "Gunter AFB, Alabama",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Alabama",
+              "CityName": "Gunter AFB, Alabama",
+              "Longitude": -86.2444,
+              "Latitude": 32.4077
+            },
+            {
+              "LocationName": "Davis Monthan AFB, Arizona",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Arizona",
+              "CityName": "Davis Monthan AFB, Arizona",
+              "Longitude": -110.8475,
+              "Latitude": 32.1566
+            },
+            {
+              "LocationName": "Luke AFB, Arizona",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Arizona",
+              "CityName": "Luke AFB, Arizona",
+              "Longitude": -112.36177,
+              "Latitude": 33.53527
+            },
+            {
+              "LocationName": "Beale AFB, California",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "California",
+              "CityName": "Beale AFB, California",
+              "Longitude": -121.3373,
+              "Latitude": 39.0943
+            },
+            {
+              "LocationName": "Edwards AFB, California",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "California",
+              "CityName": "Edwards AFB, California",
+              "Longitude": -117.8332,
+              "Latitude": 34.8898
+            },
+            {
+              "LocationName": "Los Angeles, California",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "California",
+              "CityName": "Los Angeles, California",
+              "Longitude": -118.245,
+              "Latitude": 34.0535
+            },
+            {
+              "LocationName": "Travis AFB, California",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "California",
+              "CityName": "Travis AFB, California",
+              "Longitude": -121.9318,
+              "Latitude": 38.2633
+            },
+            {
+              "LocationName": "Vandenberg AFB, California",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "California",
+              "CityName": "Vandenberg AFB, California",
+              "Longitude": -120.54249,
+              "Latitude": 34.75468
+            },
+            {
+              "LocationName": "Buckley AFB, Colorado",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Colorado",
+              "CityName": "Buckley AFB, Colorado",
+              "Longitude": -104.76261,
+              "Latitude": 39.70392
+            },
+            {
+              "LocationName": "Cheyenne Mountain AFB, Colorado",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Colorado",
+              "CityName": "Cheyenne Mountain AFB, Colorado",
+              "Longitude": -104.881,
+              "Latitude": 38.7372
+            },
+            {
+              "LocationName": "Peterson AFB, Colorado",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Colorado",
+              "CityName": "Peterson AFB, Colorado",
+              "Longitude": -104.7071,
+              "Latitude": 38.8279
+            },
+            {
+              "LocationName": "Joint Base Anacostia-Bolling, District of Columbia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "District of Columbia",
+              "CityName": "Joint Base Anacostia-Bolling, District of Columbia",
+              "Longitude": -77.01735,
+              "Latitude": 38.83941
+            },
+            {
+              "LocationName": "Dover AFB, Delaware",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Delaware",
+              "CityName": "Dover AFB, Delaware",
+              "Longitude": -75.4701,
+              "Latitude": 39.1274
+            },
+            {
+              "LocationName": "Cape Canaveral, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Cape Canaveral, Florida",
+              "Longitude": -80.6049,
+              "Latitude": 28.3846
+            },
+            {
+              "LocationName": "Eglin AFB, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Eglin AFB, Florida",
+              "Longitude": -86.5552,
+              "Latitude": 30.4654
+            },
+            {
+              "LocationName": "Hurlburt Field, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Hurlburt Field, Florida",
+              "Longitude": -86.6988,
+              "Latitude": 30.4303
+            },
+            {
+              "LocationName": "MacDill AFB, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "MacDill AFB, Florida",
+              "Longitude": -82.5033,
+              "Latitude": 27.8446
+            },
+            {
+              "LocationName": "Patrick AFB, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Patrick AFB, Florida",
+              "Longitude": -80.60844,
+              "Latitude": 28.242105
+            },
+            {
+              "LocationName": "Robins AFB, Georgia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Georgia",
+              "CityName": "Robins AFB, Georgia",
+              "Longitude": -83.5919,
+              "Latitude": 32.64
+            },
+            {
+              "LocationName": "Mountain Home AFB, Idaho",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Idaho",
+              "CityName": "Mountain Home AFB, Idaho",
+              "Longitude": -115.86732,
+              "Latitude": 43.049644
+            },
+            {
+              "LocationName": "Scott AFB, Illinois",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Illinois",
+              "CityName": "Scott AFB, Illinois",
+              "Longitude": -89.8714,
+              "Latitude": 38.5483
+            },
+            {
+              "LocationName": "Barksdale AFB, Louisiana",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Louisiana",
+              "CityName": "Barksdale AFB, Louisiana",
+              "Longitude": -93.6116,
+              "Latitude": 32.49727
+            },
+            {
+              "LocationName": "Hanscom AFB, Massachusetts",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Massachusetts",
+              "CityName": "Hanscom AFB, Massachusetts",
+              "Longitude": -71.2763,
+              "Latitude": 42.4587
+            },
+            {
+              "LocationName": "Andrews AFB, Maryland",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Maryland",
+              "CityName": "Andrews AFB, Maryland",
+              "Longitude": -76.8765,
+              "Latitude": 38.8054
+            },
+            {
+              "LocationName": "Whiteman AFB, Missouri",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Missouri",
+              "CityName": "Whiteman AFB, Missouri",
+              "Longitude": -93.572,
+              "Latitude": 38.7401
+            },
+            {
+              "LocationName": "Minot AFB, North Dakota",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "North Dakota",
+              "CityName": "Minot AFB, North Dakota",
+              "Longitude": -101.352,
+              "Latitude": 48.419
+            },
+            {
+              "LocationName": "Offutt AFB, Nebraska",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Nebraska",
+              "CityName": "Offutt AFB, Nebraska",
+              "Longitude": -95.9223,
+              "Latitude": 41.1203
+            },
+            {
+              "LocationName": "Holloman AFB, New Mexico",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New Mexico",
+              "CityName": "Holloman AFB, New Mexico",
+              "Longitude": -106.10064,
+              "Latitude": 32.84768
+            },
+            {
+              "LocationName": "Kirtland AFB, New Mexico",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New Mexico",
+              "CityName": "Kirtland AFB, New Mexico",
+              "Longitude": -106.545,
+              "Latitude": 35.0583
+            },
+            {
+              "LocationName": "Nellis AFB, Nevada",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Nevada",
+              "CityName": "Nellis AFB, Nevada",
+              "Longitude": -114.996,
+              "Latitude": 36.2363
+            },
+            {
+              "LocationName": "Rome, New York",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New York",
+              "CityName": "Rome, New York",
+              "Longitude": -75.45336,
+              "Latitude": 43.215168
+            },
+            {
+              "LocationName": "Heath, Ohio",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Ohio",
+              "CityName": "Heath, Ohio",
+              "Longitude": -82.4323,
+              "Latitude": 40.0355
+            },
+            {
+              "LocationName": "Wright-Patterson AFB, Ohio",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Ohio",
+              "CityName": "Wright-Patterson AFB, Ohio",
+              "Longitude": -84.05,
+              "Latitude": 39.8333
+            },
+            {
+              "LocationName": "Altus AFB, Oklahoma",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Oklahoma",
+              "CityName": "Altus AFB, Oklahoma",
+              "Longitude": -99.27909,
+              "Latitude": 34.66338
+            },
+            {
+              "LocationName": "Tinker AFB, Oklahoma",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Oklahoma",
+              "CityName": "Tinker AFB, Oklahoma",
+              "Longitude": -97.3894,
+              "Latitude": 35.422
+            },
+            {
+              "LocationName": "Vance AFB, Oklahoma",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Oklahoma",
+              "CityName": "Vance AFB, Oklahoma",
+              "Longitude": -97.90917,
+              "Latitude": 36.337227
+            },
+            {
+              "LocationName": "Arnold AFB, Tennessee",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Tennessee",
+              "CityName": "Arnold AFB, Tennessee",
+              "Longitude": -86.0858,
+              "Latitude": 35.3925
+            },
+            {
+              "LocationName": "Dyess AFB, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Dyess AFB, Texas",
+              "Longitude": -99.83814,
+              "Latitude": 32.421364
+            },
+            {
+              "LocationName": "Fort Sam Houston, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Fort Sam Houston, Texas",
+              "Longitude": -98.4489,
+              "Latitude": 29.4491
+            },
+            {
+              "LocationName": "Goodfellow AFB, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Goodfellow AFB, Texas",
+              "Longitude": -100.40798,
+              "Latitude": 31.342018
+            },
+            {
+              "LocationName": "Lackland AFB, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Lackland AFB, Texas",
+              "Longitude": -98.6181,
+              "Latitude": 29.3861
+            },
+            {
+              "LocationName": "Randolph AFB, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Randolph AFB, Texas",
+              "Longitude": -98.2775,
+              "Latitude": 29.5275
+            },
+            {
+              "LocationName": "Hill AFB, Utah",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Utah",
+              "CityName": "Hill AFB, Utah",
+              "Longitude": -111.9896,
+              "Latitude": 41.1251
+            },
+            {
+              "LocationName": "Dahlgren, Virginia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Virginia",
+              "CityName": "Dahlgren, Virginia",
+              "Longitude": -77.0468,
+              "Latitude": 38.331
+            },
+            {
+              "LocationName": "Langley AFB, Virginia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Virginia",
+              "CityName": "Langley AFB, Virginia",
+              "Longitude": -76.3667,
+              "Latitude": 37.0771
+            },
+            {
+              "LocationName": "Pentagon, Arlington, Virginia",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Virginia",
+              "CityName": "Pentagon, Arlington, Virginia",
+              "Longitude": -77.06204,
+              "Latitude": 38.86163
+            },
+            {
+              "LocationName": "Fairchild AFB, Washington",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Washington",
+              "CityName": "Fairchild AFB, Washington",
+              "Longitude": -117.6556,
+              "Latitude": 47.615
+            }
+          ],
+          "OrganizationName": "Air Force Civilian Career Training",
+          "DepartmentName": "Department of the Air Force",
+          "SubAgency": "Air Force Personnel Center, Talent Readiness",
+          "JobCategory": [
+            {
+              "Name": "Psychology",
+              "Code": "0180"
+            }
+          ],
+          "JobGrade": [
+            {
+              "Code": "GS"
+            }
+          ],
+          "PositionSchedule": [
+            {
+              "Name": "",
+              "Code": "1"
+            }
+          ],
+          "PositionOfferingType": [
+            {
+              "Name": "",
+              "Code": "15328"
+            }
+          ],
+          "QualificationSummary": "*The CSA PAQ program requires a degree with overall GPA standing of 2.95 /3.0 or higher. All qualifications must be met prior to August 2026. This must be from an accredited college or university: Mee",
+          "PositionRemuneration": [
+            {
+              "MinimumRange": "49960",
+              "MaximumRange": "99314",
+              "RateIntervalCode": "PA",
+              "Description": "Per Year"
+            }
+          ],
+          "PositionStartDate": "2025-09-29T00:00:00.0000",
+          "PositionEndDate": "2026-09-28T23:59:59.9970",
+          "PublicationStartDate": "2025-09-29T00:00:00.0000",
+          "ApplicationCloseDate": "2026-09-28T23:59:59.9970",
+          "UserArea": {
+            "Details": {
+              "JobSummary": "Force Renewal Programs are designed to attract students & recent graduates with management/leadership potential to careers as Federal employees with the Air Force Civilian Service. This is accomplished by recruiting & selecting high-caliber candidates & training them to become competent, effective, ",
+              "WhoMayApply": {
+                "Name": "",
+                "Code": ""
+              },
+              "LowGrade": "7",
+              "HighGrade": "9",
+              "PromotionPotential": "12",
+              "SubAgencyName": "Air Force Personnel Center, Talent Readiness",
+              "OrganizationCodes": "AF/AF1Y",
+              "Relocation": "False",
+              "HiringPath": [
+                "graduates",
+                "student",
+                "public"
+              ],
+              "HiringPathDisplay": [
+                "Recent graduates",
+                "Students",
+                "Open to the public"
+              ],
+              "MCOTags": [],
+              "TotalOpenings": "FEW",
+              "TravelCode": "1",
+              "ApplyOnlineUrl": "https://apply.usastaffing.gov/Application/Apply",
+              "DetailStatusUrl": "https://apply.usastaffing.gov/Application/ApplicationStatus",
+              "BenefitsUrl": "https://www.usajobs.gov/Help/working-in-government/benefits/",
+              "WithinArea": "False",
+              "CommuteDistance": "0",
+              "ServiceType": "01",
+              "AnnouncementClosingType": "01",
+              "AgencyContactEmail": "DO.NOT.EMAIL@CALL.ONLY",
+              "AgencyContactPhone": "1-800-525-0102",
+              "SecurityClearance": "Top Secret",
+              "DrugTestRequired": "True",
+              "PositionSensitivitiy": "Special-Sensitive (SS)/High Risk",
+              "AdjudicationType": [
+                "Suitability/Fitness"
+              ],
+              "TeleworkEligible": false,
+              "RemoteIndicator": false,
+              "FinancialDisclosure": false,
+              "BargainingUnitStatus": false
+            },
+            "IsRadialSearch": false
+          },
+          "AnnouncementClosingType": "01"
+        }
+      },
+      {
+        "MatchedObjectDescriptor": {
+          "PositionID": "CBTC-12869938-26-SB",
+          "PositionTitle": "Physician (Radiology-Diagnostic)",
+          "PositionURI": "https://www.usajobs.gov:443/job/855055300",
+          "ApplyURI": [
+            "https://www.usajobs.gov:443/job/855055300"
+          ],
+          "PositionLocationDisplay": "Gainesville, Florida",
+          "PositionLocation": [
+            {
+              "LocationName": "Gainesville, Florida",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Florida",
+              "CityName": "Gainesville, Florida",
+              "Longitude": -82.32319,
+              "Latitude": 29.65195
+            }
+          ],
+          "OrganizationName": "Veterans Health Administration",
+          "DepartmentName": "Department of Veterans Affairs",
+          "SubAgency": "North Florida/South Georgia Veterans Health System",
+          "JobCategory": [
+            {
+              "Name": "Medical Officer",
+              "Code": "0602"
+            }
+          ],
+          "JobGrade": [
+            {
+              "Code": "VM"
+            }
+          ],
+          "PositionSchedule": [
+            {
+              "Name": "",
+              "Code": "1"
+            }
+          ],
+          "PositionOfferingType": [
+            {
+              "Name": "",
+              "Code": "15317"
+            }
+          ],
+          "QualificationSummary": "To qualify for this position, you must meet the basic requirements as well as any additional requirements (if applicable) listed in the job announcement. Applicants pending the completion of training ",
+          "PositionRemuneration": [
+            {
+              "MinimumRange": "385000",
+              "MaximumRange": "400000",
+              "RateIntervalCode": "PA",
+              "Description": "Per Year"
+            }
+          ],
+          "PositionStartDate": "2026-01-21T00:00:00.0000",
+          "PositionEndDate": "2026-12-31T23:59:59.9970",
+          "PublicationStartDate": "2026-01-21T00:00:00.0000",
+          "ApplicationCloseDate": "2026-12-31T23:59:59.9970",
+          "UserArea": {
+            "Details": {
+              "JobSummary": "The North Florida/South Georgia Veterans Health System is seeking a well-rounded general Diagnostic Radiologist with subspecialty expertise, particularly in body imaging, cardiothoracic imaging, PET/CT /nuclear medicine, or neuroradiology. This announcement is recruiting for 2 Full- Time and 1 Part ",
+              "WhoMayApply": {
+                "Name": "",
+                "Code": ""
+              },
+              "LowGrade": "15",
+              "HighGrade": "15",
+              "PromotionPotential": "None",
+              "SubAgencyName": "North Florida/South Georgia Veterans Health System",
+              "OrganizationCodes": "VA/VATA",
+              "Relocation": "False",
+              "HiringPath": [
+                "fed-competitive",
+                "fed-excepted",
+                "fed-internal-search",
+                "student",
+                "vet"
+              ],
+              "HiringPathDisplay": [
+                "Competitive service",
+                "Excepted service",
+                "Internal to an agency",
+                "Students",
+                "Veterans"
+              ],
+              "MCOTags": [],
+              "TotalOpenings": "3",
+              "TravelCode": "2",
+              "ApplyOnlineUrl": "https://apply.usastaffing.gov/Application/Apply",
+              "DetailStatusUrl": "https://apply.usastaffing.gov/Application/ApplicationStatus",
+              "BenefitsUrl": "http://www.vacareers.va.gov/why-choose-va/benefits/index.asp",
+              "WithinArea": "False",
+              "CommuteDistance": "0",
+              "ServiceType": "02",
+              "AnnouncementClosingType": "01",
+              "AgencyContactEmail": "Esther.Lopez-Medina@va.gov",
+              "AgencyContactPhone": "787-641-7582 X126189",
+              "SecurityClearance": "Other",
+              "DrugTestRequired": "True",
+              "PositionSensitivitiy": "Non-sensitive (NS)/Low Risk",
+              "AdjudicationType": [
+                "Credentialing",
+                "Suitability/Fitness"
+              ],
+              "TeleworkEligible": true,
+              "RemoteIndicator": false,
+              "FinancialDisclosure": false,
+              "BargainingUnitStatus": false
+            },
+            "IsRadialSearch": false
+          },
+          "AnnouncementClosingType": "01"
+        }
+      },
+      {
+        "MatchedObjectDescriptor": {
+          "PositionID": "D-26-DHA-12800575-KLB",
+          "PositionTitle": "Civil Engineer / Mechancial Engineer / Electrical Engineer",
+          "PositionURI": "https://www.usajobs.gov:443/job/850081200",
+          "ApplyURI": [
+            "https://www.usajobs.gov:443/job/850081200"
+          ],
+          "PositionLocationDisplay": "Multiple Locations",
+          "PositionLocation": [
+            {
+              "LocationName": "Whiteman AFB, Missouri",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Missouri",
+              "CityName": "Whiteman AFB, Missouri",
+              "Longitude": -93.572,
+              "Latitude": 38.7401
+            },
+            {
+              "LocationName": "Malmstrom AFB, Montana",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Montana",
+              "CityName": "Malmstrom AFB, Montana",
+              "Longitude": -111.18402,
+              "Latitude": 47.504684
+            },
+            {
+              "LocationName": "Seymour Johnson AFB, North Carolina",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "North Carolina",
+              "CityName": "Seymour Johnson AFB, North Carolina",
+              "Longitude": -77.96784,
+              "Latitude": 35.348747
+            },
+            {
+              "LocationName": "Holloman AFB, New Mexico",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "New Mexico",
+              "CityName": "Holloman AFB, New Mexico",
+              "Longitude": -106.10064,
+              "Latitude": 32.84768
+            },
+            {
+              "LocationName": "Nellis AFB, Nevada",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Nevada",
+              "CityName": "Nellis AFB, Nevada",
+              "Longitude": -114.996,
+              "Latitude": 36.2363
+            },
+            {
+              "LocationName": "Wright-Patterson AFB, Ohio",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Ohio",
+              "CityName": "Wright-Patterson AFB, Ohio",
+              "Longitude": -84.05,
+              "Latitude": 39.8333
+            },
+            {
+              "LocationName": "Laughlin AFB, Texas",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "Texas",
+              "CityName": "Laughlin AFB, Texas",
+              "Longitude": -100.79517,
+              "Latitude": 29.354046
+            }
+          ],
+          "OrganizationName": "Air Force Civilian Career Training",
+          "DepartmentName": "Department of the Air Force",
+          "SubAgency": "Air Force Personnel Center, Talent Readiness",
+          "JobCategory": [
+            {
+              "Name": "Civil Engineering",
+              "Code": "0810"
+            },
+            {
+              "Name": "Mechanical Engineering",
+              "Code": "0830"
+            },
+            {
+              "Name": "Electrical Engineering",
+              "Code": "0850"
+            }
+          ],
+          "JobGrade": [
+            {
+              "Code": "GS"
+            }
+          ],
+          "PositionSchedule": [
+            {
+              "Name": "",
+              "Code": "1"
+            }
+          ],
+          "PositionOfferingType": [
+            {
+              "Name": "Internships",
+              "Code": "15317"
+            }
+          ],
+          "QualificationSummary": "In order to qualify, you must meet the specialized experience requirements described in the Office of Personnel Management (OPM) Qualification Standards for General Schedule Positions, for Professiona",
+          "PositionRemuneration": [
+            {
+              "MinimumRange": "55486",
+              "MaximumRange": "83525",
+              "RateIntervalCode": "PA",
+              "Description": "Per Year"
+            }
+          ],
+          "PositionStartDate": "2025-11-14T07:41:39.3930",
+          "PositionEndDate": "2026-09-30T23:59:59.9970",
+          "PublicationStartDate": "2025-11-14T07:41:39.3930",
+          "ApplicationCloseDate": "2026-09-30T23:59:59.9970",
+          "UserArea": {
+            "Details": {
+              "JobSummary": "Click on \"Learn more about this agency\" button below to view Eligibilities being considered and other IMPORTANT information. The primary purpose of this position is: This is a formal Air Force intern position, established under the PALACE Acquire (PAQ) program which is under the Pathways Recent Grad",
+              "WhoMayApply": {
+                "Name": "",
+                "Code": ""
+              },
+              "LowGrade": "7",
+              "HighGrade": "9",
+              "PromotionPotential": "12",
+              "SubAgencyName": "Air Force Personnel Center, Talent Readiness",
+              "OrganizationCodes": "AF/AF1Y",
+              "Relocation": "False",
+              "HiringPath": [
+                "graduates",
+                "student",
+                "public",
+                "fed-competitive",
+                "vet"
+              ],
+              "HiringPathDisplay": [
+                "Recent graduates",
+                "Students",
+                "Open to the public",
+                "Competitive service",
+                "Veterans"
+              ],
+              "MCOTags": [],
+              "TotalOpenings": "Few",
+              "TravelCode": "1",
+              "ApplyOnlineUrl": "https://apply.usastaffing.gov/Application/Apply",
+              "DetailStatusUrl": "https://apply.usastaffing.gov/Application/ApplicationStatus",
+              "BenefitsUrl": "https://www.usajobs.gov/Help/working-in-government/benefits/",
+              "WithinArea": "False",
+              "CommuteDistance": "0",
+              "ServiceType": "01",
+              "AnnouncementClosingType": "01",
+              "AgencyContactEmail": "DO.NOT.EMAIL@CALL.ONLY",
+              "AgencyContactPhone": "1-800-525-0102",
+              "SecurityClearance": "Secret",
+              "DrugTestRequired": "False",
+              "PositionSensitivitiy": "Noncritical-Sensitive (NCS)/Moderate Risk",
+              "AdjudicationType": [
+                "Suitability/Fitness"
+              ],
+              "TeleworkEligible": false,
+              "RemoteIndicator": false,
+              "FinancialDisclosure": false,
+              "BargainingUnitStatus": false
+            },
+            "IsRadialSearch": false
+          },
+          "AnnouncementClosingType": "01"
+        }
+      }
+    ]
+  }
+}

@@ -1,12 +1,15 @@
 /** Shared contract every ingestion adapter produces. */
 
-/** Feeds we pull from. `simplify` is discovery-only — see sources/simplify.ts. */
+/** Feeds we pull from. `simplify` is discovery-only — see sources/simplify.ts.
+ *  `usajobs` is a whole-government search rather than one employer's board, so
+ *  it has no `BoardAdapter` — see sources/usajobs.ts. */
 export type SourceName =
   | "greenhouse"
   | "ashby"
   | "lever"
   | "smartrecruiters"
-  | "simplify";
+  | "simplify"
+  | "usajobs";
 
 /**
  * One posting as reported by a source, before normalization/dedup.

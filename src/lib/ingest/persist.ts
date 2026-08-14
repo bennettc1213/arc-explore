@@ -15,6 +15,7 @@ import {
   postingSources,
   postings,
   type AtsType,
+  type FreshnessTier,
 } from "@/db/schema";
 import { detectTerm, detectWorkAuth } from "./normalize";
 import { extractSkills } from "../score/skills";
@@ -45,6 +46,14 @@ export async function persistPoll(
   incoming: SourcePosting[],
   totalOnBoard: number,
   etag?: string | null,
+  /**
+   * How strong a freshness claim these rows may carry. Defaults to
+   * `live_polled`, which is only true for Tier A: those boards are re-fetched
+   * every 20 minutes, so "confirmed live" is a statement we can back. A source
+   * reconciled through this same path on a slower loop must say so — see
+   * `scripts/ingest-usajobs.ts`, which runs daily and passes `periodic_check`.
+   */
+  opts?: { freshnessTier?: FreshnessTier },
 ): Promise<PollOutcome> {
   return db.transaction(async (tx) => {
     const existingRows = await tx
@@ -61,7 +70,7 @@ export async function persistPoll(
     const now = new Date();
 
     if (plan.toInsert.length > 0) {
-      await insertPostings(tx, orgId, plan.toInsert, now);
+      await insertPostings(tx, orgId, plan.toInsert, now, opts?.freshnessTier);
     }
 
     if (plan.toTouch.length > 0) {
@@ -166,6 +175,7 @@ async function insertPostings(
   orgId: string,
   prepared: PreparedPosting[],
   now: Date,
+  freshnessTier: FreshnessTier = "live_polled",
 ) {
   for (const p of prepared) {
     // ON CONFLICT guards a race: two orgs' polls resolving to the same
@@ -174,6 +184,7 @@ async function insertPostings(
       .insert(postings)
       .values({
         orgId,
+        freshnessTier,
         canonicalHash: p.canonicalHash,
         title: p.title,
         normalizedTitle: p.normalizedTitle,
