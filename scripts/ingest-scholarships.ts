@@ -15,6 +15,7 @@ import { closeDb } from "../src/db/client";
 import * as cftexas from "../src/lib/scholarships/cftexas";
 import * as parse from "../src/lib/scholarships/parse";
 import * as unl from "../src/lib/scholarships/unl";
+import * as unr from "../src/lib/scholarships/unr";
 import { persistScholarships } from "../src/lib/scholarships/persist";
 import type { ScholarshipSource } from "../src/lib/scholarships/types";
 import { describeError } from "../src/lib/ingest/errors";
@@ -28,6 +29,7 @@ interface Source {
 const SOURCES: Source[] = [
   { name: "cftexas", fetchScholarships: cftexas.fetchScholarships },
   { name: "unl", fetchScholarships: unl.fetchScholarships },
+  { name: "unr", fetchScholarships: unr.fetchScholarships },
   { name: "scholarshipscom", fetchScholarships: parse.fetchScholarshipsCom },
   { name: "scholarshipportal", fetchScholarships: parse.fetchScholarshipPortal },
 ];
