@@ -167,6 +167,15 @@ export default async function ListingPage({
                 >
                   apply on {item.kind === "scholarship" ? "the sponsor's site" : "the employer's site"} ↗
                 </a>
+                {user && (
+                  <Link
+                    href={`/listing/${item.id}/apply`}
+                    className="btn press"
+                    style={{ textDecoration: "none" }}
+                  >
+                    application packet
+                  </Link>
+                )}
                 {user && <TrackButton postingId={item.id} current={null} />}
               </div>
             </div>
