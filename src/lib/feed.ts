@@ -16,13 +16,16 @@ import { desc, eq, isNull, and, isNotNull, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { organizations, postings, type FreshnessTier, type PostingKind } from "@/db/schema";
+import { escapeLike, parseSearchQuery } from "./feed-search";
 import {
+  fieldsForPosting,
   rankingScore,
   scoreFit,
+  type FieldKey,
   type ScoreProfile,
   type FitResult,
 } from "./score/fit";
-import { scoreScholarshipFit } from "./score/scholarship-fit";
+import { scholarshipFields, scoreScholarshipFit } from "./score/scholarship-fit";
 import { scoreTiming, type TimingResult } from "./score/timing";
 
 export interface FeedItem {
@@ -51,6 +54,12 @@ export interface FeedItem {
   firstSeenAt: Date;
   lastSeenAt: Date;
   closedAt: Date | null;
+  /**
+   * Fields this posting is in, from the same taxonomy the Fit Score matches
+   * against. Empty means the source stated nothing we could classify — the
+   * common case for scholarships — never that it matched nothing.
+   */
+  fields: FieldKey[];
   fit: FitResult;
   timing: TimingResult;
 }
@@ -73,11 +82,31 @@ export interface FeedFilters {
   minAmount?: number | null;
   /** Free-text match against a posting's listed locations. */
   location?: string | null;
+  /** Free-text search over title, org/sponsor and eligibility. */
+  q?: string | null;
+  /** Only postings our field taxonomy places in this category. */
+  category?: FieldKey | null;
   /** Hide roles the profile is hard-blocked from. */
   hideBlocked?: boolean;
   /** Max rows to return. Applied AFTER ranking, so the list is never
    *  truncated in a way that silently drops one kind. */
   limit?: number;
+}
+
+export interface FeedResult {
+  items: FeedItem[];
+  /**
+   * Rows an active category filter dropped because we could derive no field
+   * for them at all.
+   *
+   * Reported separately because the two exclusions mean opposite things. A
+   * posting we classified as business and filtered out of software is a true
+   * negative. A posting that states no field is a gap in what the source told
+   * us, and at ~90% of open scholarships it is most of the corpus — a student
+   * who picks a category and sees five results has to know the other 1,600
+   * were unreadable, not irrelevant.
+   */
+  categoryUnclassified: number;
 }
 
 export interface FeedStats {
@@ -183,6 +212,8 @@ interface FeedRow {
 }
 
 function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
+  const criteria = criteriaFrom(r.eligibility);
+
   return {
     id: r.id,
     kind: r.kind,
@@ -198,12 +229,18 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
     amountMin: r.amountMin,
     amountMax: r.amountMax,
     amountNeedsReview: r.amountNeedsReview,
-    eligibility: criteriaFrom(r.eligibility),
+    eligibility: criteria,
     isContentMarketing: r.isContentMarketing,
     freshnessTier: r.freshnessTier,
     firstSeenAt: r.firstSeenAt,
     lastSeenAt: r.lastSeenAt,
     closedAt: r.closedAt,
+    // Same call the scorer makes, so the category filter and the "matches
+    // software" chip can never disagree.
+    fields:
+      r.kind === "scholarship"
+        ? scholarshipFields({ title: r.title, sponsorName: r.sponsorName, eligibility: criteria })
+        : fieldsForPosting({ title: r.title }),
     fit:
       r.kind === "scholarship"
         ? scoreScholarshipFit(profile, {
@@ -212,7 +249,7 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
             amountMin: r.amountMin,
             amountMax: r.amountMax,
             isContentMarketing: r.isContentMarketing,
-            eligibility: criteriaFrom(r.eligibility),
+            eligibility: criteria,
           })
         : scoreFit(profile, {
             title: r.title,
@@ -237,7 +274,7 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
 export async function getFeed(
   profile: ScoreProfile,
   filters: FeedFilters = {},
-): Promise<FeedItem[]> {
+): Promise<FeedResult> {
   const conditions = [];
   if (!filters.includeClosed) conditions.push(isNull(postings.closedAt));
   if (filters.term) conditions.push(eq(postings.term, filters.term));
@@ -262,9 +299,31 @@ export async function getFeed(
   }
 
   if (filters.location) {
-    const pattern = `%${filters.location}%`;
+    const pattern = `%${escapeLike(filters.location)}%`;
     conditions.push(
       sql`exists (select 1 from unnest(${postings.locations}) as l where l ilike ${pattern})`,
+    );
+  }
+
+  // Search runs in SQL rather than in memory, unlike the category filter
+  // below: it is the one filter that can cut the row count by orders of
+  // magnitude, and everything after this point pays per row — scoring, the
+  // sort, and the JSON handed to the client.
+  //
+  // Fields searched are the ones a student is actually naming: the title, the
+  // org or sponsor, and the eligibility text (where "must be a nursing
+  // student" lives). `descriptionText` is deliberately excluded, for the same
+  // reason it is absent from FEED_SELECT plus one more — a term like "python"
+  // appears in the boilerplate of half our internship descriptions, so
+  // including it would make search look broken by matching nearly everything.
+  for (const term of parseSearchQuery(filters.q)) {
+    const pattern = `%${escapeLike(term)}%`;
+    conditions.push(
+      sql`(
+        ${postings.title} ilike ${pattern}
+        or coalesce(${organizations.name}, ${postings.sponsorName}, '') ilike ${pattern}
+        or coalesce(${postings.eligibility}::text, '') ilike ${pattern}
+      )`,
     );
   }
 
@@ -283,9 +342,29 @@ export async function getFeed(
   const now = new Date();
   const items: FeedItem[] = rows.map((r) => buildFeedItem(profile, r, now));
 
-  const filtered = filters.hideBlocked ? items.filter((i) => !i.fit.blocked) : items;
+  let filtered = filters.hideBlocked ? items.filter((i) => !i.fit.blocked) : items;
+
+  // In memory, not SQL: the taxonomy is a set of regexes in `score/fit.ts`,
+  // and the only way to run it in Postgres would be to restate every pattern
+  // in SQL. Those two copies would drift, and the first symptom would be a
+  // row showing a "matches software" chip while missing from the software
+  // category. One taxonomy, one judgement — the cost is that the rows are
+  // fetched and scored before being dropped, which the search filter above
+  // already bounds.
+  let categoryUnclassified = 0;
+  if (filters.category) {
+    const wanted = filters.category;
+    filtered = filtered.filter((item) => {
+      if (item.fields.length === 0) {
+        categoryUnclassified++;
+        return false;
+      }
+      return item.fields.includes(wanted);
+    });
+  }
+
   filtered.sort(rank);
-  return filtered.slice(0, filters.limit ?? 500);
+  return { items: filtered.slice(0, filters.limit ?? 500), categoryUnclassified };
 }
 
 /**

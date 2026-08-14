@@ -38,9 +38,9 @@ Notes in _italics_ record what was actually built and where it differs from the 
 
 - [x] Build the student profile intake form (major, GPA, grad year, location, interests, eligibility flags)
 - [x] Build the combined browse/search feed — scholarships and internships together, one list
-  _One shared `postings` table, one feed, one rank. `getFeed` returns both kinds and the in-memory ranking runs before the limit so one kind cannot crowd out the other. **No text search yet.**_
+  _One shared `postings` table, one feed, one rank. `getFeed` returns both kinds and the in-memory ranking runs before the limit so one kind cannot crowd out the other. Text search added: AND-of-substrings over title, org/sponsor and eligibility, pushed into SQL because it is the one filter that can cut the row count by orders of magnitude and everything downstream costs per row. `descriptionText` is deliberately not searched — "python" sits in the boilerplate of half our internship descriptions, so including it makes search look broken by matching nearly everything. `ilike`, not `tsvector`: at ~4k rows the scan is free and "eng" should find "Engineering", which stemming would break. Wildcards in the query are escaped (`feed-search.ts`) — unescaped, a search for "100%" matched every row in the table._
 - [x] Add filters: deadline, amount/pay, category, location, remote
-  _`kind`, `deadline` (days out), `minAmount`, and `location` added; term, remote and show-closed existed. Category is the one specified filter still missing._
+  _`kind`, `deadline` (days out), `minAmount`, and `location` added; term, remote and show-closed existed. Category now added — and deliberately **not** backed by `postings.category`, which is null on all 3,765 rows and would have filtered to zero forever (`organizations.vertical` is equally empty). It reuses the six-key field taxonomy the Fit Score already matches on, via the same exported functions the scorer calls, so a row can never show a "matches software" chip and be missing from the software category. Applied in memory for that reason: restating the regexes in SQL would create a second copy to drift. **The honest cost:** the taxonomy can only read what a source wrote, and 90% of open scholarships (1,632 of 1,820) name no field at all, so the feed reports that count beside the results rather than letting a category look like an empty corpus._
 - [x] Design the scholarship Fit Score formula (eligibility match, competition-level heuristic, essay/effort required)
 - [x] Implement the scholarship Fit Score and show it on every listing
   _Three dimensions: field (35, degree-language match over title/sponsor/eligibility), award (35, tiered by stated amount), competition (30, the `is_content_marketing` tag). Unknown is dropped, never a miss, same contract as the internship score._
@@ -139,10 +139,10 @@ Notes in _italics_ record what was actually built and where it differs from the 
 
 ## What to do next
 
-1. **Commit the repo.** Minutes of work, and right now a single mistake loses everything. (Phase 02's feed, filters and both Fit Scores are built and verified; only the quota-gated ScholarshipPortal/Scholarships.com persist run and the commit itself remain.)
-2. **Scholarship ingestion** (Phase 01). Underway — 4 of the target 10–15 sources are wired (CFT, UNL, Scholarships.com, ScholarshipPortal, the last two through the Parse scraping API; see line 28). Freshness on scholarship rows is labelled honestly via `freshness_tier`.
-3. **Feed search** (Phase 02). The one specified filter still missing is `category`; a text search is the other gap, and the feed is now large enough that browsing alone is getting unwieldy.
-4. **Cover letters** (Phase 03). The match data they need to be grounded in already exists.
-5. **Aggregator sources** (Phase 01) — Adzuna first, labelled unverified.
+1. **Land the ScholarshipPortal rows** (Phase 01). The corpus is **3,765 postings — 1,890 internships and 1,875 scholarships**, not the 5,537 line 28 claims. Scholarships.com's 1,559 persisted on 2026-08-14; ScholarshipPortal's ~3,666 **never did** — the four scholarship runs after it all logged `polled=0 seen=0`, three of them with an error. Re-run `npm run ingest:scholarships -- --source scholarshipportal` against a fresh Parse quota and confirm against `npm run ingest:status` before trusting any scholarship count. Line 28 stays unedited until a run makes it true.
+2. **More scholarship sources** (Phase 01). 4 of the target 10–15 are wired (CFT, UNL, Scholarships.com, ScholarshipPortal — the last two through the Parse scraping API; see line 28). Freshness is labelled honestly via `freshness_tier`.
+3. **Category coverage** (Phase 01/02). The category filter now works, but it can only read what a source wrote, and 90% of open scholarships state no field — so the filter is honest and nearly empty for scholarships. That is an ingestion gap, not a filter bug: eligibility text is populated on 48 of 1,875 scholarship rows. Parsing a field of study out of the source pages is what would make this filter earn its place.
+4. **Aggregator sources** (Phase 01) — Adzuna first, labelled unverified.
+5. **Deadline reminders** (Phase 05). The Resend key is already in `.env`, and 316 scholarship rows carry a known deadline to remind against.
 
 **Waiting on you:** the resume-structuring logic for the Smart Resume converter.

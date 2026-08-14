@@ -193,7 +193,15 @@ export function fieldsForProfile(p: ScoreProfile): FieldKey[] {
   return [...out];
 }
 
-function fieldsForPosting(posting: ScorePosting): FieldKey[] {
+/**
+ * The fields an internship posting is in.
+ *
+ * Exported because the feed's category filter must ask this exact question.
+ * If the filter derived fields its own way, a row could show a "matches
+ * software" chip and then be missing from the software category — the filter
+ * and the score have to be the same judgement or one of them is lying.
+ */
+export function fieldsForPosting(posting: ScorePosting): FieldKey[] {
   // Title only. Descriptions mention every adjacent discipline and would make
   // nearly every posting match nearly every field.
   return fieldsFromText(posting.title);

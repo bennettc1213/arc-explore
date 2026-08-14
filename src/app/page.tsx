@@ -9,13 +9,14 @@ import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 import {
   INTEREST_OPTIONS,
+  INTEREST_VALUES,
   WORK_AUTH_OPTIONS,
   isProfileUsable,
   parseLocations,
   toScoreProfile,
   type UserProfile,
 } from "@/lib/profile/types";
-import type { ScoreProfile } from "@/lib/score/fit";
+import type { FieldKey, ScoreProfile } from "@/lib/score/fit";
 
 export const dynamic = "force-dynamic";
 
@@ -158,11 +159,32 @@ export default async function FeedPage({
   const rawLocation = typeof sp.location === "string" ? sp.location.trim() : "";
   const location = rawLocation ? rawLocation : null;
 
-  const [items, stats, terms] = await Promise.all([
-    getFeed(profile, { term, remoteOnly, includeClosed, hideBlocked: false, kind, deadline, minAmount, location }),
+  const q = typeof sp.q === "string" && sp.q.trim() ? sp.q.trim() : null;
+
+  // Validated against the taxonomy rather than trusted: an unknown value would
+  // otherwise filter every row out and read as an empty corpus.
+  const category: FieldKey | null =
+    typeof sp.category === "string" && (INTEREST_VALUES as readonly string[]).includes(sp.category)
+      ? (sp.category as FieldKey)
+      : null;
+
+  const [feed, stats, terms] = await Promise.all([
+    getFeed(profile, {
+      term,
+      remoteOnly,
+      includeClosed,
+      hideBlocked: false,
+      kind,
+      deadline,
+      minAmount,
+      location,
+      q,
+      category,
+    }),
     getFeedStats(kind),
     getAvailableTerms(),
   ]);
+  const { items, categoryUnclassified } = feed;
 
   const guestVerticals = new Set(profile.targetVerticals ?? []);
 
@@ -269,13 +291,35 @@ export default async function FeedPage({
           </>
         )}
 
-        <div className={`grid gap-4 md:grid-cols-4 ${user ? "" : "mt-5"}`}>
+        <label className={`field-row ${user ? "" : "mt-5"}`}>
+          <span className="mono chrome">search</span>
+          <input
+            className="field"
+            name="q"
+            defaultValue={q ?? ""}
+            placeholder="nursing · Stripe · first-generation · machine learning"
+          />
+        </label>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-3 lg:grid-cols-5">
           <label className="field-row">
             <span className="mono chrome">kind</span>
             <select className="field" name="kind" defaultValue={kind ?? ""}>
               <option value="">internships + scholarships</option>
               <option value="internship">internships</option>
               <option value="scholarship">scholarships</option>
+            </select>
+          </label>
+
+          <label className="field-row">
+            <span className="mono chrome">category</span>
+            <select className="field" name="category" defaultValue={category ?? ""}>
+              <option value="">any</option>
+              {INTEREST_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -373,10 +417,23 @@ export default async function FeedPage({
         03 — {items.length} results
       </div>
 
+      {/* A category can only be read off what the source actually wrote. Most
+          scholarships name no field at all, so without this line picking a
+          category looks like the corpus is nearly empty rather than mostly
+          unlabelled. */}
+      {category && categoryUnclassified > 0 && (
+        <div className="mono" style={{ marginBottom: 12, color: "var(--faint-readable)" }}>
+          {categoryUnclassified.toLocaleString("en-US")} more state no field we can read, so we
+          cannot place them in a category — hidden here, not necessarily off-topic
+        </div>
+      )}
+
       {items.length === 0 ? (
         <div className="slot" style={{ padding: "20px", gap: 16 }}>
           <Mascot size={32} />
-          no postings match these filters yet
+          {q
+            ? `nothing matches “${q}” with these filters — every word has to appear in the title, organization, or eligibility`
+            : "no postings match these filters yet"}
         </div>
       ) : (
         <div>

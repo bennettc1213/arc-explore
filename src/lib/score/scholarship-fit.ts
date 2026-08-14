@@ -26,7 +26,7 @@
  * dropped not penalised, and the number is never presented as odds.
  */
 
-import type { ScoreProfile, FitResult, ScoreReason } from "./fit";
+import type { ScoreProfile, FitResult, ScoreReason, FieldKey } from "./fit";
 import { fieldsForProfile, fieldsFromDegreeLanguage } from "./fit";
 
 export interface ScholarshipScorePosting {
@@ -58,6 +58,28 @@ function awardValue(amount: number): number {
   return 0.3;
 }
 
+/**
+ * The fields a scholarship is for, from everything the source told us.
+ *
+ * Exported for the feed's category filter, so filtering and scoring reach the
+ * same verdict — see `fieldsForPosting` for why that matters.
+ *
+ * Most scholarships yield nothing here, and that is the honest answer rather
+ * than a gap to paper over: "The Smith Family Endowed Scholarship" genuinely
+ * states no field of study. Measured against the live corpus, ~90% of open
+ * scholarships are unclassifiable, so any caller filtering on the result has
+ * to account for them explicitly instead of quietly dropping them.
+ */
+export function scholarshipFields(posting: ScholarshipScorePosting): FieldKey[] {
+  const text = [posting.title, posting.sponsorName ?? "", ...(posting.eligibility ?? [])]
+    .filter(Boolean)
+    .join(" ");
+  // Degree-language only. The role-title regexes ("security", "systems") are
+  // correct in a job title and wrong in scholarship prose — see
+  // `fieldsFromDegreeLanguage` for why.
+  return fieldsFromDegreeLanguage(text);
+}
+
 function scoreField(profile: ScoreProfile, posting: ScholarshipScorePosting): Dimension {
   const mine = fieldsForProfile(profile);
 
@@ -74,13 +96,7 @@ function scoreField(profile: ScoreProfile, posting: ScholarshipScorePosting): Di
     };
   }
 
-  const text = [posting.title, posting.sponsorName ?? "", ...(posting.eligibility ?? [])]
-    .filter(Boolean)
-    .join(" ");
-  // Degree-language only. The role-title regexes ("security", "systems") are
-  // correct in a job title and wrong in scholarship prose — see
-  // `fieldsFromDegreeLanguage` for why.
-  const theirs = fieldsFromDegreeLanguage(text);
+  const theirs = scholarshipFields(posting);
 
   if (theirs.length === 0) {
     return {
