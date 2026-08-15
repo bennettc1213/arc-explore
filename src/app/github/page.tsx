@@ -1,10 +1,15 @@
 import Link from "next/link";
 
-import { auditGitHub } from "@/lib/github/audit";
+import { getSessionUser } from "@/lib/auth";
+import { auditGitHub, type GitHubAudit } from "@/lib/github/audit";
 import { fetchGitHubSnapshot } from "@/lib/github/client";
+import { generateProfileReadme, type GeneratedReadme } from "@/lib/github/readme";
 import { GitHubFetchError, parseGitHubUsername, type GhFetchFailure } from "@/lib/github/types";
+import { getLatestResume, getProfile } from "@/lib/profile/store";
+import { coerceParsedResume } from "@/lib/resume/types";
 
 import { AuditPanel } from "./AuditPanel";
+import { ReadmeBuilder } from "./ReadmeBuilder";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +67,10 @@ export default async function GitHubPage({
   const typed = (raw ?? "").trim();
   const username = typed ? parseGitHubUsername(typed) : null;
 
-  let audit = null;
+  const user = await getSessionUser();
+
+  let audit: GitHubAudit | null = null;
+  let readme: GeneratedReadme | null = null;
   let failure: GhFetchFailure | null = null;
 
   if (typed) {
@@ -70,7 +78,21 @@ export default async function GitHubPage({
       failure = { kind: "invalid_username" };
     } else {
       try {
-        audit = auditGitHub(await fetchGitHubSnapshot(username));
+        const snapshot = await fetchGitHubSnapshot(username);
+        audit = auditGitHub(snapshot);
+
+        // Signed in, the README is filled from the profile and resume as well.
+        // Signed out it is thinner, not broken — every gap is a visible slot.
+        const [profile, storedResume] = user
+          ? await Promise.all([getProfile(user.id), getLatestResume(user.id)])
+          : [null, null];
+
+        readme = generateProfileReadme({
+          snapshot,
+          profile,
+          resume: storedResume ? coerceParsedResume(storedResume.parsed) : null,
+          accountEmail: user?.email ?? null,
+        });
       } catch (err) {
         failure =
           err instanceof GitHubFetchError
@@ -161,6 +183,10 @@ export default async function GitHubPage({
           </div>
 
           <AuditPanel audit={audit} />
+
+          {readme && (
+            <ReadmeBuilder readme={readme} username={audit.username} signedIn={Boolean(user)} />
+          )}
         </>
       )}
 
