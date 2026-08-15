@@ -288,6 +288,14 @@ export async function getFeed(
   filters: FeedFilters = {},
 ): Promise<FeedResult> {
   const conditions = [];
+  /*
+   * Hidden rows are gone from the feed unconditionally — `includeClosed` does
+   * not bring them back. "Show closed" means "show me things that ended",
+   * which is useful history; hidden means a person looked at this row and
+   * decided it should not be in front of a student at all, and there is no
+   * filter that should override that.
+   */
+  conditions.push(isNull(postings.hiddenAt));
   if (!filters.includeClosed) conditions.push(isNull(postings.closedAt));
   if (filters.term) conditions.push(eq(postings.term, filters.term));
   if (filters.remoteOnly) conditions.push(eq(postings.isRemote, true));
@@ -391,7 +399,10 @@ export async function getPosting(id: string, profile: ScoreProfile): Promise<Fee
     .select(FEED_SELECT)
     .from(postings)
     .leftJoin(organizations, eq(postings.orgId, organizations.id))
-    .where(eq(postings.id, id));
+    // A hidden row 404s rather than rendering. Removing it from the feed while
+    // leaving the direct link live would mean a saved bookmark or an old
+    // reminder email still walks a student into the listing we took down.
+    .where(and(eq(postings.id, id), isNull(postings.hiddenAt)));
 
   return row ? buildFeedItem(profile, row, new Date()) : null;
 }

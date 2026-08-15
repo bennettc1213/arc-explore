@@ -210,6 +210,29 @@ export const postings = pgTable(
     /** Consecutive hard-dead observations. Reset to 0 by any non-dead answer. */
     urlDeadStrikes: integer("url_dead_strikes").notNull().default(0),
 
+    /* --- human curation --- */
+    /**
+     * Suppressed from the feed by a person.
+     *
+     * Deliberately not a "not yet approved" gate. Every row here is polled from
+     * an employer's own board and the product's claim is "confirmed live 5h
+     * ago" — a row sitting in a queue waiting for a human cannot make that
+     * claim, and gating 3,765 existing rows behind review would empty the feed
+     * to zero. So the default is visible, and this is the override: a person
+     * looked at a specific row and took it down.
+     */
+    hiddenAt: timestamp("hidden_at", { withTimezone: true }),
+    /** Why, in the reviewer's words. Shown in the admin queue, never publicly. */
+    hiddenReason: text("hidden_reason"),
+    /**
+     * A person looked at this and left it up.
+     *
+     * What takes a row *out* of the triage queue without hiding it. Without it
+     * every flagged row would reappear forever and the queue would stop being
+     * a queue.
+     */
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -556,4 +579,62 @@ export const ingestRuns = pgTable(
     detail: jsonb("detail"),
   },
   (t) => [index("ingest_run_started_idx").on(t.startedAt)],
+);
+
+/* ------------------------------------------------------------------ *
+ * Listing reports — the one signal that comes from a person
+ * ------------------------------------------------------------------ */
+
+/**
+ * Why a student is reporting a listing.
+ *
+ * Ordered by how much a human is needed. The first two are things the link
+ * checker and the ATS poll can eventually catch on their own; the last three
+ * are things no automated check will ever see, and they are the reason this
+ * feature exists at all. `asks_for_payment` in particular is the scholarship
+ * scam signature — a legitimate award never charges an application fee — and
+ * it is the one report worth acting on immediately.
+ */
+export const REPORT_REASONS = [
+  "dead_link",
+  "already_closed",
+  "wrong_details",
+  "asks_for_payment",
+  "not_real",
+  "other",
+] as const;
+
+export type ReportReason = (typeof REPORT_REASONS)[number];
+
+export const listingReports = pgTable(
+  "listing_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postingId: uuid("posting_id")
+      .notNull()
+      .references(() => postings.id, { onDelete: "cascade" }),
+    /**
+     * Set null rather than cascaded when the reporter deletes their account.
+     *
+     * The report is a fact about the *listing*, and it stays useful after the
+     * person who filed it is gone. Cascading would let a listing quietly
+     * un-report itself, which is the wrong direction for a trust signal.
+     */
+    userId: uuid("user_id").references(() => profiles.id, { onDelete: "set null" }),
+    reason: text("reason").$type<ReportReason>().notNull(),
+    /** Optional free text. Capped in the schema layer, not here. */
+    detail: text("detail"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Set when a reviewer has dealt with it, either way. */
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    /** What the reviewer decided, in their words. */
+    resolution: text("resolution"),
+  },
+  (t) => [
+    // One report per person per listing. Someone who feels strongly can write
+    // a longer detail; they cannot file the same complaint fifty times.
+    uniqueIndex("listing_report_user_posting_unique").on(t.userId, t.postingId),
+    index("listing_report_open_idx").on(t.resolvedAt, t.createdAt),
+    index("listing_report_posting_idx").on(t.postingId),
+  ],
 );

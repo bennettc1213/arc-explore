@@ -16,6 +16,10 @@ for goes here in the same commit. Say so at the end of the session that adds it.
 These are not code problems. Each one is a key, a credit balance, or a decision
 only you can make, and the feature on the other side of it is already written.
 
+- [ ] **`ADMIN_EMAILS` is set locally but not in production.** `/admin` fails
+  closed, so on Vercel it currently 404s for everyone including you. Add
+  `ADMIN_EMAILS=bennettch1213@gmail.com` as a Vercel env var when you deploy.
+  It was added to local `.env` this session (gitignored, as it should be).
 - [ ] **`GITHUB_TOKEN` is not set.** The GitHub audit works without one, but
   unauthenticated GitHub allows **60 requests/hour per IP** and a hosted deploy
   shares one IP across every visitor. An audit costs up to 9 requests, so the
@@ -92,6 +96,13 @@ closed out and is the largest untested surface in the project.
 - [ ] `/linkedin` signed in — the builder filling from profile + resume.
 - [ ] Saving a profile and confirming `github_username` / `linkedin_url`
   round-trip through the form.
+- [ ] **`/admin` with a real admin session.** The page was rendered against
+  real data by temporarily stubbing `requireAdmin`, and the guard was verified
+  to 404 both with and without `ADMIN_EMAILS` set — but the two have never been
+  exercised together. The hide / unhide / resolve actions have never been
+  clicked.
+- [ ] **Filing a report end to end.** The validation is tested and the queue
+  renders seeded rows, but no report has been submitted through the form.
 - [ ] **Account deletion.** Never run, deliberately — the only way to test it is
   to destroy a real account. Verify on a throwaway account before anyone else
   has one: confirm all seven cascades fire, that `auth.users` is gone, and that
@@ -109,13 +120,15 @@ Things that are currently true but should not stay true.
   the upload form's "we keep only the structured result — not the file" was
   **false for `.txt`/`.md` uploads** (fixed in the same commit), and a policy
   promising deletion needed a deletion path, so `deleteAccount` was built.
-- [ ] **No "report this listing" button.** Phase 05.
+- [x] **No "report this listing" button.** Fixed — six reasons, sign-in
+  required, `asks_for_payment` sorts to the top of the admin queue.
 - [x] **No HTTP dead-link check on apply URLs.** Fixed — `npm run check:links`
   plus a twice-daily workflow. Flags, never closes. The first real run found
   2 of 400 answering 403, both scholarships.com behind a WAF and alive, which
   is exactly why 403 is treated as no information.
-- [ ] **No web admin view.** CLI only (`npm run ingest:status`). Phase 05 wants
-  a curation dashboard before listings go live.
+- [x] **No web admin view.** Fixed — `/admin`, a triage queue rather than a
+  review gate (see the roadmap line for why a gate is the wrong mechanism for
+  a live-polled corpus). Fails closed on `ADMIN_EMAILS`.
 - [ ] **USAJobs is `periodic_check`, not `live_polled`.** Correct as written —
   it runs daily in `ingest-daily`. Moving the step to `ingest-fast` is what
   would earn the stronger "confirmed live" claim.
@@ -135,9 +148,9 @@ of several other finished features. If you could not find it, no student will.
 - [ ] **Surface what is already built** from the feed, the tracker and the
   profile: cover letter builder, application packet, resume critique engine,
   keyword-gap view, deadline reminders.
-- [ ] **The nav now carries five links** (github, linkedin, tracker, resume,
-  profile) and will not take a sixth. Needs grouping or a menu before the next
-  page lands.
+- [ ] **The nav is full.** Six links for an admin (github, linkedin, tracker,
+  resume, profile, admin), five for everyone else. It will not take another.
+  Needs grouping or a menu before the next page lands.
 
 ---
 

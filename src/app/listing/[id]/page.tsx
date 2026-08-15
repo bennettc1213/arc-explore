@@ -2,11 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { CoverLetterEditor } from "@/components/CoverLetterEditor";
+import { ReportListing } from "@/components/ReportListing";
 import { TrackButton } from "@/components/TrackButton";
 import { getSessionUser } from "@/lib/auth";
 import { getCoverLetter } from "@/lib/cover-letter/store";
 import { getPosting } from "@/lib/feed";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
+import { hasReported } from "@/lib/reports/store";
 import { toScoreProfile } from "@/lib/profile/types";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 
@@ -114,7 +116,9 @@ export default async function ListingPage({
   const item = await getPosting(id, profile);
   if (!item) notFound();
 
-  const letter = user ? await getCoverLetter(user.id, id) : null;
+  const [letter, alreadyReported] = user
+    ? await Promise.all([getCoverLetter(user.id, id), hasReported(user.id, id)])
+    : [null, false];
 
   const closed = Boolean(item.closedAt);
   const blocked = item.fit.blocked;
@@ -333,7 +337,20 @@ export default async function ListingPage({
           )}
         </section>
 
-        <footer className="mono print-hide" style={{ marginTop: 48, color: "var(--faint-readable)" }}>
+        <section className="print-hide" style={{ marginTop: 40 }}>
+          {user ? (
+            <ReportListing postingId={item.id} alreadyReported={alreadyReported} />
+          ) : (
+            <span className="mono" style={{ color: "var(--faint-readable)" }}>
+              <Link href={`/login?next=/listing/${item.id}`} style={{ color: "var(--accent)" }}>
+                sign in
+              </Link>{" "}
+              to report a problem with this listing
+            </span>
+          )}
+        </section>
+
+        <footer className="mono print-hide" style={{ marginTop: 32, color: "var(--faint-readable)" }}>
           fit and timing are explainable heuristics, not win probabilities. we do not have
           outcome data yet, so we do not pretend to predict odds.
         </footer>

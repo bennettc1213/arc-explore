@@ -1,11 +1,14 @@
 import Link from "next/link";
 
+import { viewerIsAdmin } from "@/lib/admin/auth";
 import { getSessionUser } from "@/lib/auth";
 
 import { Mascot } from "./Mascot";
 
 export async function Nav() {
   const user = await getSessionUser();
+  // getSessionUser is React-cached, so this costs no extra round trip.
+  const isAdmin = await viewerIsAdmin();
 
   return (
     <header
@@ -46,6 +49,11 @@ export async function Nav() {
               <Link href="/profile" className="mono chrome press" style={{ color: "var(--accent)" }}>
                 profile
               </Link>
+              {isAdmin && (
+                <Link href="/admin" className="mono chrome press" style={{ color: "var(--accent-lite)" }}>
+                  admin
+                </Link>
+              )}
             </>
           ) : (
             <Link href="/login" className="mono chrome press" style={{ color: "var(--accent)" }}>
