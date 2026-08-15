@@ -442,6 +442,92 @@ export async function getFeedStats(kind?: PostingKind | null): Promise<FeedStats
   return row;
 }
 
+/**
+ * How many open postings each blank profile field would actually affect.
+ *
+ * Lives here rather than in `profile/store.ts` because it is a corpus
+ * statistic, and corpus statistics are this module's job — `getFeedStats` is
+ * its neighbour for the same reason.
+ *
+ * Four of the five counts are pure SQL over `postings` and cover internships,
+ * since those four dimensions belong to `scoreFit` alone.
+ *
+ * THE FIFTH IS A SECOND QUERY, AND IT HAS TO BE. Field coverage is derived by
+ * the taxonomy regexes, which cannot be restated in SQL without creating the
+ * second copy the category filter already refuses to make — so the rows are
+ * fetched and classified in memory, exactly as `getFeed` does on every render.
+ * The alternative was to leave that item uncounted, and the first live run
+ * showed why that fails: with no number it sorted last, so a brand-new profile
+ * was told to add preferred locations before it was told to state a major.
+ * Ranking around a missing measurement produced worse advice than measuring.
+ */
+export interface CompletionCorpusCounts {
+  statesWorkAuth: number;
+  statesTerm: number;
+  statesLocation: number;
+  namesSkills: number;
+  statesField: number;
+}
+
+/**
+ * A short in-process memo, because this measured 594ms against the live corpus
+ * and it is the same answer for every visitor.
+ *
+ * A plain module-level cache rather than a framework caching API: the value is
+ * a pure corpus statistic with no per-user component, it changes at most every
+ * 20 minutes (the `ingest-fast` cadence), and a completion meter reading a
+ * five-minute-old count is not wrong in any way a student could detect. Per
+ * instance rather than shared, which is the right trade for a stale-tolerant
+ * number — a cold instance pays once.
+ */
+const CORPUS_TTL_MS = 5 * 60_000;
+let corpusMemo: { at: number; value: CompletionCorpusCounts } | null = null;
+
+export async function getCompletionCorpus(): Promise<CompletionCorpusCounts> {
+  if (corpusMemo && Date.now() - corpusMemo.at < CORPUS_TTL_MS) return corpusMemo.value;
+
+  const openInternship = sql`${postings.kind} = 'internship' and ${postings.closedAt} is null and ${postings.hiddenAt} is null`;
+
+  const [counts, fieldRows] = await Promise.all([
+    db
+      .select({
+        statesWorkAuth: sql<number>`count(*) filter (where ${openInternship} and ${postings.workAuth} is not null)::int`,
+        statesTerm: sql<number>`count(*) filter (where ${openInternship} and ${postings.term} is not null)::int`,
+        // Non-remote only: a remote role already scores on location without a
+        // stated preference, so counting it would overstate what this buys.
+        statesLocation: sql<number>`count(*) filter (where ${openInternship} and ${postings.isRemote} = false and array_length(${postings.locations}, 1) > 0)::int`,
+        namesSkills: sql<number>`count(*) filter (where ${openInternship} and array_length(${postings.skills}, 1) > 0)::int`,
+      })
+      .from(postings),
+    // Both kinds: field is the one completion item a scholarship score reads.
+    db
+      .select({
+        kind: postings.kind,
+        title: postings.title,
+        sponsorName: postings.sponsorName,
+        eligibility: postings.eligibility,
+      })
+      .from(postings)
+      .where(and(isNull(postings.closedAt), isNull(postings.hiddenAt))),
+  ]);
+
+  const statesField = fieldRows.reduce((n, r) => {
+    const fields =
+      r.kind === "scholarship"
+        ? scholarshipFields({
+            title: r.title,
+            sponsorName: r.sponsorName,
+            eligibility: criteriaFrom(r.eligibility),
+          })
+        : fieldsForPosting({ title: r.title });
+    return fields.length > 0 ? n + 1 : n;
+  }, 0);
+
+  const value = { ...counts[0], statesField };
+  corpusMemo = { at: Date.now(), value };
+  return value;
+}
+
 /** Distinct terms present in the corpus, for the filter control. */
 export async function getAvailableTerms(): Promise<string[]> {
   const rows = await db

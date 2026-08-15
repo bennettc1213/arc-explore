@@ -53,16 +53,20 @@ only you can make, and the feature on the other side of it is already written.
   (18), trades (16) — and 1,450 state no subject anywhere. Adding keys widens
   `INTEREST_OPTIONS`, the profile intake and both Fit Scores. It is a product
   decision about who this is for, not a parser change.
-- [ ] **Gamification: points for *applying* is the wrong incentive — needs your
-  call.** The Phase 06 line says "points for profile completion, applying, and
-  referrals". Profile completion is fine and worth building: it is a real
-  readiness signal and the score is already computable. **Points for applying
-  rewards volume**, which this project has already decided against on the
-  record — the auto-submit refusal (Phase 05) cites poor mass-apply response
-  rates and employers filtering for exactly that behaviour. Paying students in
-  points to do more of it contradicts that in the same product. Referrals need
-  a referral system that does not exist. Recommendation: build the completion
-  meter, drop the applying points, defer referrals.
+- [~] **Gamification: the completion meter is built; applying points and
+  referrals are not — say if you disagree.** The Phase 06 line says "points for
+  profile completion, applying, and referrals". The recommendation here was
+  build the completion meter, drop the applying points, defer referrals, and
+  that is what shipped. **Points for applying rewards volume**, which this
+  project decided against on the record — the auto-submit refusal (Phase 05)
+  cites poor mass-apply response rates and employers filtering for exactly that
+  behaviour, so paying students in points to do more of it contradicts that in
+  the same product. **Referrals need a referral system** that does not exist,
+  and building one before there are users to refer is Phase 07 work at the
+  earliest. Completion also ships as *coverage* rather than as points, for the
+  reason the GitHub audit gives about the contribution graph: a number you can
+  raise without your outcomes changing is not worth showing. Reopen this if you
+  want either of the other two anyway.
 - [ ] **Peer reviews need users, and moderation — needs your call.** Phase 06
   line. With no students on the platform this is a black hole worse than the
   reports queue: reports at least feed a triage list one operator works, while
@@ -211,9 +215,13 @@ The cover letter builder shipped in `cbb92f5` and **its own owner did not know
 it existed.** That is a product failure, not an oversight, and the same is true
 of several other finished features. If you could not find it, no student will.
 
-- [ ] **Surface what is already built** from the feed, the tracker and the
+- [~] **Surface what is already built** from the feed, the tracker and the
   profile: cover letter builder, application packet, resume critique engine,
-  keyword-gap view, deadline reminders.
+  keyword-gap view, deadline reminders. _Partly done: the completion panel on
+  `/profile` now routes to `/resume` and the intake form with a reason attached
+  to each, and the email panel below it names the reminders and the digest. The
+  cover letter builder, the application packet and the keyword-gap view are
+  still findable only by already knowing they exist._
 - [ ] **The nav is over-full — fix this before the next page lands.** Seven
   links for an admin (github, linkedin, essay, tracker, resume, profile,
   admin), six for everyone else. `/essay` was added anyway this session rather
@@ -237,9 +245,11 @@ reason, not an omission.
   request: fills the real Greenhouse/Lever/Workday form **in the student's own
   browser**, with them reviewing and clicking submit. Same time saved, human
   still on the attestations. First thing that would live outside this repo.
-- [ ] **Peer reviews and gamification** — the two Phase 06 items still open,
-  both parked on a decision above rather than on code. Saved-search alerts, the
-  comparison view, the essay reviewer and the weekly digest have all shipped.
+- [ ] **Peer reviews** — the last Phase 06 item still open, deferred to Phase
+  07 on the recommendation in section 1: it needs users and a moderation rule
+  before the first review is written. Everything else in Phase 06 has shipped.
+- [ ] **Points for applying, and referrals** — refused and deferred
+  respectively. Both reasons are in the gamification entry in section 1.
 
 ---
 

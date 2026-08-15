@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { signOut } from "@/app/auth/actions";
 import { requireUser } from "@/lib/auth";
+import { getCompletionCorpus } from "@/lib/feed";
+import { profileCompletion } from "@/lib/profile/completion";
 import { routePresence } from "@/lib/profile/routing";
 import { getEmailPrefs, getLatestResume, getProfile } from "@/lib/profile/store";
 import { critiqueResume } from "@/lib/resume/critique";
@@ -9,6 +11,7 @@ import { coerceParsedResume } from "@/lib/resume/types";
 import { resumeCompetitiveness } from "@/lib/score/competitiveness";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 
+import { Completion } from "./Completion";
 import { DeleteAccount } from "./DeleteAccount";
 import { EmailPrefs } from "./EmailPrefs";
 import { PresencePrompt } from "./PresencePrompt";
@@ -19,10 +22,11 @@ export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
   const user = await requireUser("/profile");
-  const [profile, resume, emailPrefs] = await Promise.all([
+  const [profile, resume, emailPrefs, corpus] = await Promise.all([
     getProfile(user.id),
     getLatestResume(user.id),
     getEmailPrefs(user.id),
+    getCompletionCorpus(),
   ]);
 
   const resumeSkills = resume ? skillsFromParsedResume(resume.parsed) : [];
@@ -31,6 +35,7 @@ export default async function ProfilePage() {
   // nothing to recompute and always reflects the current checks.
   const critique = resume ? critiqueResume(coerceParsedResume(resume.parsed)) : null;
   const routing = routePresence(profile, resumeSkills);
+  const completion = profileCompletion(profile, resumeSkills, corpus);
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 880 }}>
@@ -60,6 +65,8 @@ export default async function ProfilePage() {
           </form>
         </div>
       </div>
+
+      <Completion completion={completion} />
 
       {competitiveness && competitiveness.scoreablePostings > 0 && (
         <section

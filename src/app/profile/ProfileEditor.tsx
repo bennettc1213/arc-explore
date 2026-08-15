@@ -166,7 +166,14 @@ export function ProfileEditor({
       </section>
 
       {/* --------------------------------------------------------- profile */}
-      <form action={saveAction} style={{ border: "1px solid var(--line-strong)", padding: 22 }}>
+      {/* `id` is the target of the completion panel's call to action — it
+          scrolls to the form rather than to the top of a page the reader is
+          already looking at. */}
+      <form
+        id="intake"
+        action={saveAction}
+        style={{ border: "1px solid var(--line-strong)", padding: 22, scrollMarginTop: 24 }}
+      >
         <div className="eyebrow chrome" style={{ marginBottom: 18 }}>
           your details
         </div>
