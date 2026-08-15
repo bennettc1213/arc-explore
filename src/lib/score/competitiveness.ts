@@ -53,6 +53,25 @@ interface CountRow extends Record<string, unknown> {
   n: string | number;
 }
 
+/**
+ * The skills open internships ask for most, regardless of who is asking.
+ *
+ * Exists so the LinkedIn checker can compare a pasted skills list against real
+ * demand **without the pasted text ever leaving the browser**. The alternative —
+ * posting their profile text to a server to be compared — would give the same
+ * answer and quietly break the one property that makes a paste-in tool worth
+ * trusting. So the corpus side is computed here and handed down; the comparison
+ * happens on the client.
+ */
+export async function topDemandedSkills(limit = 12): Promise<Array<{ skill: string; postings: number }>> {
+  const rows = await db.execute<CountRow>(sql`
+    select s as skill, count(*)::int as n
+    from postings, unnest(skills) as s
+    where closed_at is null and kind = 'internship'
+    group by s order by n desc limit ${limit}`);
+  return rows.map((r) => ({ skill: r.skill, postings: Number(r.n) }));
+}
+
 export async function resumeCompetitiveness(
   resumeSkills: readonly string[],
 ): Promise<Competitiveness | null> {

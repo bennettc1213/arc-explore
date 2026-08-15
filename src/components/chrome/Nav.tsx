@@ -31,6 +31,9 @@ export async function Nav() {
           <Link href="/github" className="mono chrome press" style={{ color: "var(--accent)" }}>
             github
           </Link>
+          <Link href="/linkedin" className="mono chrome press" style={{ color: "var(--accent)" }}>
+            linkedin
+          </Link>
 
           {user ? (
             <>
