@@ -159,7 +159,14 @@ Notes in _italics_ record what was actually built and where it differs from the 
 ## Phase 06 — Engagement & Differentiation
 *What makes someone come back a second time.*
 
-- [ ] Build an essay/SOP reviewer tool (structured feedback: clarity, relevance, specificity)
+- [x] Build an essay/SOP reviewer tool (structured feedback: clarity, relevance, specificity)
+  _`/essay`. Four dimensions: answers the prompt (30), specific rather than general (25), clarity (25), structure and length (20). Deterministic, and **it runs entirely in the browser** — pure functions, no endpoint that takes an essay. That is a stronger claim here than it was for the LinkedIn checker: a scholarship essay is frequently about the hardest thing that has happened to someone, and sending it to an API to be graded is something we would have to justify. We cannot justify it for feedback we can produce without it._
+
+  _**Prompt coverage is the differentiated check and the reason the tool exists.** The most common way a scholarship essay fails is not being bad — it is being a *good essay about something else*, usually written for a different application and lightly edited. That is invisible on a reread of your own work and obvious to a reader. So the student pastes the prompt, and we report which of its terms appear nowhere in the essay. Tested against a deliberately weak draft: an essay about "helping others" submitted to a leadership prompt correctly flagged **leadership** and **organization** as missing. **The honest limit is printed beside it** — we match words, not meaning, so an essay covering leadership entirely through the word "captain" reads as a miss; a gap is reported as worth two seconds of checking, never as proof._
+
+  _Two bugs my own tests caught. `stem` did not collapse "challenge" and "challenges", so a prompt asking about challenges would have reported a gap against an essay using the singular — reporting a gap a student does not have is the one error this check cannot make, since it sends them rewriting a section that was already fine. And `isConcrete` counted only digits, so "I rewrote the form four times" read as abstract; students write "three years" far more often than "3 years". **Prompt scaffolding is excluded from coverage** (`describe`, `explain`, `a time`, `for example`): an essay never needs to contain the word "describe", and one obviously silly finding at the top of the list costs trust in all the others._
+
+  _**What it refuses to score is stated on the page:** whether the essay is moving, whether the story is the right one, whether the ending lands. Those decide a scholarship essay and none of them is countable. A clean sheet means the mechanical problems are gone, not that the essay is finished — the page says to give it to one person who knows you and one who does not, and positions itself as the pass before that._
 - [ ] Add peer reviews on individual listings
 - [ ] Add saved searches with new-match alerts
 - [ ] Add light gamification — points for profile completion, applying, and referrals

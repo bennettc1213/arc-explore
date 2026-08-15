@@ -148,9 +148,12 @@ of several other finished features. If you could not find it, no student will.
 - [ ] **Surface what is already built** from the feed, the tracker and the
   profile: cover letter builder, application packet, resume critique engine,
   keyword-gap view, deadline reminders.
-- [ ] **The nav is full.** Six links for an admin (github, linkedin, tracker,
-  resume, profile, admin), five for everyone else. It will not take another.
-  Needs grouping or a menu before the next page lands.
+- [ ] **The nav is over-full — fix this before the next page lands.** Seven
+  links for an admin (github, linkedin, essay, tracker, resume, profile,
+  admin), six for everyone else. `/essay` was added anyway this session rather
+  than shipping a page nobody could find, which makes this the blocking item it
+  was warned about. The three paste-in tools (github, linkedin, essay) share a
+  shape and should collapse into one "tools" menu.
 
 ---
 
