@@ -59,7 +59,11 @@ only you can make, and the feature on the other side of it is already written.
   consecutive scrapes. A dropped row **closes a live scholarship** until the
   next run picks it up again. The real fix is requiring absence from **two
   consecutive scrapes** before setting `closed_at` — not another sort key.
-  Applies to every scholarship source, not just UNL.
+  Applies to every scholarship source, not just UNL. **There is now a working
+  precedent to copy:** `lib/ingest/linkcheck.ts` implements exactly this
+  two-observation rule (`urlDeadStrikes`, cleared by any contrary evidence,
+  timestamp stamped once). The scholarship persist path should do the same
+  with a `missing_strikes` column instead of closing on one absence.
 - [ ] **`postings.category` is NULL on all 3,765 rows**, and
   `organizations.vertical` is equally empty. Both are dead columns. The
   category filter was deliberately built on the derived field taxonomy instead.
@@ -106,10 +110,10 @@ Things that are currently true but should not stay true.
   **false for `.txt`/`.md` uploads** (fixed in the same commit), and a policy
   promising deletion needed a deletion path, so `deleteAccount` was built.
 - [ ] **No "report this listing" button.** Phase 05.
-- [ ] **No HTTP dead-link check on apply URLs.** We detect disappearance from
-  an employer's ATS within ~20 min, which is stronger than a link check — but
-  the apply URL itself is never requested, so a 404 on a live-looking row is
-  invisible.
+- [x] **No HTTP dead-link check on apply URLs.** Fixed — `npm run check:links`
+  plus a twice-daily workflow. Flags, never closes. The first real run found
+  2 of 400 answering 403, both scholarships.com behind a WAF and alive, which
+  is exactly why 403 is treated as no information.
 - [ ] **No web admin view.** CLI only (`npm run ingest:status`). Phase 05 wants
   a curation dashboard before listings go live.
 - [ ] **USAJobs is `periodic_check`, not `live_polled`.** Correct as written —
@@ -158,9 +162,13 @@ reason, not an omission.
 
 ## 7. Housekeeping
 
-- [ ] **13 commits are local and unpushed.** `master` is ahead of
-  `origin/master` by 13. Everything through Phase 04 is committed but nothing
-  since `49f1981` has left this machine.
+- [ ] **`GITHUB_TOKEN` would also help the link checker's neighbours.** Not
+  required — the link checker does not call GitHub — but noted so the two
+  rate-limit stories are not confused with each other.
+
+- [ ] **Nothing has been pushed.** `master` is well ahead of `origin/master` —
+  everything since `49f1981` is committed but has never left this machine.
+  Check with `git status -sb` before assuming a number.
 - [ ] **No real students have used any of this.** Phase 02's end-to-end line is
   `[~]` for that reason: automated browser walkthroughs pass, no human has run
   the loop. Phase 07 is where that changes.
