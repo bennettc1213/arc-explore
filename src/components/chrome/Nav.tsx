@@ -25,6 +25,13 @@ export async function Nav() {
             verified live, not scraped from memory
           </span>
 
+          {/* Signed out too: the audit reads only public data and needs no account,
+              and hiding it behind a login would gate the one tool here that runs
+              on genuinely fetched evidence. */}
+          <Link href="/github" className="mono chrome press" style={{ color: "var(--accent)" }}>
+            github
+          </Link>
+
           {user ? (
             <>
               <Link href="/tracker" className="mono chrome press" style={{ color: "var(--accent)" }}>
