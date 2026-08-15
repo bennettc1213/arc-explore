@@ -50,6 +50,22 @@ only you can make, and the feature on the other side of it is already written.
   (18), trades (16) — and 1,450 state no subject anywhere. Adding keys widens
   `INTEREST_OPTIONS`, the profile intake and both Fit Scores. It is a product
   decision about who this is for, not a parser change.
+- [ ] **Gamification: points for *applying* is the wrong incentive — needs your
+  call.** The Phase 06 line says "points for profile completion, applying, and
+  referrals". Profile completion is fine and worth building: it is a real
+  readiness signal and the score is already computable. **Points for applying
+  rewards volume**, which this project has already decided against on the
+  record — the auto-submit refusal (Phase 05) cites poor mass-apply response
+  rates and employers filtering for exactly that behaviour. Paying students in
+  points to do more of it contradicts that in the same product. Referrals need
+  a referral system that does not exist. Recommendation: build the completion
+  meter, drop the applying points, defer referrals.
+- [ ] **Peer reviews need users, and moderation — needs your call.** Phase 06
+  line. With no students on the platform this is a black hole worse than the
+  reports queue: reports at least feed a triage list one operator works, while
+  peer reviews are public content that needs a moderation path before the first
+  one is written. Recommendation: defer to Phase 07, after the beta group
+  exists, and decide the moderation rule before building it.
 - [ ] **MCP servers need authorization** (environment, not this codebase):
   **claude.ai** and **Thumbtack**. claude.ai connectors go through claude.ai
   connector settings; others through `/mcp` in an interactive session. Nothing
