@@ -2,12 +2,14 @@ import Link from "next/link";
 
 import { signOut } from "@/app/auth/actions";
 import { requireUser } from "@/lib/auth";
+import { routePresence } from "@/lib/profile/routing";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { critiqueResume } from "@/lib/resume/critique";
 import { coerceParsedResume } from "@/lib/resume/types";
 import { resumeCompetitiveness } from "@/lib/score/competitiveness";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 
+import { PresencePrompt } from "./PresencePrompt";
 import { ProfileEditor } from "./ProfileEditor";
 import { ResumeCritique } from "./ResumeCritique";
 
@@ -25,6 +27,7 @@ export default async function ProfilePage() {
   // Pure function over the stored parse — no model call, no query, so it costs
   // nothing to recompute and always reflects the current checks.
   const critique = resume ? critiqueResume(coerceParsedResume(resume.parsed)) : null;
+  const routing = routePresence(profile, resumeSkills);
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 880 }}>
@@ -127,6 +130,14 @@ export default async function ProfilePage() {
           </p>
         </section>
       )}
+
+      <PresencePrompt
+        routing={routing}
+        linked={{
+          github: profile?.githubUsername ?? null,
+          linkedin: profile?.linkedinUrl ?? null,
+        }}
+      />
 
       {critique && <ResumeCritique critique={critique} />}
 

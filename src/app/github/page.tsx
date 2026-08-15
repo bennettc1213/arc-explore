@@ -64,10 +64,19 @@ export default async function GitHubPage({
 }) {
   const sp = await searchParams;
   const raw = Array.isArray(sp.u) ? sp.u[0] : sp.u;
-  const typed = (raw ?? "").trim();
-  const username = typed ? parseGitHubUsername(typed) : null;
 
   const user = await getSessionUser();
+  const storedProfile = user ? await getProfile(user.id) : null;
+
+  /*
+   * The saved handle stands in when the URL does not carry one, so a signed-in
+   * student who has linked their profile lands on their own audit instead of an
+   * empty form. An explicit `?u=` still wins — the page has to stay usable for
+   * looking at somebody else's profile, which is how most people will first try
+   * it.
+   */
+  const typed = (raw ?? storedProfile?.githubUsername ?? "").trim();
+  const username = typed ? parseGitHubUsername(typed) : null;
 
   let audit: GitHubAudit | null = null;
   let readme: GeneratedReadme | null = null;
@@ -83,13 +92,11 @@ export default async function GitHubPage({
 
         // Signed in, the README is filled from the profile and resume as well.
         // Signed out it is thinner, not broken — every gap is a visible slot.
-        const [profile, storedResume] = user
-          ? await Promise.all([getProfile(user.id), getLatestResume(user.id)])
-          : [null, null];
+        const storedResume = user ? await getLatestResume(user.id) : null;
 
         readme = generateProfileReadme({
           snapshot,
-          profile,
+          profile: storedProfile,
           resume: storedResume ? coerceParsedResume(storedResume.parsed) : null,
           accountEmail: user?.email ?? null,
         });

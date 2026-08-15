@@ -248,6 +248,17 @@ export const profiles = pgTable("profiles", {
    *  would silently bury inventory the user never said they didn't want. */
   openToRemote: boolean("open_to_remote").notNull().default(true),
   portfolioUrl: text("portfolio_url"),
+  /**
+   * The GitHub handle, not a URL — it is what every API path needs, and storing
+   * the URL would mean re-parsing it on every audit.
+   *
+   * Separate from `portfolio_url` on purpose: the resume parser deliberately
+   * picks a *non-platform* link for that field, so a GitHub URL would never
+   * land there and overwriting it with one would lose the personal site.
+   */
+  githubUsername: text("github_username"),
+  /** Stored so a student can get back to it. Never fetched — see CLAUDE.md. */
+  linkedinUrl: text("linkedin_url"),
   /** Deadline reminder emails. On by default — a student who saved something
    *  with a deadline asked to be reminded of it in every sense but the
    *  literal one — and switched off by the unsubscribe link on every send. */

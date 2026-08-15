@@ -30,6 +30,8 @@ function toUserProfile(row: typeof profiles.$inferSelect): UserProfile {
     targetLocations: row.targetLocations,
     openToRemote: row.openToRemote,
     portfolioUrl: row.portfolioUrl,
+    githubUsername: row.githubUsername,
+    linkedinUrl: row.linkedinUrl,
   };
 }
 
@@ -75,6 +77,8 @@ export async function saveProfile(userId: string, input: ProfileInput): Promise<
     targetLocations: input.targetLocations,
     openToRemote: input.openToRemote,
     portfolioUrl: input.portfolioUrl,
+    githubUsername: input.githubUsername,
+    linkedinUrl: input.linkedinUrl,
     updatedAt: new Date(),
   };
 

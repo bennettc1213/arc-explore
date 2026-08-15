@@ -6,6 +6,8 @@ import { EMPTY_PARSED_RESUME, type ParsedResume } from "../resume/types";
 import type { UserProfile } from "../profile/types";
 
 const profile = (over: Partial<UserProfile> = {}): UserProfile => ({
+  githubUsername: null,
+  linkedinUrl: null,
   id: "u1",
   displayName: "Jordan Ellis",
   school: "University of Nevada, Reno",

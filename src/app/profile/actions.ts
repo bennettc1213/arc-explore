@@ -44,6 +44,8 @@ export async function saveProfileAction(
     targetLocations: parseLocations(String(formData.get("targetLocations") ?? "")),
     openToRemote: formData.get("openToRemote") === "1",
     portfolioUrl: String(formData.get("portfolioUrl") ?? ""),
+    githubUsername: String(formData.get("githubUsername") ?? ""),
+    linkedinUrl: String(formData.get("linkedinUrl") ?? ""),
   });
 
   if (!parsed.success) {
@@ -61,6 +63,10 @@ export async function saveProfileAction(
   // scored on the previous answers.
   revalidatePath("/");
   revalidatePath("/profile");
+  // Both read the profile: /github pre-fills the username, /linkedin builds its
+  // draft from the rest of it.
+  revalidatePath("/github");
+  revalidatePath("/linkedin");
 
   return { status: "saved" };
 }

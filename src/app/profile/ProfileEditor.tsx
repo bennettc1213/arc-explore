@@ -27,6 +27,8 @@ interface FormValues {
   targetLocations: string;
   openToRemote: boolean;
   portfolioUrl: string;
+  githubUsername: string;
+  linkedinUrl: string;
 }
 
 function toFormValues(profile: UserProfile | null): FormValues {
@@ -41,6 +43,8 @@ function toFormValues(profile: UserProfile | null): FormValues {
     targetLocations: (profile?.targetLocations ?? []).join(", "),
     openToRemote: profile?.openToRemote ?? true,
     portfolioUrl: profile?.portfolioUrl ?? "",
+    githubUsername: profile?.githubUsername ?? "",
+    linkedinUrl: profile?.linkedinUrl ?? "",
   };
 }
 
@@ -255,6 +259,36 @@ export function ProfileEditor({
               value={values.portfolioUrl}
               onChange={(e) => set("portfolioUrl", e.target.value)}
               placeholder="https://yoursite.com"
+            />
+          </Field>
+
+          <Field
+            label="github"
+            error={err("githubUsername")}
+            hint="username or profile URL — links your audit to your profile"
+          >
+            <input
+              className="field"
+              name="githubUsername"
+              value={values.githubUsername}
+              onChange={(e) => set("githubUsername", e.target.value)}
+              placeholder="octocat"
+              spellCheck={false}
+            />
+          </Field>
+
+          <Field
+            label="linkedin"
+            error={err("linkedinUrl")}
+            hint="stored so you can get back to it — we never fetch it"
+          >
+            <input
+              className="field"
+              name="linkedinUrl"
+              type="url"
+              value={values.linkedinUrl}
+              onChange={(e) => set("linkedinUrl", e.target.value)}
+              placeholder="https://linkedin.com/in/you"
             />
           </Field>
         </div>

@@ -22,6 +22,8 @@ function form(over: Record<string, unknown> = {}) {
     targetLocations: [],
     openToRemote: true,
     portfolioUrl: "",
+    githubUsername: "",
+    linkedinUrl: "",
     ...over,
   };
 }
@@ -100,6 +102,8 @@ const full: UserProfile = {
   targetLocations: ["New York"],
   openToRemote: false,
   portfolioUrl: "https://ben.dev",
+  githubUsername: "benchu",
+  linkedinUrl: "https://linkedin.com/in/benchu",
 };
 
 describe("toScoreProfile", () => {
@@ -129,7 +133,15 @@ describe("toScoreProfile", () => {
   // them reached the scorer it would be inventing a signal no employer stated.
   it("never leaks gpa, school, name or portfolio into scoring", () => {
     const scored = toScoreProfile(full) as Record<string, unknown>;
-    for (const leaked of ["gpa", "school", "displayName", "portfolioUrl", "id"]) {
+    for (const leaked of [
+      "gpa",
+      "school",
+      "displayName",
+      "portfolioUrl",
+      "githubUsername",
+      "linkedinUrl",
+      "id",
+    ]) {
       assert.equal(leaked in scored, false, `${leaked} must not reach the scorer`);
     }
   });

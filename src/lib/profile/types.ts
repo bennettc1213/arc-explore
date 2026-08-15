@@ -103,7 +103,44 @@ export const profileInputSchema = z.object({
     (v) => v === null || /^https?:\/\/\S+\.\S+/.test(v),
     { message: "portfolio should be a full URL starting with http" },
   ),
+  /**
+   * Stored as the handle, not the URL — it is what every GitHub API path needs.
+   * A pasted profile URL is accepted and reduced to the handle, because that is
+   * what students actually have to hand.
+   */
+  githubUsername: z
+    .string()
+    .trim()
+    .max(300)
+    .transform((s) => (s.length === 0 ? null : parseGitHubHandle(s)))
+    .nullable()
+    .refine((v) => v !== "", { message: "that is not a GitHub username" }),
+  /**
+   * Kept so a student can get back to their own profile from here. It is never
+   * fetched — see CLAUDE.md. Nothing in this codebase loads this URL.
+   */
+  linkedinUrl: optionalText(300).refine(
+    (v) => v === null || /^https?:\/\/(?:[a-z]{2,3}\.)?linkedin\.com\/\S+/i.test(v),
+    { message: "that should be a linkedin.com profile URL" },
+  ),
 });
+
+/**
+ * A GitHub handle out of whatever was pasted.
+ *
+ * Duplicated from `lib/github/types.ts` rather than imported: this module is
+ * the schema the whole app validates profiles against, and importing the GitHub
+ * module here would drag its types into every page that touches a profile.
+ * Returns "" for unparseable input so the refine above can reject it — null
+ * means "not stated", which is a different thing.
+ */
+function parseGitHubHandle(raw: string): string {
+  let s = raw.trim();
+  const url = s.match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/([^/?#\s]+)/i);
+  if (url) s = url[1];
+  s = s.replace(/^@/, "").replace(/\/+$/, "");
+  return /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i.test(s) ? s : "";
+}
 
 export type ProfileInput = z.infer<typeof profileInputSchema>;
 
@@ -138,6 +175,8 @@ export const EMPTY_PROFILE_INPUT: ProfileInput = {
   targetLocations: [],
   openToRemote: true,
   portfolioUrl: null,
+  githubUsername: null,
+  linkedinUrl: null,
 };
 
 /* ------------------------------------------------------------------ *
