@@ -5,7 +5,15 @@ from `scholarship-platform-roadmap.md`: the roadmap is *what to build*, this is
 *what is wrong with what exists* plus what is blocked on someone.
 
 **Update rule:** anything discovered mid-build that we deliberately did not stop
-for goes here in the same commit. Say so at the end of the session that adds it.
+for goes here in the same commit. Say so at the end of the session that adds it
+— name what you added, and say "no new entries" explicitly when there are none,
+so silence is never ambiguous. Fixing an item means editing its line to `[x]`
+in the commit that fixes it, leaving the text that describes what it was.
+
+**This file, not the roadmap, is where the remaining work is.** 49 of the
+roadmap's 64 lines are done and almost every one still open is blocked on the
+owner or needs real students. See `HANDOFF.md` for the ordered list of what to
+pick up first.
 
 **Status legend:** `[ ]` open · `[x]` fixed · `[~]` partly done.
 

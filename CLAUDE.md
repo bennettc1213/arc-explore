@@ -2,6 +2,8 @@
 
 @AGENTS.md
 
+@HANDOFF.md is the orientation document — where the project stands, what to build next, the design doctrines, and the landmines. Read it first if you are new to this repo or returning after a break.
+
 Read @scholarship-platform-roadmap.md before starting any work. It is the full phase-by-phase build plan and checklist for this project.
 
 @FIXES.md is the running list of what is broken, missing, or blocked. The roadmap is *what to build*; FIXES.md is *what is wrong with what exists*.
