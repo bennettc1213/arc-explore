@@ -313,6 +313,24 @@ export const profiles = pgTable("profiles", {
    *  literal one — and switched off by the unsubscribe link on every send. */
   deadlineRemindersEnabled: boolean("deadline_reminders_enabled").notNull().default(true),
   /**
+   * The weekly digest of new matches.
+   *
+   * On by default for the same reason reminders are: a filled-in profile is a
+   * standing statement of what someone is looking for, and the digest is the
+   * only thing here that answers it without being asked. It is gated on the
+   * profile actually saying something (`isProfileUsable`) — an empty profile
+   * produces nothing worth mailing, so the default costs a silent user nothing.
+   */
+  weeklyDigestEnabled: boolean("weekly_digest_enabled").notNull().default(true),
+  /**
+   * Watermark for the digest, exactly as `saved_searches.last_notified_at`
+   * works: new means "first seen since we last wrote to you".
+   *
+   * Defaults to now so a profile created today never receives a first digest
+   * containing the entire corpus, and moves **only after a send succeeds**.
+   */
+  lastDigestAt: timestamp("last_digest_at", { withTimezone: true }).notNull().defaultNow(),
+  /**
    * Bearer token for the unsubscribe link.
    *
    * Random per profile rather than the user id, and separate from any session:

@@ -26,12 +26,15 @@ only you can make, and the feature on the other side of it is already written.
   whole site gets ~6 audits an hour. Any token fixes it (5,000/hr) and it needs
   **no scopes** — everything we read is public. Add `GITHUB_TOKEN=` to `.env`
   and as a Vercel env var.
-- [ ] **`RESEND_API_KEY` + `REMINDER_FROM_EMAIL`.** Deadline reminders **and
-  saved-search alerts** are built and dry-run verified but deliberately inert. Needs the repo secret and
-  a **verified sender domain**. Run `npm run reminders` first — with no
-  `--send` it prints exactly what would go out. Worth knowing: 288 open
-  postings carry a future deadline, but ATS internships almost never publish
-  one, so reminders stay quiet until students save scholarships.
+- [ ] **`RESEND_API_KEY` + `REMINDER_FROM_EMAIL`.** All three email features —
+  deadline reminders, saved-search alerts and the **weekly digest** — are built
+  and dry-run verified but deliberately inert. Needs the repo secret and a
+  **verified sender domain**. Run `npm run reminders`, `npm run alerts` and
+  `npm run digest` first — with no `--send` each prints exactly what would go
+  out. Worth knowing: 288 open postings carry a future deadline, but ATS
+  internships almost never publish one, so reminders stay quiet until students
+  save scholarships. The digest is the one that will actually fire — every
+  profile with a usable profile gets one the week after it is switched on.
 - [ ] **Adzuna app id/key.** Phase 01 line is blocked, not merely unstarted —
   there is nothing to build against until one is registered. Free tier.
 - [ ] **Parse credit balance.** ScholarshipPortal's ~3,666 rows have **never
@@ -89,6 +92,51 @@ only you can make, and the feature on the other side of it is already written.
   category filter was deliberately built on the derived field taxonomy instead.
   Either backfill them or drop them — right now they are a trap for the next
   person who assumes a column with a name means something.
+- [ ] **A scholarship can score 100 with full confidence; an internship
+  essentially cannot.** Found by the first live digest dry run, which returned
+  six scholarships and zero internships for a profile stating software,
+  data/ai, product and business. It is structural: `scoreScholarshipFit` has
+  **three** dimensions and all three are routinely known, so it reaches 100 at
+  3-of-3 confidence, while `scoreFit` has **five** and `term`/`skills` are
+  routinely unstated, so a strong internship sits at 3-of-5 and `rankingScore`
+  shrinks it toward the prior. Measured that run: best scholarship rank
+  **100.0**, best internship **82.0** — of 400 new rows, no internship could
+  outrank any of the top scholarships. `rankingScore` is doing exactly what it
+  was designed to do; the gap is that "known on 3 of 3" and "known on 3 of 5"
+  are not the same confidence and the shrink cannot make them one. The digest
+  works around it by reserving `MIN_PER_KIND` slots. **The feed has the same
+  bias** and hides it only by showing everything — worth a decision on whether
+  the two scorers should be normalised to a common number of dimensions, or
+  whether cross-kind ranking should be abandoned in favour of ranking within
+  each kind.
+- [ ] **Sponsor company names are read as degree language.**
+  `scholarshipFields` feeds title + **sponsor name** + eligibility through
+  `fieldsFromDegreeLanguage`, so *who pays for* an award is treated as evidence
+  about *what you must study*. Live examples from the digest's own top picks:
+  "Mendoza Law Firm" and "Red Egg Marketing" both classified **business** — the
+  first two recommendations in the email — on the strength of the sponsor's
+  line of work alone. Neither scholarship states a field. It needs a judgement
+  rather than a patch, because the same field sometimes carries real signal:
+  "American Society of Mechanical Engineers" as sponsor genuinely does mean
+  hardware. Options are to drop sponsor from field derivation, or to exclude
+  commercial-entity names (`LLC`, `PLLC`, `Law Firm`, `Agency`, `Marketing`)
+  while keeping societies and foundations. It also lands hardest on exactly the
+  rows the scoring is meant to down-rank, since law firms and marketing
+  agencies are what sponsor content-marketing awards.
+  _Partly addressed:_ the unbounded-substring half of this **is fixed** — see
+  the boundary fix below. The remaining issue is that `\blaw\b` legitimately
+  matches "Law Firm", and the sponsor should probably not have been read at all.
+- [x] **Unbounded short words in the field taxonomy invented field matches.**
+  Fixed in `MAJOR_TO_FIELDS`. Unbounded `law` matched **"Delaware"**,
+  "Lawrence", "outlaw", "flawless" and "lawn", so every scholarship whose
+  eligibility said "must be a Delaware resident" was classified **business**;
+  `design` matched "designated"; `math` matched "aftermath"; and `materials`
+  matched the phrase "application materials", ordinary scholarship boilerplate.
+  Corpus incidence today is small (Delaware 2 rows, lawn 1), but the mechanism
+  was wrong under any reading, and a false positive is worse than an unknown —
+  unknown is dropped and labelled, an invented match is indistinguishable from
+  a real one and silently moves a row up the ranking. Tested against the exact
+  prose that produced each one.
 - [ ] **Two copies of the slot-marker regex.** `lib/github/readme.ts` and
   `lib/linkedin/build.ts` each define their own `SLOT_RE` for
   `[YOUR SPECIFIC DETAIL: …]`, and `lib/cover-letter/types.ts` has a third,
@@ -105,7 +153,9 @@ never driven end to end with a real session. This is one login away from being
 closed out and is the largest untested surface in the project.
 
 - [ ] `/resume` — the editor renders, decode logic is tested, never driven.
-- [ ] `/profile` — including the new presence prompt and the two link fields.
+- [ ] `/profile` — including the new presence prompt, the two link fields, and
+  the new email-preferences panel (its action is separate from the profile
+  form's, and that separation has never been exercised with a real session).
 - [ ] `/listing/[id]/apply` — the application packet.
 - [ ] `/github` signed in — the README generator filling from profile + resume,
   and the stored-handle fallback.
@@ -187,8 +237,9 @@ reason, not an omission.
   request: fills the real Greenhouse/Lever/Workday form **in the student's own
   browser**, with them reviewing and clicking submit. Same time saved, human
   still on the attestations. First thing that would live outside this repo.
-- [ ] **Peer reviews, gamification, saved-search alerts, comparison view,
-  weekly digest** — all Phase 06, none started.
+- [ ] **Peer reviews and gamification** — the two Phase 06 items still open,
+  both parked on a decision above rather than on code. Saved-search alerts, the
+  comparison view, the essay reviewer and the weekly digest have all shipped.
 
 ---
 

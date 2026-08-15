@@ -1,0 +1,60 @@
+####
+# The weekly digest of new matches.
+#
+# Weekly, and on a Sunday morning rather than a weekday, because this is the one
+# email here nobody asked a specific question to receive — it should land when
+# someone has time to act on it, not in the middle of a Tuesday.
+#
+# The cadence is enforced in code (`digestDue`), not by this schedule. A cron
+# that fires and a profile that is due are separate facts: a missed run, a
+# manual dispatch or a retry must not mail somebody twice in one week, and the
+# watermark on the profile is what guarantees that.
+#
+# INERT UNTIL RESEND_API_KEY IS SET. The step below runs without `--send` if the
+# secret is missing, so a repository with no key still exercises the whole path
+# weekly and prints what it would have sent, rather than silently doing nothing
+# until somebody notices.
+####
+name: digest
+
+on:
+  schedule:
+    - cron: "17 14 * * 0" # Sundays, 14:17 UTC — mid-morning US, off the hour
+  workflow_dispatch:
+    inputs:
+      send:
+        description: "actually send (unchecked = dry run)"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: send weekly digests
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REMINDER_FROM_EMAIL: ${{ secrets.REMINDER_FROM_EMAIL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+        # `--send` only when the key exists and the run asked for it. A manual
+        # dispatch defaults to a dry run for the same reason the script does.
+        run: >
+          npm run digest --
+          ${{ (secrets.RESEND_API_KEY != '' && github.event_name == 'schedule') && '--send' || '' }}
+          ${{ (secrets.RESEND_API_KEY != '' && github.event.inputs.send == 'true') && '--send' || '' }}

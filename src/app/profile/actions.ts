@@ -7,7 +7,7 @@ import { db } from "@/db/client";
 import { resumes } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { AccountDeleteError, deleteAccount } from "@/lib/profile/delete";
-import { ensureProfile, getProfile, saveProfile } from "@/lib/profile/store";
+import { ensureProfile, getProfile, saveEmailPrefs, saveProfile } from "@/lib/profile/store";
 import {
   INTEREST_VALUES,
   parseLocations,
@@ -141,6 +141,39 @@ export async function uploadResumeAction(
       projects: result.parsed.projects.length,
     },
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * Email preferences
+ * ------------------------------------------------------------------ */
+
+export interface EmailPrefsState {
+  status: "idle" | "saved" | "error";
+  message?: string;
+}
+
+/**
+ * Save the two email subscriptions.
+ *
+ * A separate action from `saveProfileAction`, and the separation is the point:
+ * every unsubscribe link writes these columns without a session, so folding
+ * them into the profile form would let a stale tab silently resubscribe someone
+ * who had already opted out. See `getEmailPrefs` for the longer version.
+ */
+export async function saveEmailPrefsAction(
+  _prev: EmailPrefsState,
+  formData: FormData,
+): Promise<EmailPrefsState> {
+  const user = await requireUser("/profile");
+  await ensureProfile(user.id);
+
+  await saveEmailPrefs(user.id, {
+    deadlineReminders: formData.get("deadlineReminders") === "1",
+    weeklyDigest: formData.get("weeklyDigest") === "1",
+  });
+
+  revalidatePath("/profile");
+  return { status: "saved" };
 }
 
 /* ------------------------------------------------------------------ *

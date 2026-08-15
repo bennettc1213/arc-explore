@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
+import { fieldsFromDegreeLanguage } from "./fit";
 import { scoreScholarshipFit } from "./scholarship-fit";
 
 const EMPTY_PROFILE = {
@@ -138,5 +139,43 @@ describe("scoreScholarshipFit", () => {
   it("returns a real skills gap shape (empty) so the feed can render it", () => {
     const r = scoreScholarshipFit(CS_PROFILE, base({ amountMin: 1000 }));
     assert.deepEqual(r.skills, { matched: [], missing: [] });
+  });
+});
+
+/**
+ * Word boundaries in the degree-language patterns.
+ *
+ * Every case below was produced by the classifier against the live corpus, not
+ * invented: the weekly digest's top-ranked pick for a business-interested
+ * profile was a law firm's essay scholarship, "matching business" because
+ * unbounded `law` fired on the sponsor's company name. Pulling that thread
+ * found the same class of bug in four patterns.
+ *
+ * A false positive is worse than an unknown here. Unknown is dropped from the
+ * average and labelled as such; an invented field match is indistinguishable
+ * from a real one and quietly moves a posting up the ranking.
+ */
+describe("fieldsFromDegreeLanguage word boundaries", () => {
+  it("does not read a field out of ordinary scholarship prose", () => {
+    for (const text of [
+      "must be a Delaware resident",
+      "open to Lawrence Township residents",
+      "a flawless academic record",
+      "submit all application materials by March 1",
+      "the designated recipient will be notified",
+      "in the aftermath of the storm",
+    ]) {
+      assert.deepEqual(fieldsFromDegreeLanguage(text), [], text);
+    }
+  });
+
+  it("still reads the degrees these patterns exist for", () => {
+    assert.deepEqual(fieldsFromDegreeLanguage("open to law students"), ["business"]);
+    assert.deepEqual(fieldsFromDegreeLanguage("for mathematics majors"), [
+      "quant_finance",
+      "data_ai",
+    ]);
+    assert.deepEqual(fieldsFromDegreeLanguage("graphic design majors"), ["product"]);
+    assert.deepEqual(fieldsFromDegreeLanguage("materials science and engineering"), ["hardware"]);
   });
 });

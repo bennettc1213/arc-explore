@@ -1,0 +1,2 @@
+ALTER TABLE "profiles" ADD COLUMN "weekly_digest_enabled" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+ALTER TABLE "profiles" ADD COLUMN "last_digest_at" timestamp with time zone DEFAULT now() NOT NULL;

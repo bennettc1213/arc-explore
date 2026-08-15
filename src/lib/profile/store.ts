@@ -91,6 +91,51 @@ export async function saveProfile(userId: string, input: ProfileInput): Promise<
   return toUserProfile(row);
 }
 
+/* ------------------------------------------------------------------ *
+ * Email preferences
+ * ------------------------------------------------------------------ */
+
+export interface EmailPrefs {
+  deadlineReminders: boolean;
+  weeklyDigest: boolean;
+}
+
+/**
+ * Read and written **separately from the profile**, on purpose.
+ *
+ * Every unsubscribe link in every email we send writes these two columns
+ * without a session. If they were fields on the profile form, a student who
+ * unsubscribed from their inbox and later pressed save on a page rendered
+ * before that — a tab left open, a back button — would silently resubscribe
+ * themselves, because the form would post the checkbox state it was rendered
+ * with. Saving your major must never be able to turn our email back on.
+ */
+export async function getEmailPrefs(userId: string): Promise<EmailPrefs> {
+  const [row] = await db
+    .select({
+      deadlineReminders: profiles.deadlineRemindersEnabled,
+      weeklyDigest: profiles.weeklyDigestEnabled,
+    })
+    .from(profiles)
+    .where(eq(profiles.id, userId))
+    .limit(1);
+
+  // Defaults match the column defaults, so a profile row that does not exist
+  // yet reads the same as one that has never been touched.
+  return row ?? { deadlineReminders: true, weeklyDigest: true };
+}
+
+export async function saveEmailPrefs(userId: string, prefs: EmailPrefs): Promise<void> {
+  await db
+    .update(profiles)
+    .set({
+      deadlineRemindersEnabled: prefs.deadlineReminders,
+      weeklyDigestEnabled: prefs.weeklyDigest,
+      updatedAt: new Date(),
+    })
+    .where(eq(profiles.id, userId));
+}
+
 export interface StoredResume {
   id: string;
   fileName: string | null;

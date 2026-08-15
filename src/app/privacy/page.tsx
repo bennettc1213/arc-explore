@@ -89,8 +89,16 @@ export default function PrivacyPage() {
             why="without it the daily job would mail you about the same award every morning"
           />
           <Row
+            what="Your saved searches, and when we last emailed you about each one"
+            why="new-match alerts — the timestamp is what stops an alert repeating what it already sent"
+          />
+          <Row
+            what="Whether the weekly digest is on, and when the last one went out"
+            why="the digest — the timestamp is the whole of what we remember about it. We do not keep a record of which opportunities any digest contained"
+          />
+          <Row
             what="Your email address"
-            why="it is how you sign in — there are no passwords here — and where reminders go if you leave them on"
+            why="it is how you sign in — there are no passwords here — and where reminders, alerts and the digest go if you leave them on"
           />
         </ul>
       </Section>
@@ -118,8 +126,8 @@ export default function PrivacyPage() {
             why="a PDF resume is sent to Claude to be read into structure, because a plain text extractor turns a two-column resume into nonsense. Cover letter generation sends the facts we already hold. This is the most sensitive thing that leaves, and it is worth knowing before you upload"
           />
           <Row
-            what="Resend — your email address and the listing title"
-            why="only if deadline reminders are on, only for postings you saved, and every message carries an unsubscribe link that needs no login"
+            what="Resend — your email address and the listing titles in that message"
+            why="only for the three things you can switch off — deadline reminders for postings you saved, alerts for searches you saved, and the weekly digest. Each is a separate subscription with its own unsubscribe link, none of which needs a login, and turning one off never silently turns off the others"
           />
           <Row
             what="Supabase — everything above"

@@ -3,13 +3,14 @@ import Link from "next/link";
 import { signOut } from "@/app/auth/actions";
 import { requireUser } from "@/lib/auth";
 import { routePresence } from "@/lib/profile/routing";
-import { getLatestResume, getProfile } from "@/lib/profile/store";
+import { getEmailPrefs, getLatestResume, getProfile } from "@/lib/profile/store";
 import { critiqueResume } from "@/lib/resume/critique";
 import { coerceParsedResume } from "@/lib/resume/types";
 import { resumeCompetitiveness } from "@/lib/score/competitiveness";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 
 import { DeleteAccount } from "./DeleteAccount";
+import { EmailPrefs } from "./EmailPrefs";
 import { PresencePrompt } from "./PresencePrompt";
 import { ProfileEditor } from "./ProfileEditor";
 import { ResumeCritique } from "./ResumeCritique";
@@ -18,9 +19,10 @@ export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
   const user = await requireUser("/profile");
-  const [profile, resume] = await Promise.all([
+  const [profile, resume, emailPrefs] = await Promise.all([
     getProfile(user.id),
     getLatestResume(user.id),
+    getEmailPrefs(user.id),
   ]);
 
   const resumeSkills = resume ? skillsFromParsedResume(resume.parsed) : [];
@@ -155,6 +157,8 @@ export default async function ProfilePage() {
             : null
         }
       />
+
+      <EmailPrefs prefs={emailPrefs} />
 
       <DeleteAccount />
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { unsubscribeDigest } from "@/lib/digest/store";
 import { unsubscribeByToken } from "@/lib/reminders/store";
 import { unsubscribeAllSearches, unsubscribeSearch } from "@/lib/searches/store";
 
@@ -21,16 +22,17 @@ export const dynamic = "force-dynamic";
  * from the app.
  *
  * WHICH THING IT TURNS OFF IS DELIBERATELY NARROW. `?search=<id>` stops that
- * one alert; `?searches=all` stops every alert; a bare token stops deadline
- * reminders. Clicking "stop alerts for this search" and having it silence
- * everything we send would be the kind of over-reach that makes people
- * unsubscribe from all of it next time.
+ * one alert; `?searches=all` stops every alert; `?digest=1` stops the weekly
+ * digest; a bare token stops deadline reminders. Clicking "stop alerts for this
+ * search" and having it silence everything we send would be the kind of
+ * over-reach that makes people unsubscribe from all of it next time.
  */
 
 type Outcome =
   | { kind: "reminders" }
   | { kind: "one_search" }
   | { kind: "all_searches" }
+  | { kind: "digest" }
   | { kind: "failed" };
 
 async function apply(sp: Record<string, string | string[] | undefined>): Promise<Outcome> {
@@ -49,6 +51,10 @@ async function apply(sp: Record<string, string | string[] | undefined>): Promise
 
   if (one("searches") === "all") {
     return (await unsubscribeAllSearches(token)) ? { kind: "all_searches" } : { kind: "failed" };
+  }
+
+  if (one("digest") === "1") {
+    return (await unsubscribeDigest(token)) ? { kind: "digest" } : { kind: "failed" };
   }
 
   return (await unsubscribeByToken(token)) ? { kind: "reminders" } : { kind: "failed" };
@@ -94,6 +100,20 @@ const COPY: Record<Outcome["kind"], { heading: React.ReactNode; body: React.Reac
         Every saved search stays saved and still works in the feed; none of them will email you.
         Deadline reminders are separate and are unchanged — if you want those off too, use the link
         in one of those messages.
+      </>
+    ),
+  },
+  digest: {
+    heading: (
+      <>
+        the weekly digest <span style={{ color: "var(--accent)" }}>is off</span>
+      </>
+    ),
+    body: (
+      <>
+        No more Sunday round-ups. Deadline reminders and saved-search alerts are separate
+        subscriptions and are unchanged — this link did not touch them. You can turn the digest
+        back on under email from your profile.
       </>
     ),
   },

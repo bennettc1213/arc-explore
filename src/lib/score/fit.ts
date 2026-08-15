@@ -133,16 +133,30 @@ export const FIELD_KEYS = Object.keys(FIELDS) as [FieldKey, ...FieldKey[]];
  * scholarship titles and eligibility criteria say "computer science", not
  * "backend engineer". `\bcs\b` is word-bounded on both sides because `cs\b`
  * alone matched the trailing "cs" inside "Omics", "Physics" and "Mechanics".
+ *
+ * SHORT WORDS ARE WORD-BOUNDED, for the same reason and found the same way —
+ * by reading what the classifier actually did to the live corpus. Unbounded
+ * `law` matched **"Delaware"**, "Lawrence", "outlaw", "flawless" and "lawn",
+ * classifying every scholarship whose eligibility says "must be a Delaware
+ * resident" as *business*; `design` matched "designated"; `math` matched
+ * "aftermath"; and `materials` matched the phrase "application materials",
+ * which is ordinary scholarship boilerplate rather than a materials-science
+ * degree. A field a source never named is the one thing this taxonomy must
+ * never invent — the whole contract is that unknown is dropped, and a false
+ * positive is worse than an unknown because it is indistinguishable from a
+ * real match.
  */
 const MAJOR_TO_FIELDS: Array<{ re: RegExp; fields: FieldKey[] }> = [
   { re: /computer science|\bcs\b|software|computer engineering|cyber[- ]?security/i, fields: ["software", "data_ai"] },
   { re: /data science|statistics|machine learning|artificial intelligence|\bai\b/i, fields: ["data_ai", "software"] },
-  { re: /electrical|mechanical|aerospace|robotics|biomedical engineering|materials/i, fields: ["hardware"] },
-  { re: /math|physics/i, fields: ["quant_finance", "data_ai"] },
+  // "materials" alone is boilerplate; a materials major always says which one.
+  { re: /electrical|mechanical|aerospace|robotics|biomedical engineering|materials\s+(?:science|engineering)/i, fields: ["hardware"] },
+  // Left-bounded only: "math" must also match "mathematics" and "mathematical".
+  { re: /\bmath|physics/i, fields: ["quant_finance", "data_ai"] },
   { re: /finance|accounting|economics/i, fields: ["quant_finance", "business"] },
   { re: /business|marketing|management|supply chain/i, fields: ["business", "product"] },
-  { re: /design|human[- ]computer/i, fields: ["product"] },
-  { re: /political science|public policy|law|sociology|psychology/i, fields: ["business"] },
+  { re: /\bdesign\b|human[- ]computer/i, fields: ["product"] },
+  { re: /political science|public policy|\blaw\b|sociology|psychology/i, fields: ["business"] },
 ];
 
 /**
