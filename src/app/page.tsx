@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Mascot } from "@/components/chrome/Mascot";
 import { PostingRow } from "@/components/PostingRow";
 import { SavedSearches } from "@/components/SavedSearches";
+import { recordEvent } from "@/lib/analytics/record";
 import { statusesForPostings } from "@/lib/applications/store";
 import { getSessionUser } from "@/lib/auth";
 import { getAvailableTerms, getFeed, getFeedStats, type DeadlineFilter } from "@/lib/feed";
@@ -160,48 +161,65 @@ export default async function FeedPage({
           (profile.targetLocations?.length ?? 0) > 0,
       );
 
-  const term = typeof sp.term === "string" && sp.term ? sp.term : null;
-  const remoteOnly = sp.remoteOnly === "1";
+  /*
+   * ONE PARSER, NOT TWO. This page used to re-read every filter out of
+   * `searchParams` itself, beside the `filtersFromParams` call above that feeds
+   * "save this search" — and the two disagreed. The feed's own checkbox posts
+   * `remoteOnly=1` while `filtersToQuery` wrote `remote=1`, so **remote-only
+   * never survived a round trip in either direction**: saving from a remote
+   * filtered feed stored `remoteOnly: false`, and clicking a saved remote
+   * search produced a URL this page ignored. Alerts for those searches were
+   * therefore matching non-remote roles too.
+   *
+   * Found by instrumenting searches, of all things — the event log recorded
+   * `filters: ["kind"]` for a request that plainly also had `remote=1` on it.
+   * The fix is not to rename a key: it is that a filter must have exactly one
+   * definition of how it is read from a URL, so the saved copy and the live
+   * copy cannot drift again.
+   */
+  const { term, remoteOnly, kind, deadline, minAmount, location, q, category } = currentFilters;
+
+  // Not saveable, so not part of the shared shape — see savedFiltersSchema.
   const includeClosed = sp.includeClosed === "1";
-  const kind = sp.kind === "internship" || sp.kind === "scholarship" ? sp.kind : null;
-
-  const deadline: DeadlineFilter | null =
-    sp.deadline === "set" || sp.deadline === "30" || sp.deadline === "60" || sp.deadline === "90"
-      ? sp.deadline
-      : null;
-
-  const minAmountRaw = Number(sp.minAmount);
-  const minAmount = Number.isFinite(minAmountRaw) && minAmountRaw > 0 ? minAmountRaw : null;
-
-  const rawLocation = typeof sp.location === "string" ? sp.location.trim() : "";
-  const location = rawLocation ? rawLocation : null;
-
-  const q = typeof sp.q === "string" && sp.q.trim() ? sp.q.trim() : null;
-
-  // Validated against the taxonomy rather than trusted: an unknown value would
-  // otherwise filter every row out and read as an empty corpus.
-  const category: FieldKey | null =
-    typeof sp.category === "string" && (INTEREST_VALUES as readonly string[]).includes(sp.category)
-      ? (sp.category as FieldKey)
-      : null;
 
   const [feed, stats, terms] = await Promise.all([
     getFeed(profile, {
-      term,
-      remoteOnly,
+      ...currentFilters,
       includeClosed,
       hideBlocked: false,
-      kind,
-      deadline,
-      minAmount,
-      location,
-      q,
-      category,
     }),
     getFeedStats(kind),
     getAvailableTerms(),
   ]);
   const { items, categoryUnclassified } = feed;
+
+  // A search, not a page view: a bare `/` is browsing and is not counted. What
+  // is recorded is which filter *keys* were used and whether the result was
+  // empty — never the query text, and never who ran it. See analytics/record.ts
+  // for why that boundary is enforced there rather than trusted here.
+  const activeFilters = Object.entries({
+    q,
+    kind,
+    deadline,
+    minAmount,
+    location,
+    term,
+    category,
+    remote: remoteOnly ? "1" : null,
+  })
+    .filter(([, v]) => v !== null)
+    .map(([k]) => k);
+
+  if (activeFilters.length > 0) {
+    await recordEvent("search_run", {
+      filters: activeFilters,
+      empty: items.length === 0,
+      // Bucketed rather than exact: the useful question is "did this return
+      // nothing / a little / a lot", and a raw count is a finer fingerprint of
+      // one request than the answer needs.
+      results: items.length === 0 ? "none" : items.length < 10 ? "few" : "many",
+    });
+  }
 
   const guestVerticals = new Set(profile.targetVerticals ?? []);
 
@@ -392,7 +410,8 @@ export default async function FeedPage({
 
         <div className="mt-4 flex flex-wrap items-center gap-5">
           <label className="mono chrome flex items-center gap-2">
-            <input type="checkbox" name="remoteOnly" value="1" defaultChecked={remoteOnly} />
+            {/* `remote`, matching `filtersToQuery` — one name for one filter. */}
+            <input type="checkbox" name="remote" value="1" defaultChecked={remoteOnly} />
             remote only
           </label>
           <label className="mono chrome flex items-center gap-2">

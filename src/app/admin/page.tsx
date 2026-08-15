@@ -1,9 +1,12 @@
 import Link from "next/link";
 
 import { requireAdmin } from "@/lib/admin/auth";
+import { filterUsage, metricCounts, recentCounts } from "@/lib/metrics/store";
+import { buildMetrics } from "@/lib/metrics/types";
 import { adminCounts, openReports, triageQueue } from "@/lib/reports/store";
 import { URGENT_REASONS, reasonLabel, type ReportReason } from "@/lib/reports/types";
 
+import { Metrics } from "./Metrics";
 import {
   hideListingAction,
   markReviewedAction,
@@ -71,11 +74,15 @@ function HideForm({ postingId }: { postingId: string }) {
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
-  const [counts, reports, triage] = await Promise.all([
+  const [counts, reports, triage, rawMetrics, recent, filters] = await Promise.all([
     adminCounts(),
     openReports(),
     triageQueue(),
+    metricCounts(),
+    recentCounts(),
+    filterUsage(),
   ]);
+  const metrics = buildMetrics(rawMetrics);
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
@@ -105,6 +112,8 @@ export default async function AdminPage() {
         <Count n={counts.triage} label="flagged, unreviewed" />
         <Count n={counts.hidden} label="hidden by a person" />
       </div>
+
+      <Metrics metrics={metrics} recent={recent} filters={filters} />
 
       {/* ------------------------------------------------------ reports */}
       <section style={{ marginBottom: 44 }}>

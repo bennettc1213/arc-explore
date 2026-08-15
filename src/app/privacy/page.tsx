@@ -103,6 +103,38 @@ export default function PrivacyPage() {
         </ul>
       </Section>
 
+      <Section title="what we count, and what we deliberately do not">
+        <p style={{ marginBottom: 12 }}>
+          There is no analytics script on any page here — no Google, no PostHog, no Vercel
+          Analytics, nothing that phones a third party when you load something. We count three
+          things, into a table in our own database, and that table holds{" "}
+          <em>no user id, no IP address and no browser fingerprint</em>. It cannot be joined back
+          to a person, because there is nothing in it to join on.
+        </p>
+        <ul style={{ paddingLeft: 18 }}>
+          <Row
+            what="That a filtered search happened"
+            why="with which filter names were used and whether it returned nothing. What you typed into the search box is never recorded — only that a text term was present"
+          />
+          <Row
+            what="That a listing page was opened"
+            why="with whether it was an internship or a scholarship. Not which listing"
+          />
+          <Row
+            what="That a GitHub audit ran"
+            why="with the score it produced. Not the username"
+          />
+        </ul>
+        <p style={{ marginTop: 12 }}>
+          Everything else we report — signups, applications tracked, resumes, cover letters — is
+          counted from the tables that already exist because a feature needed them, rather than
+          from a second log of what people did. And the LinkedIn checker and the essay reviewer
+          are counted <em>nowhere</em>: both run entirely in your browser, both pages say so, and
+          adding even a content-free usage ping would put a network call on a page that currently
+          makes none. We would rather not know how often they are used.
+        </p>
+      </Section>
+
       <Section title="the one place our wording was too generous">
         <p>
           The upload form used to say we keep &ldquo;only the structured result — not the file&rdquo;.

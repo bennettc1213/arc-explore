@@ -91,6 +91,29 @@ only you can make, and the feature on the other side of it is already written.
   two-observation rule (`urlDeadStrikes`, cleared by any contrary evidence,
   timestamp stamped once). The scholarship persist path should do the same
   with a `missing_strikes` column instead of closing on one absence.
+- [x] **Remote-only never survived a saved search, in either direction.**
+  Fixed. The feed page re-read every filter out of `searchParams` itself,
+  beside the `filtersFromParams` call that feeds "save this search" — two
+  parsers over one query string — and they disagreed on one key: the feed's
+  checkbox posted `remoteOnly=1` while `filtersToQuery` wrote `remote=1`. So
+  saving from a remote-filtered feed stored `remoteOnly: false`, and clicking a
+  saved remote search produced a URL the feed ignored. **Saved-search alerts
+  for those searches had been matching non-remote roles the whole time**, which
+  is worse than the UI bug, since it went out by email. Found by instrumenting
+  searches for analytics — the event log recorded `filters: ["kind"]` for a
+  request that plainly also carried `remote=1`. Fixed at the root rather than
+  by renaming a key: the page now derives its filters from `filtersFromParams`,
+  so there is one definition of how a filter is read from a URL. Verified live,
+  `?kind=internship` 500 rows vs `&remote=1` 94.
+- [ ] **No test could have caught that, and the shape of the gap is worth
+  knowing.** The round-trip test between `filtersToQuery` and
+  `filtersFromParams` passed the whole time — both sides of the pair agreed
+  with each other. The drift was between that pair and a *page*, and pages here
+  are not unit-testable. Everything the feed page does is now delegated to
+  tested functions, which is the structural answer, but the general problem
+  stands: a Server Component that reads `searchParams` directly is untested
+  surface. Worth a rule — params are parsed in a tested module, never in a
+  page — rather than another test.
 - [ ] **`postings.category` is NULL on all 3,765 rows**, and
   `organizations.vertical` is equally empty. Both are dead columns. The
   category filter was deliberately built on the derived field taxonomy instead.
@@ -170,7 +193,8 @@ closed out and is the largest untested surface in the project.
   real data by temporarily stubbing `requireAdmin`, and the guard was verified
   to 404 both with and without `ADMIN_EMAILS` set — but the two have never been
   exercised together. The hide / unhide / resolve actions have never been
-  clicked.
+  clicked, and the metrics panel has never been seen in a browser (the same
+  numbers were verified through `npm run metrics`, which needs no session).
 - [ ] **Filing a report end to end.** The validation is tested and the queue
   renders seeded rows, but no report has been submitted through the form.
 - [ ] **Account deletion.** Never run, deliberately — the only way to test it is

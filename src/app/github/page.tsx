@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { recordEvent } from "@/lib/analytics/record";
 import { getSessionUser } from "@/lib/auth";
 import { auditGitHub, type GitHubAudit } from "@/lib/github/audit";
 import { fetchGitHubSnapshot } from "@/lib/github/client";
@@ -89,6 +90,12 @@ export default async function GitHubPage({
       try {
         const snapshot = await fetchGitHubSnapshot(username);
         audit = auditGitHub(snapshot);
+
+        // Only a completed fetch counts. A typo costs zero GitHub requests and
+        // should cost zero events too, or the number stops meaning "audits run"
+        // and starts meaning "times the form was submitted". The username is
+        // not recorded — the count is the metric, not who was looked up.
+        await recordEvent("github_audited", { score: audit.score });
 
         // Signed in, the README is filled from the profile and resume as well.
         // Signed out it is thinner, not broken — every gap is a visible slot.

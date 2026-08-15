@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CoverLetterEditor } from "@/components/CoverLetterEditor";
 import { ReportListing } from "@/components/ReportListing";
 import { TrackButton } from "@/components/TrackButton";
+import { recordEvent } from "@/lib/analytics/record";
 import { getSessionUser } from "@/lib/auth";
 import { getCoverLetter } from "@/lib/cover-letter/store";
 import { getPosting } from "@/lib/feed";
@@ -115,6 +116,12 @@ export default async function ListingPage({
   const profile = user ? toScoreProfile(stored, resumeSkills) : toScoreProfile(null, []);
   const item = await getPosting(id, profile);
   if (!item) notFound();
+
+  // After the 404 check, so a bad or hidden id is not counted as a view. The
+  // kind is the only property worth keeping — the posting id is deliberately
+  // not recorded, since "which listings are popular" is not a question worth
+  // building a per-listing view log to answer.
+  await recordEvent("listing_viewed", { kind: item.kind });
 
   const [letter, alreadyReported] = user
     ? await Promise.all([getCoverLetter(user.id, id), hasReported(user.id, id)])

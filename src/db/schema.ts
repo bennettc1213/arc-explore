@@ -453,6 +453,17 @@ export const applications = pgTable(
       .references(() => postings.id, { onDelete: "cascade" }),
     status: text("status").$type<ApplicationStatus>().notNull().default("saved"),
     appliedAt: timestamp("applied_at", { withTimezone: true }),
+    /**
+     * When the student first tracked this.
+     *
+     * Added late, for the Phase 07 metrics: the table only ever carried
+     * `updatedAt`, so "how many applications were tracked in the last week" was
+     * unanswerable — a row saved in March and re-read in August looks identical
+     * to one saved this morning. Existing rows are backfilled from `updatedAt`,
+     * which is exactly right for a row nobody has touched since saving it and
+     * the best available estimate for one they have.
+     */
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     /** Free-text final outcome. Together with `status` this is what a real
      *  odds model will eventually train on. */
     outcome: text("outcome"),
@@ -698,4 +709,57 @@ export const savedSearches = pgTable(
     // Drives the alert job: everything still watching, oldest watermark first.
     index("saved_search_notify_idx").on(t.notify, t.lastNotifiedAt),
   ],
+);
+
+/* ------------------------------------------------------------------ *
+ * Usage events — the only thing here not derivable from a real table
+ * ------------------------------------------------------------------ */
+
+/**
+ * What we count that leaves no other trace.
+ *
+ * Deliberately three. Nearly every number Phase 07 asks for is already a fact
+ * about a table we own — signups are `profiles`, applications tracked are
+ * `applications`, resumes are `resumes`, saved searches are `saved_searches` —
+ * and counting those from an event log instead would be storing a second,
+ * worse copy of something the database already knows. An event is written only
+ * where the action genuinely leaves nothing behind.
+ *
+ * THREE TOOLS ARE DELIBERATELY NOT INSTRUMENTED. `/linkedin` and `/essay` run
+ * entirely in the browser — pure functions, no endpoint that takes the text —
+ * and both pages say so, because for tools whose premise is "we never receive
+ * this" that promise is the product. A content-free usage ping would not send
+ * the text, but it would put a network call on a page that currently makes
+ * none and make a plain sentence need an asterisk. The usage count is not worth
+ * that, so those two are a known blind spot, stated in the metrics rather than
+ * quietly estimated.
+ */
+export const EVENT_NAMES = ["search_run", "listing_viewed", "github_audited"] as const;
+export type EventName = (typeof EVENT_NAMES)[number];
+
+/**
+ * A usage event.
+ *
+ * IT HOLDS NO USER ID, BY DESIGN, AND THAT IS THE POINT OF THE TABLE.
+ * Every metric worth citing here is a count, and a count does not need to know
+ * who. Attribution is already available for everything user-owned, from tables
+ * that need the user id to function; adding it here would create the one thing
+ * this schema does not otherwise contain — a behavioural log of what a named
+ * student looked at. There is also no IP, no user agent, and no search text:
+ * `props` carries which *filter keys* were used, never what anyone typed.
+ *
+ * RLS is enabled with **no policies at all** (see the migration), which denies
+ * everything through the public anon key. There is no row here anyone outside
+ * the server has any business reading.
+ */
+export const events = pgTable(
+  "events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").$type<EventName>().notNull(),
+    /** Low-cardinality, non-identifying properties only — see `analytics/record.ts`. */
+    props: jsonb("props"),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("event_name_at_idx").on(t.name, t.at)],
 );

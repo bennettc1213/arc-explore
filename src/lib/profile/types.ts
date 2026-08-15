@@ -221,8 +221,22 @@ export function toScoreProfile(
   };
 }
 
+/**
+ * The five fields this predicate reads, and nothing more.
+ *
+ * Typed as a subset rather than as the whole `UserProfile` so a caller holding
+ * a raw `profiles` row — the metrics count, which reads the table directly —
+ * can ask the question without first running the row through the store's
+ * narrowing mapper. A `UserProfile` still satisfies it, so every existing
+ * caller is unaffected.
+ */
+export type UsableProfileFields = Pick<
+  UserProfile,
+  "major" | "gradYear" | "workAuth" | "targetVerticals" | "targetLocations"
+>;
+
 /** True when at least one answer can actually move a score. */
-export function isProfileUsable(profile: UserProfile | null): boolean {
+export function isProfileUsable(profile: UsableProfileFields | null): boolean {
   if (!profile) return false;
   return Boolean(
     profile.major ||
