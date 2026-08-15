@@ -17,6 +17,7 @@ import { desc, eq, isNull, and, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { organizations, postings, type FreshnessTier, type PostingKind } from "@/db/schema";
 import { escapeLike, parseSearchQuery } from "./feed-search";
+import { isFlaggedDead } from "./ingest/linkcheck";
 import {
   fieldsForPosting,
   rankingScore,
@@ -46,6 +47,14 @@ export interface FeedItem {
   amountMin: number | null;
   amountMax: number | null;
   amountNeedsReview: boolean;
+  /**
+   * The apply URL answered 404/410 on two consecutive checks.
+   *
+   * A warning, never a closure — see lib/ingest/linkcheck.ts. The row stays in
+   * the feed because we would rather show a student a link we are unsure about,
+   * labelled, than hide an opportunity on the strength of two HTTP responses.
+   */
+  applyLinkDead: boolean;
   /** Raw eligibility bullets, as the source stated them. */
   eligibility: string[];
   isContentMarketing: boolean;
@@ -174,6 +183,7 @@ const FEED_SELECT = {
   amountMin: postings.amountMin,
   amountMax: postings.amountMax,
   amountNeedsReview: postings.amountNeedsReview,
+  urlDeadStrikes: postings.urlDeadStrikes,
   eligibility: postings.eligibility,
   isContentMarketing: postings.isContentMarketing,
   freshnessTier: postings.freshnessTier,
@@ -203,6 +213,7 @@ interface FeedRow {
   amountMin: number | null;
   amountMax: number | null;
   amountNeedsReview: boolean;
+  urlDeadStrikes: number;
   eligibility: unknown;
   isContentMarketing: boolean;
   freshnessTier: FreshnessTier;
@@ -229,6 +240,7 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
     amountMin: r.amountMin,
     amountMax: r.amountMax,
     amountNeedsReview: r.amountNeedsReview,
+    applyLinkDead: isFlaggedDead({ urlDeadStrikes: r.urlDeadStrikes }),
     eligibility: criteria,
     isContentMarketing: r.isContentMarketing,
     freshnessTier: r.freshnessTier,

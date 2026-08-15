@@ -192,6 +192,23 @@ export default async function ListingPage({
           </div>
         </header>
 
+        {item.applyLinkDead && (
+          <section
+            className="print-hide border"
+            style={{ borderColor: "var(--accent)", padding: "14px 18px", marginBottom: 24 }}
+          >
+            <div className="mono-strong" style={{ color: "var(--accent)" }}>
+              this apply link may be dead
+            </div>
+            <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "62ch" }}>
+              We requested it twice and it answered &ldquo;not found&rdquo; both times. That is
+              enough to warn you and not enough to hide the listing — a page can 404 for reasons
+              that have nothing to do with whether the {item.kind === "scholarship" ? "award" : "role"}{" "}
+              is open. Worth opening before you spend time on an application.
+            </p>
+          </section>
+        )}
+
         <section
           className="print-hide border-y grid gap-x-8 gap-y-3 md:grid-cols-2"
           style={{ borderColor: "var(--line)", padding: "20px 0", marginBottom: 32 }}

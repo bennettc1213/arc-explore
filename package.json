@@ -18,6 +18,7 @@
     "ingest:usajobs": "tsx scripts/ingest-usajobs.ts",
     "reminders": "tsx scripts/send-reminders.ts",
     "ingest:status": "tsx scripts/ingest-status.ts",
+    "check:links": "tsx scripts/check-links.ts",
     "ingest:rederive": "tsx scripts/ingest-rederive.ts",
     "ingest:retag": "tsx scripts/backfill-content-marketing.ts",
     "check": "npm run typecheck && npm run lint && npm test"

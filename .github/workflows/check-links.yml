@@ -1,0 +1,63 @@
+####
+# Apply-URL health.
+#
+# The ATS poll already closes an internship within ~20 minutes of it vanishing
+# from its employer's own feed, which is a stronger signal than any link check.
+# This exists for what that does not cover: the ~1,880 scholarship rows we do
+# not poll, and the case where an ATS still lists a row whose apply link has
+# rotted underneath it.
+#
+# It FLAGS and never closes. Two consecutive 404s is the most it is allowed to
+# conclude, and 403/429/5xx are treated as no information at all — the first
+# real run proved why, answering 403 on scholarships.com pages that are behind
+# a WAF and perfectly alive. Believing those would have flagged 1,559 rows dead
+# in one pass.
+#
+# Twice daily at a 300-row budget covers the open corpus roughly every six
+# days, which is the right cadence for a signal whose whole point is patience.
+####
+name: check-links
+
+on:
+  schedule:
+    - cron: "43 3,15 * * *" # off the hour, twice a day
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "how many postings to check this run"
+        required: false
+        default: "300"
+      dryRun:
+        description: "request and report, write nothing"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: check-links
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # Generous: the run is deliberately slow. A one-second delay per host and
+    # six workers is politeness, not inefficiency, and rushing it is how you
+    # get rate-limited by the hosts whose pages you are trying to read.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: check apply urls
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: >
+          npm run check:links --
+          --limit ${{ github.event.inputs.limit || '300' }}
+          ${{ github.event.inputs.dryRun == 'true' && '--dry-run' || '' }}

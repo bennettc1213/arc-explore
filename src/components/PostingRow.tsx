@@ -136,6 +136,17 @@ export function PostingRow({
                 · you are not eligible
               </span>
             )}
+            {/* Flagged, not hidden. Two 404s is enough to warn and not enough
+                to bury an opportunity — see lib/ingest/linkcheck.ts. */}
+            {item.applyLinkDead && !closed && (
+              <span
+                className="mono"
+                style={{ color: "var(--accent)" }}
+                title="We requested this apply URL twice and it answered “not found” both times."
+              >
+                · link may be dead
+              </span>
+            )}
             {item.timing.label === "new today" && !closed && (
               <span className="mono" style={{ color: "var(--accent)" }}>
                 · {item.timing.label}

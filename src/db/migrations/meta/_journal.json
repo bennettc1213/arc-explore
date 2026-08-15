@@ -71,6 +71,13 @@
       "when": 1786766388878,
       "tag": "0009_hot_shatterstar",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786767854046,
+      "tag": "0010_sleepy_jack_flag",
+      "breakpoints": true
     }
   ]
 }

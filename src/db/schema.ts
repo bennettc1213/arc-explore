@@ -187,12 +187,38 @@ export const postings = pgTable(
      *  always null — rendered as an honest slot rather than a guess. */
     deadlineAt: timestamp("deadline_at", { withTimezone: true }),
 
+    /* --- apply-URL health --- */
+    /**
+     * Last time we actually requested the apply URL, and what it answered.
+     *
+     * Separate from the freshness engine above and deliberately weaker than it.
+     * `closedAt` means the posting vanished from its employer's own ATS feed,
+     * which is the employer telling us it is gone. A 404 from the apply URL is
+     * one HTTP response, and responses lie: WAFs return 403, rate limiters
+     * return 429, and a redirect to a generic careers page is a 200 that means
+     * nothing. So these columns **flag**, and never close anything.
+     */
+    urlCheckedAt: timestamp("url_checked_at", { withTimezone: true }),
+    urlStatus: integer("url_status"),
+    /**
+     * First of the current run of hard-dead observations, cleared on recovery.
+     *
+     * Two consecutive checks are required before this is set — the same rule
+     * the UNL crawl needs and does not yet have. One 404 is not evidence.
+     */
+    urlDeadSince: timestamp("url_dead_since", { withTimezone: true }),
+    /** Consecutive hard-dead observations. Reset to 0 by any non-dead answer. */
+    urlDeadStrikes: integer("url_dead_strikes").notNull().default(0),
+
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     uniqueIndex("posting_canonical_unique").on(t.canonicalHash),
     index("posting_org_idx").on(t.orgId),
     index("posting_open_idx").on(t.closedAt, t.firstSeenAt),
+    // Drives "check the least recently checked first". Nulls sort first, which
+    // is what we want: a posting never checked is the highest priority.
+    index("posting_url_check_idx").on(t.urlCheckedAt),
     index("posting_term_idx").on(t.term),
     // Every existing query (the internship feed, competitiveness) implicitly
     // assumed one kind. This is what lets a scholarship feed query scope
