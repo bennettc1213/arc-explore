@@ -1,0 +1,160 @@
+# Fixes & Open Items
+
+Everything known to be broken, missing, or waiting on a decision. Kept separate
+from `scholarship-platform-roadmap.md`: the roadmap is *what to build*, this is
+*what is wrong with what exists* plus what is blocked on someone.
+
+**Update rule:** anything discovered mid-build that we deliberately did not stop
+for goes here in the same commit. Say so at the end of the session that adds it.
+
+**Status legend:** `[ ]` open · `[x]` fixed · `[~]` partly done.
+
+---
+
+## 1. Blocked on you — nothing to build until these land
+
+These are not code problems. Each one is a key, a credit balance, or a decision
+only you can make, and the feature on the other side of it is already written.
+
+- [ ] **`GITHUB_TOKEN` is not set.** The GitHub audit works without one, but
+  unauthenticated GitHub allows **60 requests/hour per IP** and a hosted deploy
+  shares one IP across every visitor. An audit costs up to 9 requests, so the
+  whole site gets ~6 audits an hour. Any token fixes it (5,000/hr) and it needs
+  **no scopes** — everything we read is public. Add `GITHUB_TOKEN=` to `.env`
+  and as a Vercel env var.
+- [ ] **`RESEND_API_KEY` + `REMINDER_FROM_EMAIL`.** Deadline reminders are
+  built and dry-run verified but deliberately inert. Needs the repo secret and
+  a **verified sender domain**. Run `npm run reminders` first — with no
+  `--send` it prints exactly what would go out. Worth knowing: 288 open
+  postings carry a future deadline, but ATS internships almost never publish
+  one, so reminders stay quiet until students save scholarships.
+- [ ] **Adzuna app id/key.** Phase 01 line is blocked, not merely unstarted —
+  there is nothing to build against until one is registered. Free tier.
+- [ ] **Parse credit balance.** ScholarshipPortal's ~3,666 rows have **never
+  persisted** across three attempts. Both bugs those attempts exposed are
+  fixed; what is unproven is the multi-batch path at that scale. Free tier is
+  **200 credits/month**, one crawl is ~19. Check the balance *before*
+  re-running `npm run ingest:scholarships -- --source scholarshipportal`.
+- [ ] **Smart Resume structuring logic (Phase 03).** The roadmap line says "the
+  logic you provide" and it has not landed. Do not invent a structure for it.
+- [ ] **`DATABASE_URL` repo secret.** The `ingest-fast` / `ingest-daily`
+  workflows need it to run in CI.
+- [ ] **Field taxonomy decision — does this serve non-tech students?** `FIELDS`
+  has six keys, all tech/business. Of 1,632 unclassifiable scholarship rows,
+  **182 name a subject the taxonomy has no key for** — education (42),
+  nursing/health (36), engineering (29), arts/media (28), law (19), science
+  (18), trades (16) — and 1,450 state no subject anywhere. Adding keys widens
+  `INTEREST_OPTIONS`, the profile intake and both Fit Scores. It is a product
+  decision about who this is for, not a parser change.
+- [ ] **MCP servers need authorization** (environment, not this codebase):
+  **claude.ai** and **Thumbtack**. claude.ai connectors go through claude.ai
+  connector settings; others through `/mcp` in an interactive session. Nothing
+  built so far depends on them.
+
+---
+
+## 2. Known bugs
+
+- [ ] **The UNL crawl intermittently drops a row.** 263/263/264 across three
+  consecutive scrapes. A dropped row **closes a live scholarship** until the
+  next run picks it up again. The real fix is requiring absence from **two
+  consecutive scrapes** before setting `closed_at` — not another sort key.
+  Applies to every scholarship source, not just UNL.
+- [ ] **`postings.category` is NULL on all 3,765 rows**, and
+  `organizations.vertical` is equally empty. Both are dead columns. The
+  category filter was deliberately built on the derived field taxonomy instead.
+  Either backfill them or drop them — right now they are a trap for the next
+  person who assumes a column with a name means something.
+- [ ] **Two copies of the slot-marker regex.** `lib/github/readme.ts` and
+  `lib/linkedin/build.ts` each define their own `SLOT_RE` for
+  `[YOUR SPECIFIC DETAIL: …]`, and `lib/cover-letter/types.ts` has a third,
+  looser one. The looser one cannot be shared (it matches markdown link labels)
+  but the two strict copies should be one exported function.
+
+---
+
+## 3. Never verified with a real signed-in session
+
+Auth is **magic-link only**, so every signed-in page below has been verified by
+unit test, by accessibility snapshot, or through a temporary preview route —
+never driven end to end with a real session. This is one login away from being
+closed out and is the largest untested surface in the project.
+
+- [ ] `/resume` — the editor renders, decode logic is tested, never driven.
+- [ ] `/profile` — including the new presence prompt and the two link fields.
+- [ ] `/listing/[id]/apply` — the application packet.
+- [ ] `/github` signed in — the README generator filling from profile + resume,
+  and the stored-handle fallback.
+- [ ] `/linkedin` signed in — the builder filling from profile + resume.
+- [ ] Saving a profile and confirming `github_username` / `linkedin_url`
+  round-trip through the form.
+
+---
+
+## 4. Honesty and trust debt
+
+Things that are currently true but should not stay true.
+
+- [ ] **No privacy policy.** Phase 05 line. This matters more now than when it
+  was written: we store parsed resumes, we hold email addresses, and the
+  reminder job sends mail. "We do not sell your data" needs to be written down
+  before students arrive.
+- [ ] **No "report this listing" button.** Phase 05.
+- [ ] **No HTTP dead-link check on apply URLs.** We detect disappearance from
+  an employer's ATS within ~20 min, which is stronger than a link check — but
+  the apply URL itself is never requested, so a 404 on a live-looking row is
+  invisible.
+- [ ] **No web admin view.** CLI only (`npm run ingest:status`). Phase 05 wants
+  a curation dashboard before listings go live.
+- [ ] **USAJobs is `periodic_check`, not `live_polled`.** Correct as written —
+  it runs daily in `ingest-daily`. Moving the step to `ingest-fast` is what
+  would earn the stronger "confirmed live" claim.
+- [ ] **USAJobs pay is dropped entirely.** The API states a rate whose unit
+  lives in a separate `RateIntervalCode`; writing 17 (dollars/hour) into the
+  same `amount_min` that holds a $5,000 award would break the "min award"
+  filter in both directions. Needs a rate-interval column first.
+
+---
+
+## 5. Discoverability
+
+The cover letter builder shipped in `cbb92f5` and **its own owner did not know
+it existed.** That is a product failure, not an oversight, and the same is true
+of several other finished features. If you could not find it, no student will.
+
+- [ ] **Surface what is already built** from the feed, the tracker and the
+  profile: cover letter builder, application packet, resume critique engine,
+  keyword-gap view, deadline reminders.
+- [ ] **The nav now carries five links** (github, linkedin, tracker, resume,
+  profile) and will not take a sixth. Needs grouping or a menu before the next
+  page lands.
+
+---
+
+## 6. Deliberately not built — revisit only if asked
+
+Recorded so they are not rediscovered as gaps. Each was a decision with a
+reason, not an omission.
+
+- [ ] **DOCX resume import and export.** Both refused for the same reason: a
+  document-generation dependency. Print-to-PDF produces real selectable text so
+  the ATS case is covered. Worth adding only if students actually ask.
+- [ ] **Auto-submit applications.** Decided against 2026-08-14 — see the Phase
+  05 roadmap line for the three reasons. The autofill half was built instead.
+- [ ] **Browser-extension autofill.** The route back in for the auto-apply
+  request: fills the real Greenhouse/Lever/Workday form **in the student's own
+  browser**, with them reviewing and clicking submit. Same time saved, human
+  still on the attestations. First thing that would live outside this repo.
+- [ ] **Peer reviews, gamification, saved-search alerts, comparison view,
+  weekly digest** — all Phase 06, none started.
+
+---
+
+## 7. Housekeeping
+
+- [ ] **13 commits are local and unpushed.** `master` is ahead of
+  `origin/master` by 13. Everything through Phase 04 is committed but nothing
+  since `49f1981` has left this machine.
+- [ ] **No real students have used any of this.** Phase 02's end-to-end line is
+  `[~]` for that reason: automated browser walkthroughs pass, no human has run
+  the loop. Phase 07 is where that changes.
