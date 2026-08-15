@@ -11,6 +11,7 @@ import {
 } from "@/lib/applications/types";
 
 import { ApplicationCard, type CardApplication } from "./ApplicationCard";
+import { ComparePicker } from "./ComparePicker";
 
 export const dynamic = "force-dynamic";
 
@@ -114,6 +115,15 @@ export default async function TrackerPage() {
         </div>
       ) : (
         <div>
+          {/* Comparing is what you do with a shortlist, and the tracker is the
+              shortlist. Closed rows are excluded — there is no decision left to
+              make about those. */}
+          <ComparePicker
+            options={apps
+              .filter((a) => !a.closed)
+              .map((a) => ({ postingId: a.postingId, title: a.title, company: a.company }))}
+          />
+
           {apps.map((app) => (
             <ApplicationCard key={app.id} app={app} />
           ))}

@@ -170,7 +170,12 @@ Notes in _italics_ record what was actually built and where it differs from the 
 - [ ] Add peer reviews on individual listings
 - [ ] Add saved searches with new-match alerts
 - [ ] Add light gamification — points for profile completion, applying, and referrals
-- [ ] Add a side-by-side comparison view for two or three opportunities
+- [x] Add a side-by-side comparison view for two or three opportunities
+  _`/compare?ids=…`, entered from the tracker. **The useful part is not the table, it is the diff.** Printing two listings next to each other is a worse version of two browser tabs; what you cannot do in two tabs is see *which* facts differ, so every row knows whether it varies and the differing ones come first ("7 of 11 differ"), with the identical ones below under their own heading._
+
+  _**A stated value against an unstated one is a difference, not a tie** — that rule shapes the whole page. "One of these publishes a deadline and the other does not" is the difference between an application you can plan and one that could close tomorrow, and rendering both as a quiet dash would hide exactly the thing worth seeing. Unknown is still never scored as a miss; it is just not pretended to be agreement. The winner marking is guarded twice: **a row where any column is unstated marks nobody** (declaring one would rank a posting above another on a fact we do not hold for both), and **a tie marks nobody** rather than marking the first column and implying it came out ahead._
+
+  _Scored against the viewer's own profile, because "which of these is better" is a question about a person. Capped at three — four columns stops being a comparison and becomes a feed — and extra ids are clamped rather than rejected. Rows a comparison cannot use are dropped entirely: two internships are never compared on an award neither has. The picker lives on the tracker rather than the feed, since comparing is what you do with a shortlist and comparing two of 3,765 feed rows is not a decision anyone is making._
 - [ ] Add a weekly email digest of new matches
 
 ## Phase 07 — Launch & Growth
