@@ -638,3 +638,46 @@ export const listingReports = pgTable(
     index("listing_report_posting_idx").on(t.postingId),
   ],
 );
+
+/* ------------------------------------------------------------------ *
+ * Saved searches — a standing query, and optionally an alert on it
+ * ------------------------------------------------------------------ */
+
+/**
+ * A set of feed filters a student wants to keep, and be told about.
+ *
+ * `filters` is jsonb rather than columns for the same reason `resumes.parsed`
+ * is: the filter set is still moving (category and location arrived after the
+ * feed shipped), and a column per filter means a migration every time one is
+ * added. It is validated against a fixed schema on the way in *and* on the way
+ * out — see `lib/searches/types.ts` — so an old shape degrades rather than
+ * throwing on a page someone just wanted to look at.
+ */
+export const savedSearches = pgTable(
+  "saved_searches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    /** What the student called it. Their words, never generated over the top. */
+    name: text("name").notNull(),
+    filters: jsonb("filters").notNull(),
+    /** Per-search, so turning one alert off does not silence the others. */
+    notify: boolean("notify").notNull().default(true),
+    /**
+     * The watermark for "new since last time".
+     *
+     * Set to now on creation rather than left null, so a brand-new saved search
+     * does not fire an alert containing the entire corpus that matches it. The
+     * first alert a student gets should be genuinely new postings.
+     */
+    lastNotifiedAt: timestamp("last_notified_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("saved_search_user_idx").on(t.userId),
+    // Drives the alert job: everything still watching, oldest watermark first.
+    index("saved_search_notify_idx").on(t.notify, t.lastNotifiedAt),
+  ],
+);

@@ -56,3 +56,17 @@ export function parseSearchQuery(raw: string | null | undefined): string[] {
     .map((term) => term.slice(0, MAX_TERM_LENGTH))
     .slice(0, MAX_TERMS);
 }
+
+/* ------------------------------------------------------------------ *
+ * Filter vocabularies
+ * ------------------------------------------------------------------ */
+
+/**
+ * The deadline windows the feed offers.
+ *
+ * Lives here rather than in `feed.ts` because `feed.ts` opens a database
+ * connection at import, and the saved-search schema needs to validate against
+ * this list without one. `feed.ts` re-exports it, so nothing else moved.
+ */
+export const DEADLINE_FILTERS = ["set", "30", "60", "90"] as const;
+export type DeadlineFilter = (typeof DEADLINE_FILTERS)[number];

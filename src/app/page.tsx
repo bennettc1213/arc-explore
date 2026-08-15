@@ -2,11 +2,14 @@ import Link from "next/link";
 
 import { Mascot } from "@/components/chrome/Mascot";
 import { PostingRow } from "@/components/PostingRow";
+import { SavedSearches } from "@/components/SavedSearches";
 import { statusesForPostings } from "@/lib/applications/store";
 import { getSessionUser } from "@/lib/auth";
 import { getAvailableTerms, getFeed, getFeedStats, type DeadlineFilter } from "@/lib/feed";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { skillsFromParsedResume } from "@/lib/score/skills";
+import { listSearches } from "@/lib/searches/store";
+import { filtersFromParams, isEmptyFilters } from "@/lib/searches/types";
 import {
   INTEREST_OPTIONS,
   INTEREST_VALUES,
@@ -132,9 +135,13 @@ export default async function FeedPage({
   const deleted = deletedParam === "1" || deletedParam === "partial" ? deletedParam : null;
 
   const user = await getSessionUser();
-  const [stored, resume] = user
-    ? await Promise.all([getProfile(user.id), getLatestResume(user.id)])
-    : [null, null];
+  const [stored, resume, savedSearches] = user
+    ? await Promise.all([getProfile(user.id), getLatestResume(user.id), listSearches(user.id)])
+    : [null, null, []];
+
+  // Read from the same params the feed filters on, so "save this search" saves
+  // exactly what is on screen.
+  const currentFilters = filtersFromParams(sp);
 
   // Derived on read, not stored: improving the extractor improves everyone's
   // scores without a migration or a re-upload.
@@ -453,6 +460,21 @@ export default async function FeedPage({
           {categoryUnclassified.toLocaleString("en-US")} more state no field we can read, so we
           cannot place them in a category — hidden here, not necessarily off-topic
         </div>
+      )}
+
+      {/* Signed-in only: a saved search needs somewhere to belong and something
+          to alert. Signed out the feed still works, filters and all. */}
+      {user && (
+        <SavedSearches
+          current={currentFilters}
+          currentIsEmpty={isEmptyFilters(currentFilters)}
+          searches={savedSearches.map((s) => ({
+            id: s.id,
+            name: s.name,
+            filters: s.filters,
+            notify: s.notify,
+          }))}
+        />
       )}
 
       {items.length === 0 ? (

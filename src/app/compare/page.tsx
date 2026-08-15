@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { getSessionUser } from "@/lib/auth";
-import { MAX_COMPARE, MIN_COMPARE, buildComparison, parseCompareIds } from "@/lib/compare";
+import { MIN_COMPARE, buildComparison, parseCompareIds } from "@/lib/compare";
 import { getPosting } from "@/lib/feed";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { toScoreProfile } from "@/lib/profile/types";

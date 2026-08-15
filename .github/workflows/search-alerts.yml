@@ -1,0 +1,55 @@
+####
+# New-match alerts for saved searches.
+#
+# Daily rather than on the ingest loop. The feed refreshes every 20 minutes,
+# and mailing a student that often would make this the most unsubscribed-from
+# thing we do — a saved search is a standing interest, not a live ticker.
+#
+# INERT UNTIL RESEND_API_KEY IS SET. The step below runs without `--send` if
+# the secret is missing, so a repository with no key still exercises the whole
+# path daily and prints what it would have sent, rather than silently doing
+# nothing until someone notices.
+####
+name: search-alerts
+
+on:
+  schedule:
+    - cron: "23 13 * * *" # 13:23 UTC — mid-morning US, off the hour
+  workflow_dispatch:
+    inputs:
+      send:
+        description: "actually send (unchecked = dry run)"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: search-alerts
+  cancel-in-progress: false
+
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - run: npm ci
+
+      - name: send saved-search alerts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REMINDER_FROM_EMAIL: ${{ secrets.REMINDER_FROM_EMAIL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+        # `--send` only when the key exists and the run asked for it. A manual
+        # dispatch defaults to a dry run for the same reason the script does.
+        run: >
+          npm run alerts --
+          ${{ (secrets.RESEND_API_KEY != '' && github.event_name == 'schedule') && '--send' || '' }}
+          ${{ (secrets.RESEND_API_KEY != '' && github.event.inputs.send == 'true') && '--send' || '' }}

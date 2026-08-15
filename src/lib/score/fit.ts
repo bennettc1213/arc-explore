@@ -117,6 +117,15 @@ type FieldKey = keyof typeof FIELDS;
 export type { FieldKey };
 
 /**
+ * The keys, as a runtime value.
+ *
+ * Derived from `FIELDS` rather than written out again, so a seventh field
+ * cannot be added to the taxonomy and silently left out of the places that
+ * validate against it — the category filter and the saved-search schema.
+ */
+export const FIELD_KEYS = Object.keys(FIELDS) as [FieldKey, ...FieldKey[]];
+
+/**
  * Maps a stated major onto the fields it plausibly leads to.
  *
  * Degree-language only: every alternative names a field of study, not a role.

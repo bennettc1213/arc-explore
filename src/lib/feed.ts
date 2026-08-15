@@ -16,7 +16,7 @@ import { desc, eq, isNull, and, isNotNull, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { organizations, postings, type FreshnessTier, type PostingKind } from "@/db/schema";
-import { escapeLike, parseSearchQuery } from "./feed-search";
+import { escapeLike, parseSearchQuery, type DeadlineFilter } from "./feed-search";
 import { isFlaggedDead } from "./ingest/linkcheck";
 import {
   fieldsForPosting,
@@ -74,7 +74,9 @@ export interface FeedItem {
 }
 
 /** "set" = any stated upcoming deadline; "30"/"60"/"90" = closing within N days. */
-export type DeadlineFilter = "set" | "30" | "60" | "90";
+// Defined in feed-search.ts, which is free of database imports, so the
+// saved-search schema can validate against it without opening a connection.
+export { DEADLINE_FILTERS, type DeadlineFilter } from "./feed-search";
 
 export interface FeedFilters {
   /** Include postings that have closed. Off by default. */
@@ -97,6 +99,15 @@ export interface FeedFilters {
   category?: FieldKey | null;
   /** Hide roles the profile is hard-blocked from. */
   hideBlocked?: boolean;
+  /**
+   * Only postings we first saw after this moment.
+   *
+   * Drives the saved-search alert job: "new since we last told you" is
+   * `first_seen_at`, not `posted_at`. An employer's stated posting date is
+   * usually absent and, when present, is a claim rather than an observation —
+   * the moment we first saw a row is the only thing we can stand behind.
+   */
+  newSince?: Date | null;
   /** Max rows to return. Applied AFTER ranking, so the list is never
    *  truncated in a way that silently drops one kind. */
   limit?: number;
@@ -297,6 +308,9 @@ export async function getFeed(
    */
   conditions.push(isNull(postings.hiddenAt));
   if (!filters.includeClosed) conditions.push(isNull(postings.closedAt));
+  if (filters.newSince) {
+    conditions.push(sql`${postings.firstSeenAt} > ${filters.newSince.toISOString()}::timestamptz`);
+  }
   if (filters.term) conditions.push(eq(postings.term, filters.term));
   if (filters.remoteOnly) conditions.push(eq(postings.isRemote, true));
   if (filters.kind) conditions.push(eq(postings.kind, filters.kind));

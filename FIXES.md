@@ -26,8 +26,8 @@ only you can make, and the feature on the other side of it is already written.
   whole site gets ~6 audits an hour. Any token fixes it (5,000/hr) and it needs
   **no scopes** — everything we read is public. Add `GITHUB_TOKEN=` to `.env`
   and as a Vercel env var.
-- [ ] **`RESEND_API_KEY` + `REMINDER_FROM_EMAIL`.** Deadline reminders are
-  built and dry-run verified but deliberately inert. Needs the repo secret and
+- [ ] **`RESEND_API_KEY` + `REMINDER_FROM_EMAIL`.** Deadline reminders **and
+  saved-search alerts** are built and dry-run verified but deliberately inert. Needs the repo secret and
   a **verified sender domain**. Run `npm run reminders` first — with no
   `--send` it prints exactly what would go out. Worth knowing: 288 open
   postings carry a future deadline, but ATS internships almost never publish
