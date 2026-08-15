@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { db } from "@/db/client";
 import { resumes } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
+import { AccountDeleteError, deleteAccount } from "@/lib/profile/delete";
 import { ensureProfile, getProfile, saveProfile } from "@/lib/profile/store";
 import {
   INTEREST_VALUES,
@@ -14,6 +16,7 @@ import {
 } from "@/lib/profile/types";
 import { parseResume, ResumeParseError } from "@/lib/resume/parse";
 import { checkUpload, resumeToProfileSuggestions, type ProfileSuggestions } from "@/lib/resume/types";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export interface ProfileFormState {
   status: "idle" | "saved" | "error";
@@ -138,4 +141,55 @@ export async function uploadResumeAction(
       projects: result.parsed.projects.length,
     },
   };
+}
+
+/* ------------------------------------------------------------------ *
+ * Account deletion
+ * ------------------------------------------------------------------ */
+
+export interface DeleteAccountState {
+  status: "idle" | "error";
+  message?: string;
+}
+
+/**
+ * Delete the account.
+ *
+ * Guarded by typing the word rather than a confirm dialog: this is the one
+ * irreversible action in the product, and a dialog is dismissed by reflex. The
+ * id comes from the verified session, never the form, so a posted id cannot
+ * delete somebody else.
+ *
+ * On success it redirects out — the session cookie now points at a user that
+ * no longer exists, and every authenticated page would otherwise bounce the
+ * visitor through a login for an account they just destroyed.
+ */
+export async function deleteAccountAction(
+  _prev: DeleteAccountState,
+  formData: FormData,
+): Promise<DeleteAccountState> {
+  const user = await requireUser("/profile");
+
+  if (String(formData.get("confirm") ?? "").trim().toLowerCase() !== "delete") {
+    return { status: "error", message: 'type "delete" to confirm' };
+  }
+
+  let authDeleted: boolean;
+  try {
+    ({ authDeleted } = await deleteAccount(user.id));
+  } catch (err) {
+    return {
+      status: "error",
+      message: err instanceof AccountDeleteError ? err.message : "could not delete the account",
+    };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  await supabase.auth.signOut();
+
+  revalidatePath("/");
+  // `authDeleted: false` means SUPABASE_SERVICE_ROLE_KEY is unset: every row we
+  // hold is gone but the login record survives. The landing page says which
+  // happened rather than claiming a clean sweep either way.
+  redirect(authDeleted ? "/?deleted=1" : "/?deleted=partial");
 }

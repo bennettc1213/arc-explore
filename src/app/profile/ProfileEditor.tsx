@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 
 import { Mascot } from "@/components/chrome/Mascot";
 import {
@@ -112,8 +113,12 @@ export function ProfileEditor({
           resume — optional
         </div>
         <p className="t-sm" style={{ color: "var(--muted)", marginBottom: 16, maxWidth: "62ch" }}>
-          We read it once to fill in the fields below, then keep only the structured
-          result — not the file. Nothing is saved to your profile until you press save.
+          We read it once to fill in the fields below. A PDF is never stored — only the
+          structure we read out of it. A .txt or .md upload is kept as text, so a re-parse
+          does not need it again. Nothing is saved to your profile until you press save.{" "}
+          <Link href="/privacy" style={{ color: "var(--accent)" }}>
+            what we hold
+          </Link>
         </p>
 
         <form action={uploadAction} className="flex flex-wrap items-center gap-3">

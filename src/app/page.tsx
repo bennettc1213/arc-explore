@@ -121,6 +121,16 @@ export default async function FeedPage({
 }) {
   const sp = await searchParams;
 
+  /*
+   * Set by the account-deletion redirect. Worth a banner rather than a silent
+   * landing: someone who just destroyed everything they had here should be told
+   * it worked, and told which of the two things happened — "partial" means the
+   * app data is gone but the login record survived because the service-role key
+   * was unset.
+   */
+  const deletedParam = Array.isArray(sp.deleted) ? sp.deleted[0] : sp.deleted;
+  const deleted = deletedParam === "1" || deletedParam === "partial" ? deletedParam : null;
+
   const user = await getSessionUser();
   const [stored, resume] = user
     ? await Promise.all([getProfile(user.id), getLatestResume(user.id)])
@@ -195,6 +205,23 @@ export default async function FeedPage({
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
+      {deleted && (
+        <div
+          className="border"
+          style={{ borderColor: "var(--accent)", padding: "14px 18px", marginBottom: 28 }}
+        >
+          <div className="mono-strong" style={{ color: "var(--accent)" }}>
+            {deleted === "partial" ? "your data is deleted" : "your account is deleted"}
+          </div>
+          <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "62ch" }}>
+            {deleted === "partial"
+              ? "Your profile, resumes, cover letters, applications and reminder history are gone. The sign-in record itself could not be removed automatically — email us and it will be."
+              : "Your profile, resumes, cover letters, applications, reminder history and sign-in record are gone. Nothing was kept, so there is nothing to restore."}{" "}
+            The feed below still works signed out.
+          </p>
+        </div>
+      )}
+
       <header style={{ marginBottom: 40 }}>
         <div className="eyebrow chrome">01 — internships + scholarships</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>

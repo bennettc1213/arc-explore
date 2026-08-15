@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Mascot } from "./Mascot";
 
 export function Footer() {
@@ -16,7 +18,12 @@ export function Footer() {
             </div>
           </div>
         </div>
-        <div className="mono chrome">tech vertical · business vertical next</div>
+        <div className="flex items-center gap-5">
+          <Link href="/privacy" className="mono chrome press" style={{ color: "var(--accent)" }}>
+            privacy
+          </Link>
+          <span className="mono chrome">tech vertical · business vertical next</span>
+        </div>
       </div>
     </footer>
   );

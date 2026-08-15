@@ -88,6 +88,11 @@ closed out and is the largest untested surface in the project.
 - [ ] `/linkedin` signed in — the builder filling from profile + resume.
 - [ ] Saving a profile and confirming `github_username` / `linkedin_url`
   round-trip through the form.
+- [ ] **Account deletion.** Never run, deliberately — the only way to test it is
+  to destroy a real account. Verify on a throwaway account before anyone else
+  has one: confirm all seven cascades fire, that `auth.users` is gone, and that
+  the `deleted=partial` branch reads correctly when
+  `SUPABASE_SERVICE_ROLE_KEY` is unset.
 
 ---
 
@@ -95,10 +100,11 @@ closed out and is the largest untested surface in the project.
 
 Things that are currently true but should not stay true.
 
-- [ ] **No privacy policy.** Phase 05 line. This matters more now than when it
-  was written: we store parsed resumes, we hold email addresses, and the
-  reminder job sends mail. "We do not sell your data" needs to be written down
-  before students arrive.
+- [x] **No privacy policy.** Fixed — `/privacy`, written from the schema and
+  linked from the footer. Writing it surfaced two things worth keeping in mind:
+  the upload form's "we keep only the structured result — not the file" was
+  **false for `.txt`/`.md` uploads** (fixed in the same commit), and a policy
+  promising deletion needed a deletion path, so `deleteAccount` was built.
 - [ ] **No "report this listing" button.** Phase 05.
 - [ ] **No HTTP dead-link check on apply URLs.** We detect disappearance from
   an employer's ATS within ~20 min, which is stronger than a link check — but

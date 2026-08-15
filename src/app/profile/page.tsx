@@ -9,6 +9,7 @@ import { coerceParsedResume } from "@/lib/resume/types";
 import { resumeCompetitiveness } from "@/lib/score/competitiveness";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 
+import { DeleteAccount } from "./DeleteAccount";
 import { PresencePrompt } from "./PresencePrompt";
 import { ProfileEditor } from "./ProfileEditor";
 import { ResumeCritique } from "./ResumeCritique";
@@ -155,9 +156,15 @@ export default async function ProfilePage() {
         }
       />
 
+      <DeleteAccount />
+
       <p className="mono" style={{ marginTop: 28 }}>
         <Link href="/" className="press" style={{ color: "var(--accent)" }}>
           back to the feed →
+        </Link>
+        {"  ·  "}
+        <Link href="/privacy" className="press" style={{ color: "var(--accent)" }}>
+          what we hold about you →
         </Link>
       </p>
     </main>
