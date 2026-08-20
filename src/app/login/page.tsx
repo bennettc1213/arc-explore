@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { BackLink } from "@/components/BackLink";
 import { getSessionUser } from "@/lib/auth";
 import { safeNextPath } from "@/lib/safe-redirect";
 
@@ -38,6 +39,7 @@ export default async function LoginPage({
 
   return (
     <main className="wrap" style={{ paddingBlock: "64px 96px", maxWidth: 560 }}>
+      <BackLink href="/" label="back to the feed" />
       <div className="eyebrow chrome">sign in</div>
       <h1 className="chrome" style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.03em", marginTop: 12 }}>
         save your profile, keep your <span style={{ color: "var(--accent)" }}>scores</span>

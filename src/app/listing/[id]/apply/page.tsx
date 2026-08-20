@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BackLink } from "@/components/BackLink";
 import { CopyField } from "@/components/CopyField";
 import { requireUser } from "@/lib/auth";
 import { buildApplicationPacket } from "@/lib/apply/packet";
@@ -54,11 +55,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ id: stri
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
-      <div style={{ marginBottom: 24 }}>
-        <Link href={`/listing/${id}`} className="mono chrome press" style={{ color: "var(--accent)" }}>
-          ← back to the listing
-        </Link>
-      </div>
+      <BackLink href={`/listing/${id}`} label="back to the listing" />
 
       <header style={{ marginBottom: 28 }}>
         <div className="eyebrow chrome">application packet</div>

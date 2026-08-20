@@ -1,16 +1,20 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { BackLink } from "@/components/BackLink";
+import { ApplyWizard } from "@/components/apply/ApplyWizard";
 import { CoverLetterEditor } from "@/components/CoverLetterEditor";
 import { ReportListing } from "@/components/ReportListing";
 import { TrackButton } from "@/components/TrackButton";
 import { recordEvent } from "@/lib/analytics/record";
+import { buildApplicationPacket } from "@/lib/apply/packet";
 import { getSessionUser } from "@/lib/auth";
 import { getCoverLetter } from "@/lib/cover-letter/store";
 import { getPosting } from "@/lib/feed";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { hasReported } from "@/lib/reports/store";
 import { toScoreProfile } from "@/lib/profile/types";
+import { coerceParsedResume } from "@/lib/resume/types";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 
 export const dynamic = "force-dynamic";
@@ -127,21 +131,50 @@ export default async function ListingPage({
     ? await Promise.all([getCoverLetter(user.id, id), hasReported(user.id, id)])
     : [null, false];
 
+  // The one-button apply flow, assembled server-side from the same packet the
+  // /apply page shows, so the wizard and the packet can never disagree about
+  // what we hold. Only built for a signed-in student — the wizard writes back
+  // to their profile, which does not exist signed out.
+  const parsedResume = resume ? coerceParsedResume(resume.parsed) : null;
+  const wizardBoot = user
+    ? (() => {
+        const packet = buildApplicationPacket({
+          profile: stored,
+          resume: parsedResume,
+          accountEmail: user.email ?? null,
+        });
+        return {
+          postingId: item.id,
+          postingTitle: item.title,
+          postingUrl: item.url,
+          kind: item.kind,
+          fields: packet.fields,
+          attestations: packet.attestations,
+          letterState: (letter
+            ? letter.unfilledSlots.length > 0
+              ? "slots"
+              : "ready"
+            : "none") as "none" | "slots" | "ready",
+          current: {
+            displayName: stored?.displayName ?? "",
+            school: stored?.school ?? "",
+            major: stored?.major ?? "",
+            gradYear: stored?.gradYear != null ? String(stored.gradYear) : "",
+            gpa: stored?.gpa != null ? String(stored.gpa) : "",
+            workAuth: stored?.workAuth ?? "",
+            targetLocations: (stored?.targetLocations ?? []).join(", "),
+          },
+        };
+      })()
+    : null;
+
   const closed = Boolean(item.closedAt);
   const blocked = item.fit.blocked;
   const amount = item.kind === "scholarship" ? formatAmount(item.amountMin, item.amountMax) : null;
 
   return (
     <main className="wrap" style={{ paddingBlock: "40px 96px" }}>
-      <div className="print-hide" style={{ marginBottom: 32 }}>
-        <Link
-          href="/"
-          className="mono press"
-          style={{ color: "var(--accent)", textDecoration: "none" }}
-        >
-          ← back to feed
-        </Link>
-      </div>
+      <BackLink href="/" label="back to feed" />
 
       <header className="print-hide" style={{ marginBottom: 24 }}>
           <div className="eyebrow chrome">04 — opportunity</div>
@@ -178,6 +211,7 @@ export default async function ListingPage({
                 >
                   apply on {item.kind === "scholarship" ? "the sponsor's site" : "the employer's site"} ↗
                 </a>
+                {wizardBoot && <ApplyWizard boot={wizardBoot} />}
                 {user && (
                   <Link
                     href={`/listing/${item.id}/apply`}
@@ -315,7 +349,7 @@ export default async function ListingPage({
           </section>
         )}
 
-        <section>
+        <section id="cover-letter">
           <div className="eyebrow chrome print-hide" style={{ marginBottom: 12 }}>
             05 — cover letter
           </div>

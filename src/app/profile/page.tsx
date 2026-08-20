@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { signOut } from "@/app/auth/actions";
+import { BackLink } from "@/components/BackLink";
 import { requireUser } from "@/lib/auth";
 import { getCompletionCorpus } from "@/lib/feed";
 import { profileCompletion } from "@/lib/profile/completion";
@@ -17,6 +17,7 @@ import { EmailPrefs } from "./EmailPrefs";
 import { PresencePrompt } from "./PresencePrompt";
 import { ProfileEditor } from "./ProfileEditor";
 import { ResumeCritique } from "./ResumeCritique";
+import { SignOutButton } from "./SignOutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,7 @@ export default async function ProfilePage() {
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 880 }}>
+      <BackLink href="/" label="back to the feed" />
       <div className="flex flex-wrap items-start justify-between gap-4" style={{ marginBottom: 32 }}>
         <div>
           <div className="eyebrow chrome">your profile</div>
@@ -58,11 +60,7 @@ export default async function ProfilePage() {
 
         <div className="flex flex-col items-end gap-2">
           <span className="mono">{user.email}</span>
-          <form action={signOut}>
-            <button type="submit" className="btn press">
-              sign out
-            </button>
-          </form>
+          <SignOutButton />
         </div>
       </div>
 

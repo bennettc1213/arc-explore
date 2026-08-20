@@ -1,18 +1,14 @@
 import Link from "next/link";
 
+import { BackLink } from "@/components/BackLink";
 import { requireAdmin } from "@/lib/admin/auth";
 import { filterUsage, metricCounts, recentCounts } from "@/lib/metrics/store";
 import { buildMetrics } from "@/lib/metrics/types";
 import { adminCounts, openReports, triageQueue } from "@/lib/reports/store";
 import { URGENT_REASONS, reasonLabel, type ReportReason } from "@/lib/reports/types";
 
+import { HideForm, MarkReviewedButton, ResolveForm, UnhideButton } from "./AdminActionButtons";
 import { Metrics } from "./Metrics";
-import {
-  hideListingAction,
-  markReviewedAction,
-  resolveReportAction,
-  unhideListingAction,
-} from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -48,30 +44,6 @@ function Count({ n, label, urgent }: { n: number; label: string; urgent?: boolea
   );
 }
 
-function HideForm({ postingId }: { postingId: string }) {
-  return (
-    <form action={hideListingAction} className="flex flex-wrap items-center gap-2">
-      <input type="hidden" name="postingId" value={postingId} />
-      <input
-        name="reason"
-        placeholder="why (recorded, never shown publicly)"
-        style={{
-          background: "transparent",
-          border: "1px solid var(--line)",
-          color: "var(--text)",
-          padding: "6px 8px",
-          font: "inherit",
-          fontSize: "0.8rem",
-          minWidth: 240,
-        }}
-      />
-      <button type="submit" className="btn press">
-        hide
-      </button>
-    </form>
-  );
-}
-
 export default async function AdminPage() {
   const admin = await requireAdmin();
   const [counts, reports, triage, rawMetrics, recent, filters] = await Promise.all([
@@ -86,6 +58,7 @@ export default async function AdminPage() {
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
+      <BackLink href="/" label="back to the feed" />
       <header style={{ marginBottom: 28 }}>
         <div className="eyebrow chrome">admin</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>
@@ -200,35 +173,12 @@ export default async function AdminPage() {
 
                   <div className="flex flex-wrap items-center gap-3" style={{ marginTop: 12 }}>
                     {r.hiddenAt ? (
-                      <form action={unhideListingAction}>
-                        <input type="hidden" name="postingId" value={r.postingId} />
-                        <button type="submit" className="btn press">
-                          put it back
-                        </button>
-                      </form>
+                      <UnhideButton postingId={r.postingId} />
                     ) : (
                       <HideForm postingId={r.postingId} />
                     )}
 
-                    <form action={resolveReportAction} className="flex flex-wrap items-center gap-2">
-                      <input type="hidden" name="reportId" value={r.id} />
-                      <input
-                        name="resolution"
-                        placeholder="what you decided"
-                        style={{
-                          background: "transparent",
-                          border: "1px solid var(--line)",
-                          color: "var(--text)",
-                          padding: "6px 8px",
-                          font: "inherit",
-                          fontSize: "0.8rem",
-                          minWidth: 200,
-                        }}
-                      />
-                      <button type="submit" className="btn press">
-                        resolve
-                      </button>
-                    </form>
+                    <ResolveForm reportId={r.id} />
                   </div>
                 </li>
               );
@@ -272,21 +222,11 @@ export default async function AdminPage() {
 
                 <div className="flex flex-wrap items-center gap-3" style={{ marginTop: 10 }}>
                   {t.hiddenAt ? (
-                    <form action={unhideListingAction}>
-                      <input type="hidden" name="postingId" value={t.id} />
-                      <button type="submit" className="btn press">
-                        put it back
-                      </button>
-                    </form>
+                    <UnhideButton postingId={t.id} />
                   ) : (
                     <HideForm postingId={t.id} />
                   )}
-                  <form action={markReviewedAction}>
-                    <input type="hidden" name="postingId" value={t.id} />
-                    <button type="submit" className="btn press">
-                      looked, leave it up
-                    </button>
-                  </form>
+                  <MarkReviewedButton postingId={t.id} />
                 </div>
               </li>
             ))}

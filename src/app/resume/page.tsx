@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BackLink } from "@/components/BackLink";
 import { ResumeEditor } from "@/components/ResumeEditor";
 import { requireUser } from "@/lib/auth";
 import { getLatestResume } from "@/lib/profile/store";
@@ -21,6 +22,7 @@ export default async function ResumePage() {
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
+      <BackLink href="/profile" label="back to your profile" />
       <header className="print-hide" style={{ marginBottom: 32 }}>
         <div className="eyebrow chrome">resume</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>

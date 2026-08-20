@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BackLink } from "@/components/BackLink";
 import { Mascot } from "@/components/chrome/Mascot";
 import { requireUser } from "@/lib/auth";
 import { listApplications } from "@/lib/applications/store";
@@ -68,6 +69,7 @@ export default async function TrackerPage() {
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 1100 }}>
+      <BackLink href="/" label="back to the feed" />
       <header style={{ marginBottom: 32 }}>
         <div className="eyebrow chrome">your applications</div>
         <h1

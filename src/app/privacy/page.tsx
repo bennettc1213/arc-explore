@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { BackLink } from "@/components/BackLink";
+
 export const metadata = {
   title: "Privacy — internship tracker",
   description: "What we store, what leaves our systems, and what we will never do.",
@@ -46,6 +48,7 @@ function Row({ what, why }: { what: string; why: string }) {
 export default function PrivacyPage() {
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 820 }}>
+      <BackLink href="/" label="back to the feed" />
       <header style={{ marginBottom: 36 }}>
         <div className="eyebrow chrome">privacy</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>

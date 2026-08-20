@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BackLink } from "@/components/BackLink";
 import { EssayReviewer } from "./EssayReviewer";
 
 export const metadata = {
@@ -17,6 +18,7 @@ export const metadata = {
 export default function EssayPage() {
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 900 }}>
+      <BackLink href="/" label="back to the feed" />
       <header style={{ marginBottom: 28 }}>
         <div className="eyebrow chrome">08 — essay</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>

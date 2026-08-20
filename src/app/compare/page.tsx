@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BackLink } from "@/components/BackLink";
 import { getSessionUser } from "@/lib/auth";
 import { MIN_COMPARE, buildComparison, parseCompareIds } from "@/lib/compare";
 import { getPosting } from "@/lib/feed";
@@ -99,6 +100,7 @@ export default async function ComparePage({
   if (found.length < MIN_COMPARE) {
     return (
       <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 900 }}>
+        <BackLink href="/tracker" label="back to tracker" />
         <div className="eyebrow chrome">compare</div>
         <h1 className="section-title chrome" style={{ marginTop: 12, marginBottom: 16 }}>
           pick <span style={{ color: "var(--accent)" }}>two or three</span>
@@ -121,6 +123,7 @@ export default async function ComparePage({
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
+      <BackLink href="/tracker" label="back to tracker" />
       <header style={{ marginBottom: 28 }}>
         <div className="eyebrow chrome">compare</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>
