@@ -36,13 +36,16 @@ only you can make, and the feature on the other side of it is already written.
   and as a Vercel env var.
 - [ ] **`RESEND_API_KEY` + `REMINDER_FROM_EMAIL`.** All three email features —
   deadline reminders, saved-search alerts and the **weekly digest** — are built
-  and dry-run verified but deliberately inert. Needs the repo secret and a
-  **verified sender domain**. Run `npm run reminders`, `npm run alerts` and
-  `npm run digest` first — with no `--send` each prints exactly what would go
-  out. Worth knowing: 288 open postings carry a future deadline, but ATS
-  internships almost never publish one, so reminders stay quiet until students
-  save scholarships. The digest is the one that will actually fire — every
-  profile with a usable profile gets one the week after it is switched on.
+  and dry-run verified but deliberately inert, and the apply wizard's
+  confirmation email now joins them: it is composed and *shown* in the wizard's
+  final step (copyable, never sent), and switching it to a real send is part of
+  the same decision. Needs the repo secret and a **verified sender domain**.
+  Run `npm run reminders`, `npm run alerts` and `npm run digest` first — with
+  no `--send` each prints exactly what would go out. Worth knowing: 288 open
+  postings carry a future deadline, but ATS internships almost never publish
+  one, so reminders stay quiet until students save scholarships. The digest is
+  the one that will actually fire — every profile with a usable profile gets
+  one the week after it is switched on.
 - [ ] **Adzuna app id/key.** Phase 01 line is blocked, not merely unstarted —
   there is nothing to build against until one is registered. Free tier.
 - [ ] **Parse credit balance.** ScholarshipPortal's ~3,666 rows have **never
@@ -90,15 +93,19 @@ only you can make, and the feature on the other side of it is already written.
 
 ## 2. Known bugs
 
-- [ ] **The UNL crawl intermittently drops a row.** 263/263/264 across three
-  consecutive scrapes. A dropped row **closes a live scholarship** until the
-  next run picks it up again. The real fix is requiring absence from **two
-  consecutive scrapes** before setting `closed_at` — not another sort key.
-  Applies to every scholarship source, not just UNL. **There is now a working
-  precedent to copy:** `lib/ingest/linkcheck.ts` implements exactly this
-  two-observation rule (`urlDeadStrikes`, cleared by any contrary evidence,
-  timestamp stamped once). The scholarship persist path should do the same
-  with a `missing_strikes` column instead of closing on one absence.
+- [x] **The UNL crawl intermittently drops a row.** Fixed by porting the two-observation
+  rule from `lib/ingest/linkcheck.ts` onto the ATS-feed freshness path. Added
+  `postings.missing_strikes` (integer, default 0) and `postings.missing_since`
+  (timestamptz, first crossing of the threshold, never moved) as a direct
+  analogue of `url_dead_strikes` / `url_dead_since`. `reconcile()` now returns
+  three states in place of the old one-shot close: `toIncrementMissing` (absent
+  once — strike bumped, posting stays open), `toClose` (absent on the *second
+  consecutive* scrape — `closed_at` finally set), and `toResetMissing` (present
+  again after a prior strike — counter cleared). Persist applies each in one
+  transaction. Verified live: a dry-run crawl against the real corpus on a single
+  absence now reports `closed: 0` where the old path would have closed the row,
+  and the new columns backfill to 0 on all 3,765 open postings. Applies to every
+  scholarship source on the same reconcile path, not just UNL.
 - [x] **Remote-only never survived a saved search, in either direction.**
   Fixed. The feed page re-read every filter out of `searchParams` itself,
   beside the `filtersFromParams` call that feeds "save this search" — two
@@ -122,11 +129,18 @@ only you can make, and the feature on the other side of it is already written.
   stands: a Server Component that reads `searchParams` directly is untested
   surface. Worth a rule — params are parsed in a tested module, never in a
   page — rather than another test.
-- [ ] **`postings.category` is NULL on all 3,765 rows**, and
+- [x] **`postings.category` is NULL on all 3,765 rows**, and
   `organizations.vertical` is equally empty. Both are dead columns. The
   category filter was deliberately built on the derived field taxonomy instead.
   Either backfill them or drop them — right now they are a trap for the next
   person who assumes a column with a name means something.
+  _Fixed — dropped, not backfilled. Audited first: no insert ever wrote either
+  column and no query ever read one (the feed's category filter reads the
+  derived `fieldsForPosting` taxonomy; `recruiting_cycles.vertical` and
+  `profiles.target_verticals` are live lookalikes and were left alone).
+  Migration `0016_drop_dead_columns` applied to the live database and verified:
+  both columns gone, both lookalikes intact. There was nothing to backfill
+  from — the taxonomy derivation is computed at read time, not stored._
 - [ ] **A scholarship can score 100 with full confidence; an internship
   essentially cannot.** Found by the first live digest dry run, which returned
   six scholarships and zero internships for a profile stating software,
@@ -172,11 +186,60 @@ only you can make, and the feature on the other side of it is already written.
   unknown is dropped and labelled, an invented match is indistinguishable from
   a real one and silently moves a row up the ranking. Tested against the exact
   prose that produced each one.
-- [ ] **Two copies of the slot-marker regex.** `lib/github/readme.ts` and
+- [x] **Two copies of the slot-marker regex.** `lib/github/readme.ts` and
   `lib/linkedin/build.ts` each define their own `SLOT_RE` for
   `[YOUR SPECIFIC DETAIL: …]`, and `lib/cover-letter/types.ts` has a third,
   looser one. The looser one cannot be shared (it matches markdown link labels)
   but the two strict copies should be one exported function.
+  _Fixed — the strict scanner now lives once in `lib/cover-letter/types.ts` as
+  `markerSlotsFromText(...texts)`, beside `slotMarker` (which defines the
+  format) and the deliberately-looser `slotsFromText`. Both generators import
+  it; five new tests pin the markdown-link-label case that is the reason the
+  strict variant exists._
+- [x] **The focus ring assumes the nav is `position: fixed`; it is not.**
+  `FocusRing.tsx` marks anything inside a `<header>` as `fixed` and applies no
+  scroll offset, on the comment "Only the nav is truly `position: fixed`". The
+  nav header is actually `position: relative` in normal flow and scrolls away
+  with the page, so the ring for a focused nav element detaches from it as soon
+  as the page scrolls. Confirmed live: `body > header` computes to
+  `position: relative`. Harmless until a keyboard user scrolls mid-focus, and
+  the fixed branch never fires for the element it was written for.
+  _Fixed — the heuristic `closest("header")` is replaced by `inFixedContext`,
+  which walks the ancestor chain and asks `getComputedStyle` for an actual
+  `position: fixed`. That corrects both directions of the old guess: the nav
+  (relative) now gets a document-anchored ring that scrolls with it, and the
+  apply wizard's overlay (genuinely fixed) gets a viewport-anchored ring that
+  stays put — the old check would have gotten that case wrong too. The stale
+   "fixed inside the nav" comment in globals.css was updated to match._
+- [x] **Cover letter drafts came back as hollow `[YOUR SPECIFIC DETAIL: …]`
+   placeholders.** The grounding engine only matched a resume's *experience
+   bullets* against a posting's skills, using a **tech-only** vocabulary. A
+   non-technical resume (and ~70% of postings that carry no skills list at all)
+   therefore produced a letter with no evidence to quote, so the generator
+   filled it with placeholders — which read as broken. Fixed three ways: (1) the
+   skill vocabulary now has a `general` group (retail, customer service,
+   warehouse, creative, office skills…) and the skills-list splitter now handles
+   ` & ` separators, so a non-tech resume's real skills register; (2)
+   `evidenceForPosting` now also cites skills the candidate listed outright when
+   the posting names them; (3) when nothing matches, `buildCoverLetterContext`
+   falls back to the candidate's most substantive real experience as *honest
+   background* evidence (quoted verbatim) instead of a placeholder shell, and
+   the generator is told via a new `directMatch` flag not to claim a relevance
+   the facts do not support. Verified end-to-end against the owner's own resume:
+   letters now stand on real experience with at most one genuine slot
+   (portfolio / transcript). 174 unit tests pass; typecheck and lint clean.
+- [x] **The apply wizard had too many steps that felt like questions with only
+   one answer.** Every attestation was its own "I understand — continue" screen,
+   the cover letter and resume were not shown as attached, and facts were
+   reviewed on a separate screen the student could not act on. Redesigned the
+   wizard to a minimal flow: only genuine clarifying questions (profile gaps the
+   wizard writes back to) get their own step; everything else — facts held,
+   resume and cover letter as attachments, legal declarations — is folded into a
+   single review screen. The student sees what's attached, confirms the legal
+   statements once, then opens the employer's real form and submits themselves.
+   `planApplySteps` now emits only `gap` / `review` / `handoff` (removed
+   `facts`, `attestation`, `letter`). 13 wizard tests rewritten and passing;
+   typecheck and lint clean.
 
 ---
 
@@ -192,6 +255,14 @@ closed out and is the largest untested surface in the project.
   the new email-preferences panel (its action is separate from the profile
   form's, and that separation has never been exercised with a real session).
 - [ ] `/listing/[id]/apply` — the application packet.
+- [ ] **The apply wizard on `/listing/[id]`** ("apply with arc explorer" button).
+  The step plan, prompt mapping, progress math and confirmation composer are
+  unit-tested (13 tests in `lib/apply/wizard.test.ts`), and the page compiles
+  through a production build — but the modal itself, the gap write-backs into
+  the profile, and the final mark-applied stamp have never been driven with a
+  real session. Verify alongside the packet page it sits beside: open the
+  wizard, answer a gap, confirm an attestation, walk to the hand-off, and
+  confirm the tracker stamps `applied` exactly once.
 - [ ] `/github` signed in — the README generator filling from profile + resume,
   and the stored-handle fallback.
 - [ ] `/linkedin` signed in — the builder filling from profile + resume.
@@ -251,15 +322,31 @@ of several other finished features. If you could not find it, no student will.
   profile: cover letter builder, application packet, resume critique engine,
   keyword-gap view, deadline reminders. _Partly done: the completion panel on
   `/profile` now routes to `/resume` and the intake form with a reason attached
-  to each, and the email panel below it names the reminders and the digest. The
-  cover letter builder, the application packet and the keyword-gap view are
-  still findable only by already knowing they exist._
-- [ ] **The nav is over-full — fix this before the next page lands.** Seven
-  links for an admin (github, linkedin, essay, tracker, resume, profile,
-  admin), six for everyone else. `/essay` was added anyway this session rather
-  than shipping a page nobody could find, which makes this the blocking item it
-  was warned about. The three paste-in tools (github, linkedin, essay) share a
+  to each, and the email panel below it names the reminders and the digest.
+  The three open tools (github, linkedin, essay) are now surfaced on the feed
+  itself via `ToolsTease` for signed-out visitors and carry labels + blurbs in
+  the nav's "tools" menu — previously they were only findable by name. That
+  metadata now lives in one place: `lib/tools.ts`, shared by the menu and the
+  tease. The cover letter builder, the application packet and the keyword-gap
+  view are still reachable only by opening a listing (the builder and packet
+  are the "05 — cover letter" section and the "application packet" button there;
+  the gap is the skills line on each feed and listing row)._
+- [x] **The nav is over-full — fix this before the next page lands.** Seven links
+  for an admin (github, linkedin, essay, tracker, resume, profile, admin), six
+  for everyone else. `/essay` was added anyway this session rather than
+  shipping a page nobody could find, which makes this the blocking item it was
+  warned about. The three paste-in tools (github, linkedin, essay) share a
   shape and should collapse into one "tools" menu.
+  _Fixed. The three tools now live under one "tools" disclosure
+  (`src/components/chrome/ToolsMenu.tsx`) that opens signed-out like each tool
+  it holds. Mouse and keyboard both work: ArrowDown opens and lands focus on
+  the first item, arrows/Home/End cycle, Escape returns focus to the trigger,
+  Tab leaving either end closes it, and any navigation (including the browser
+  back button) closes it. Each item carries a one-line description, which is
+  the first pass at the discoverability item above. The layout header now
+  out-paints `main` (`body > header { z-index: 20 }`) so the panel can extend
+  past the 72px bar. Nav is now five links for an admin (tools, tracker,
+  resume, profile, admin), two for everyone else (tools, sign in).
 
 ---
 
