@@ -9,7 +9,7 @@ import { Footer } from "@/components/chrome/Footer";
 import { Nav } from "@/components/chrome/Nav";
 
 export const metadata: Metadata = {
-  title: "Instela",
+  title: "Instela | Find scholarships and internships",
   description:
     "Instela helps students find internships and scholarships, prepare applications, and keep track of what they have sent.",
   icons: {
