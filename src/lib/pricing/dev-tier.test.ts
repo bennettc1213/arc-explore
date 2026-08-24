@@ -110,7 +110,7 @@ test("a signed cookie round-trips, and only under the password that signed it", 
 
 test("an edited cookie is refused rather than believed", () => {
   /*
-   * THE LOAD-BEARING TEST FOR THE COOKIE. Stored plain, `arc_dev_tier=apply`
+   * THE LOAD-BEARING TEST FOR THE COOKIE. Stored plain, `instela_dev_tier=apply`
    * would be a paywall anyone could edit past in devtools, which would make
    * the password decorative. Every one of these is a real thing someone would
    * try first.

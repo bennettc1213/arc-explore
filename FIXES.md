@@ -41,7 +41,7 @@ only you can make, and the feature on the other side of it is already written.
   the one that is *not* dry-run by default (see below) — it will make a genuine
   Resend API call the moment a student marks an application submitted.
   `REMINDER_FROM_EMAIL` being absent means `fromAddress()` falls back to
-  `reminders@arc-explore.dev`, almost certainly not a verified sender on the
+  `reminders@instela.org`, almost certainly not a verified sender on the
   account, so the send returns `failed` rather than delivering. Handled, never
   thrown — the tracker stamp still lands — but it is a live outbound call, not a
   simulation. **To close: verify a sender domain in Resend and set
@@ -92,7 +92,7 @@ only you can make, and the feature on the other side of it is already written.
   workflows are now on the default branch, which is where GitHub requires them
   to be for a `schedule` trigger to fire at all. **What remains is one repo
   secret**: `DATABASE_URL`, at
-  `github.com/bennettc1213/arc-explore/settings/secrets/actions`, copied from
+  `github.com/bennettc1213/instela/settings/secrets/actions`, copied from
   local `.env`. Until it is set, `ingest-fast` runs every 20 minutes and fails
   immediately, which is loud but harmless.
 
@@ -594,7 +594,7 @@ closed out and is the largest untested surface in the project.
   the new email-preferences panel (its action is separate from the profile
   form's, and that separation has never been exercised with a real session).
 - [ ] `/listing/[id]/apply` — the application packet.
-- [ ] **The apply wizard on `/listing/[id]`** ("apply with arc explorer" button).
+- [ ] **The apply wizard on `/listing/[id]`** ("apply with Instela" button).
   The step plan, prompt mapping, progress math and confirmation composer are
   unit-tested (13 tests in `lib/apply/wizard.test.ts`), and the page compiles
   through a production build — but the modal itself, the gap write-backs into
@@ -638,18 +638,18 @@ closed out and is the largest untested surface in the project.
   that "I submitted this" stamps the tracker exactly once. **Do this first** —
   it is one login and one `load unpacked` away.
 - [ ] **The embedded apply path, with the extension actually loaded.** Built
-  2026-08-20. What is verified: the frame renders inside an Arc page, the host
+  2026-08-20. What is verified: the frame renders inside an Instela page, the host
   banner and escape hatch are correct, 24 live form fields are present in the
   frame, and — after a bug fix — the no-extension fallback correctly disables
   the button and explains itself. What is **not** verified is every line that
   needs Chrome to have the extension loaded: that `all_frames: true` really
   does inject the content script into the embedded frame, that the origin check
-  admits Arc and rejects everything else, that a fill inside the frame reports
+  admits Instela and rejects everything else, that a fill inside the frame reports
   back, and that the amber marks land on the right boxes. Playwright is not a
   dependency of this project and this codebase refuses dependencies, so the
   extension could not be loaded from the harness — it needs a human running
   `load unpacked`. **Test the rejection direction too:** serve a page from a
-  non-Arc origin that frames the same Greenhouse form and posts `ARC_EMBED_FILL`
+  non-Instela origin that frames the same Greenhouse form and posts `INSTELA_EMBED_FILL`
   at it; nothing must happen.
 - [ ] **Lever's hCaptcha never actually minted a token in a frame — so Lever is
   withheld from the embedded path until it does.** Greenhouse's reCAPTCHA did
@@ -1039,9 +1039,9 @@ measured.
   avoiding makes the code less clear, not safer._
 - [x] **Submission detection, so the loop actually closes.** `lib/apply/
   submitted.ts`, per platform as CLAUDE.md requires, Greenhouse first. The
-  content script watches from **inside** the frame — Arc's own JavaScript
+  content script watches from **inside** the frame — Instela's own JavaScript
   cannot read a cross-origin document, so nothing else can see the employer's
-  confirmation — and posts `ARC_EMBED_SUBMITTED` back, which advances the
+  confirmation — and posts `INSTELA_EMBED_SUBMITTED` back, which advances the
   wizard.
   _**It never submits anything; it observes.** The student presses the
   employer's own button and this notices afterwards. The no-`.click()`
@@ -1186,9 +1186,9 @@ measured.
   and the page says so rather than accepting attempts against a secret that
   does not exist). The page takes the password and a tier, and afterwards
   offers a tier switcher and a turn-off.
-  _**A signed cookie, not a plain one.** `arc_dev_tier` carries the tier plus
+  _**A signed cookie, not a plain one.** `instela_dev_tier` carries the tier plus
   an HMAC of it keyed on the password itself — stored plain,
-  `arc_dev_tier=apply` would be a paywall anyone edits past in devtools, which
+  `instela_dev_tier=apply` would be a paywall anyone edits past in devtools, which
   would make the password decorative. Keying on the password rather than a
   separate signing secret means **rotating the password revokes every cookie
   already issued**, which is the cheapest possible revocation. Password
@@ -1471,11 +1471,11 @@ reason, not an omission.
   same Greenhouse form and shout "fill" at it, pulling a signed-in student's
   real facts into a document that site controls. Three conditions must hold —
   sender is `window.parent`, that parent is `window.top`, and its origin is a
-  configured Arc origin — and `extension-invariants.test.ts` now also asserts
+  configured Instela origin — and `extension-invariants.test.ts` now also asserts
   the script never replies to a `"*"` target and still contains exactly one
   `fill` routine, so the embedded path cannot grow a second filler that drifts
   from `matchFieldKey`. **The parent page never handles the student's facts**:
-  it posts a verb, and the values travel the existing service-worker → Arc API
+  it posts a verb, and the values travel the existing service-worker → Instela API
   path into the frame._
 
   _**A real bug found by running it, which no test would have caught.** With no

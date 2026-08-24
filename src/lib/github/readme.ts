@@ -6,9 +6,10 @@
  *
  *  1. **Every fact in a README must be exact.** Repository names, URLs and
  *     languages are copied verbatim out of the API response here. A model
- *     retyping "arc-explore" as "arc_explore" produces a README with a dead
- *     link on the first page a recruiter opens, and nothing about the output
- *     would look wrong enough to catch. A cover letter is prose and needs a
+ *     retyping "instela" as "instella" produces a README with a dead link on
+ *     the first page a recruiter opens, and nothing about the output would
+ *     look wrong enough to catch — it is wrong by one character, in a string
+ *     nobody proofreads. A cover letter is prose and needs a
  *     writer; a README is a scaffold around a list of facts we already hold.
  *  2. **`/github` is a public page with no login.** A generate button wired to
  *     a model on an unauthenticated form is a bill any visitor can run up.

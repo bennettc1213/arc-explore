@@ -53,7 +53,7 @@ export const DEV_PASSWORD_VAR = "DEV_PASSWORD";
 
 /** Cookie holding the unlocked tier. Prefixed like nothing else here, so it is
  *  obvious in devtools what it is and that it is not a session. */
-export const DEV_COOKIE = "arc_dev_tier";
+export const DEV_COOKIE = "instela_dev_tier";
 
 export function parseTier(raw: string | undefined | null): TierId | null {
   if (!raw) return null;
@@ -94,7 +94,7 @@ export function devPasswordMatches(
  * the password.
  *
  * Signed rather than stored plain because the cookie is client-side data and a
- * plain `arc_dev_tier=apply` would be a paywall anyone could edit past in
+ * plain `instela_dev_tier=apply` would be a paywall anyone could edit past in
  * devtools — which would make the password decorative.
  */
 export function signDevTier(tier: TierId, password: string): string {

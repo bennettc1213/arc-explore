@@ -19,14 +19,14 @@
 
 const DEFAULT_ORIGIN = "http://localhost:3000";
 
-async function arcOrigin() {
-  const { arcOrigin } = await chrome.storage.local.get("arcOrigin");
-  return (arcOrigin || DEFAULT_ORIGIN).replace(/\/+$/, "");
+async function instelaOrigin() {
+  const { instelaOrigin } = await chrome.storage.local.get("instelaOrigin");
+  return (instelaOrigin || DEFAULT_ORIGIN).replace(/\/+$/, "");
 }
 
 /** GET the packet for a tab's URL. Never throws — the popup renders the reason. */
 async function fetchPacket(pageUrl) {
-  const origin = await arcOrigin();
+  const origin = await instelaOrigin();
   try {
     const res = await fetch(
       `${origin}/api/extension/packet?url=${encodeURIComponent(pageUrl)}`,
@@ -48,7 +48,7 @@ async function fetchPacket(pageUrl) {
 
 /** Tell Instela the student submitted it. */
 async function markApplied(postingId) {
-  const origin = await arcOrigin();
+  const origin = await instelaOrigin();
   try {
     const res = await fetch(`${origin}/api/extension/applied`, {
       method: "POST",
@@ -64,22 +64,22 @@ async function markApplied(postingId) {
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type === "ARC_GET_PACKET") {
+  if (msg?.type === "INSTELA_GET_PACKET") {
     fetchPacket(msg.pageUrl).then(sendResponse);
     return true; // async
   }
-  if (msg?.type === "ARC_MARK_APPLIED") {
+  if (msg?.type === "INSTELA_MARK_APPLIED") {
     markApplied(msg.postingId).then(sendResponse);
     return true;
   }
   // Per-site access. Split into ask/check/inject rather than one call, because
   // `permissions.request` must happen inside the popup's own user gesture and
   // the other two must not prompt at all.
-  if (msg?.type === "ARC_HAS_SITE_ACCESS") {
+  if (msg?.type === "INSTELA_HAS_SITE_ACCESS") {
     hasSiteAccess(msg.pageUrl).then((granted) => sendResponse({ granted }));
     return true;
   }
-  if (msg?.type === "ARC_ENSURE_SCRIPT") {
+  if (msg?.type === "INSTELA_ENSURE_SCRIPT") {
     ensureContentScript(msg.tabId).then((ok) => sendResponse({ ok }));
     return true;
   }

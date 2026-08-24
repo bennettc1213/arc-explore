@@ -163,6 +163,6 @@ test("the embedded path still never submits, and still fills through the tested 
   assert.doesNotMatch(js, /requestSubmit/);
   // The embed path must reuse `fill`, not grow a second filling routine that
   // could drift from `matchFieldKey`'s decisions.
-  assert.match(js, /ARC_EMBED_FILL/);
+  assert.match(js, /INSTELA_EMBED_FILL/);
   assert.equal((js.match(/async function fill\(/g) ?? []).length, 1);
 });

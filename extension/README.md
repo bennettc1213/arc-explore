@@ -76,11 +76,11 @@ to `http://localhost:3000`. Set it to the deployed origin and add that origin to
 ## How it works
 
 ```
-popup.js ── ARC_GET_PACKET ──▶ background.js ──▶ GET /api/extension/packet?url=…
+popup.js ── INSTELA_GET_PACKET ──▶ background.js ──▶ GET /api/extension/packet?url=…
                                                         │
    ◀───────────── posting + values ─────────────────────┘
 
-popup.js ── ARC_FILL {values} ──▶ content.js ──▶ the employer's form
+popup.js ── INSTELA_FILL {values} ──▶ content.js ──▶ the employer's form
 ```
 
 **The student's data never enters the employer's page context.** All fetching

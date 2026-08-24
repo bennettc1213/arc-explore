@@ -65,7 +65,7 @@ interface Candidate {
  */
 const HEADERS: Record<string, string> = {
   "User-Agent":
-    "Mozilla/5.0 (compatible; internship-tracker link check; +https://github.com/bennettc1213/arc-explore)",
+    "Mozilla/5.0 (compatible; instela link check; +https://github.com/bennettc1213/instela)",
   Accept: "text/html,application/xhtml+xml",
 };
 

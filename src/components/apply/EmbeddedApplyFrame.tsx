@@ -16,8 +16,8 @@ import { applyUrlHost } from "@/lib/apply/apply-url";
  * *inside* the frame via `all_frames: true` and does the filling there.
  *
  * That is also why the facts never pass through this component: it posts
- * `ARC_EMBED_FILL` and nothing else. The values travel the extension's own
- * path, service worker → Arc API → the frame.
+ * `INSTELA_EMBED_FILL` and nothing else. The values travel the extension's own
+ * path, service worker → Instela API → the frame.
  *
  * ── WHY THE ADDRESS IS PRINTED ──────────────────────────────────────────────
  *
@@ -82,16 +82,16 @@ export function EmbeddedApplyFrame({
       // not from the exact form we embedded is not ours to read.
       if (event.origin !== origin) return;
       const data = event.data as
-        | { type: "ARC_EMBED_PONG" }
-        | { type: "ARC_EMBED_SUBMITTED"; postingId: string | null }
+        | { type: "INSTELA_EMBED_PONG" }
+        | { type: "INSTELA_EMBED_SUBMITTED"; postingId: string | null }
         | {
-            type: "ARC_EMBED_RESULT";
+            type: "INSTELA_EMBED_RESULT";
             state: string;
             report?: { filled: number; blocked: number; skippedNonEmpty: number };
             blockedLabels?: string[];
             postingId?: string | null;
           };
-      if (data?.type === "ARC_EMBED_PONG") {
+      if (data?.type === "INSTELA_EMBED_PONG") {
         presentRef.current = true;
         setExtension("present");
         return;
@@ -106,12 +106,12 @@ export function EmbeddedApplyFrame({
        * `lib/apply/submitted.ts`. Where no rule exists, this message simply
        * never arrives and the student marks it applied themselves.
        */
-      if (data?.type === "ARC_EMBED_SUBMITTED") {
+      if (data?.type === "INSTELA_EMBED_SUBMITTED") {
         setStatus("submitted — the employer's confirmation is on screen");
         onSubmitted?.(data.postingId ?? null);
         return;
       }
-      if (data?.type !== "ARC_EMBED_RESULT") return;
+      if (data?.type !== "INSTELA_EMBED_RESULT") return;
 
       busyRef.current = false;
       setBusy(false);
@@ -158,7 +158,7 @@ export function EmbeddedApplyFrame({
     if (!origin) return;
     let tries = 0;
     const send = () => {
-      frameRef.current?.contentWindow?.postMessage({ type: "ARC_EMBED_PING" }, origin);
+      frameRef.current?.contentWindow?.postMessage({ type: "INSTELA_EMBED_PING" }, origin);
     };
     send();
     const timer = window.setInterval(() => {
@@ -187,7 +187,7 @@ export function EmbeddedApplyFrame({
     setBusy(true);
     setStatus(null);
     setBlocked([]);
-    frameRef.current?.contentWindow?.postMessage({ type: "ARC_EMBED_FILL" }, origin);
+    frameRef.current?.contentWindow?.postMessage({ type: "INSTELA_EMBED_FILL" }, origin);
     // A dead-man's switch, so the button can never sit on "filling…" forever.
     window.setTimeout(() => {
       if (!busyRef.current) return;

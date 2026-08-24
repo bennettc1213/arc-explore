@@ -99,7 +99,7 @@ function ready(packet, tabId) {
         fillButton.textContent = "filling…";
         let res;
         try {
-          res = await chrome.tabs.sendMessage(tabId, { type: "ARC_FILL", values });
+          res = await chrome.tabs.sendMessage(tabId, { type: "INSTELA_FILL", values });
         } catch {
           res = { error: "could not reach the page — try reloading it" };
         }
@@ -139,7 +139,7 @@ function ready(packet, tabId) {
       onclick: async () => {
         appliedButton.disabled = true;
         const res = await chrome.runtime.sendMessage({
-          type: "ARC_MARK_APPLIED",
+          type: "INSTELA_MARK_APPLIED",
           postingId: posting.id,
         });
         appliedButton.textContent = res?.ok ? "recorded ✓" : "could not record";
@@ -231,7 +231,7 @@ function needsSiteAccess(tab, packet) {
         // A freshly granted origin injects nothing into the tab already open,
         // and the student is looking at it — so put the script in by hand
         // rather than making them reload a page they have no reason to suspect.
-        await chrome.runtime.sendMessage({ type: "ARC_ENSURE_SCRIPT", tabId: tab.id });
+        await chrome.runtime.sendMessage({ type: "INSTELA_ENSURE_SCRIPT", tabId: tab.id });
         ready(packet, tab.id);
       },
     },
@@ -263,7 +263,7 @@ async function main() {
   const tab = await activeTab();
   if (!tab?.url) return errorState("no active tab");
 
-  const res = await chrome.runtime.sendMessage({ type: "ARC_GET_PACKET", pageUrl: tab.url });
+  const res = await chrome.runtime.sendMessage({ type: "INSTELA_GET_PACKET", pageUrl: tab.url });
 
   document.getElementById("origin").value = res.origin ?? "";
 
@@ -272,7 +272,7 @@ async function main() {
       // Declared hosts answer true without prompting; everything else needs
       // the one-time per-site grant below.
       const { granted } = await chrome.runtime.sendMessage({
-        type: "ARC_HAS_SITE_ACCESS",
+        type: "INSTELA_HAS_SITE_ACCESS",
         pageUrl: tab.url,
       });
       if (!granted && originPatternForUrl(tab.url)) return needsSiteAccess(tab, res.packet);
@@ -296,7 +296,7 @@ document.getElementById("settings-toggle").addEventListener("click", () => {
 });
 document.getElementById("save-origin").addEventListener("click", async () => {
   const value = document.getElementById("origin").value.trim();
-  await chrome.storage.local.set({ arcOrigin: value });
+  await chrome.storage.local.set({ instelaOrigin: value });
   main();
 });
 

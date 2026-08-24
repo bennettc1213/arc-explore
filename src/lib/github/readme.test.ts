@@ -64,17 +64,17 @@ function resume(over: Partial<ParsedResume> = {}): ParsedResume {
 
 test("repo names and URLs are copied verbatim, never retyped", () => {
   // The whole reason this generator is deterministic. A model retyping
-  // "arc-explore" as "arc_explore" produces a dead link on the first page a
-  // recruiter opens, and nothing about the output would look wrong.
+  // "instela" as "instella" produces a dead link on the first page a recruiter
+  // opens — wrong by one character, and nothing about the output looks wrong.
   const { markdown } = generateProfileReadme({
     snapshot: snapshot({
-      repos: [repo({ name: "arc-explore", description: "Scholarship matching" })],
+      repos: [repo({ name: "instela", description: "Scholarship matching" })],
     }),
     profile: null,
     resume: null,
     accountEmail: null,
   });
-  assert.match(markdown, /\*\*\[arc-explore\]\(https:\/\/github\.com\/octocat\/arc-explore\)\*\* — Scholarship matching/);
+  assert.match(markdown, /\*\*\[instela\]\(https:\/\/github\.com\/octocat\/instela\)\*\* — Scholarship matching/);
 });
 
 test("a repo with no description gets a slot, not a description we invented", () => {

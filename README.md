@@ -1,4 +1,4 @@
-# internship tracker
+# Instela
 
 Internships sourced by polling each employer's own applicant-tracking system, scored
 against your profile with reasons you can read, and ranked by how recently we confirmed

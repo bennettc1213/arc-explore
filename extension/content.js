@@ -18,7 +18,7 @@
  *   · It must never overwrite a value the student already typed.
  */
 
-const ARC_STYLE_ID = "arc-explorer-style";
+const INSTELA_STYLE_ID = "instela-style";
 
 /* ------------------------------------------------------------------ *
  * Reading a field
@@ -129,9 +129,9 @@ function setSelect(el, value) {
  * ------------------------------------------------------------------ */
 
 function ensureStyle() {
-  if (document.getElementById(ARC_STYLE_ID)) return;
+  if (document.getElementById(INSTELA_STYLE_ID)) return;
   const style = document.createElement("style");
-  style.id = ARC_STYLE_ID;
+  style.id = INSTELA_STYLE_ID;
   style.textContent = `
     .arc-filled { outline: 2px solid #2f81f7 !important; outline-offset: 1px; }
     .arc-yours  { outline: 2px dashed #d29922 !important; outline-offset: 1px; }
@@ -216,7 +216,7 @@ async function fill(values) {
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-  if (msg?.type === "ARC_FILL") {
+  if (msg?.type === "INSTELA_FILL") {
     fill(msg.values).then(sendResponse).catch((err) =>
       sendResponse({ error: err?.message ?? "fill failed" }),
     );
@@ -250,12 +250,12 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
  * still never holds the packet in its own JavaScript.
  */
 
-const DEFAULT_ARC_ORIGIN = "http://localhost:3000";
+const DEFAULT_INSTELA_ORIGIN = "http://localhost:3000";
 
 async function allowedParentOrigins() {
-  const { arcOrigin } = await chrome.storage.local.get("arcOrigin");
-  const configured = (arcOrigin || "").replace(/\/+$/, "");
-  const list = [DEFAULT_ARC_ORIGIN];
+  const { instelaOrigin } = await chrome.storage.local.get("instelaOrigin");
+  const configured = (instelaOrigin || "").replace(/\/+$/, "");
+  const list = [DEFAULT_INSTELA_ORIGIN];
   if (configured) list.push(configured);
   return list;
 }
@@ -272,25 +272,25 @@ async function isTrustedEmbedder(event) {
 
 window.addEventListener("message", async (event) => {
   const type = event.data?.type;
-  if (type !== "ARC_EMBED_PING" && type !== "ARC_EMBED_FILL") return;
+  if (type !== "INSTELA_EMBED_PING" && type !== "INSTELA_EMBED_FILL") return;
   if (!(await isTrustedEmbedder(event))) return;
 
   const reply = (payload) => event.source.postMessage({ ...payload, id: event.data.id }, event.origin);
 
   // A ping so the page can tell "extension not installed" apart from "fill
   // silently did nothing". Those need different sentences on screen.
-  if (type === "ARC_EMBED_PING") {
-    reply({ type: "ARC_EMBED_PONG" });
+  if (type === "INSTELA_EMBED_PING") {
+    reply({ type: "INSTELA_EMBED_PONG" });
     return;
   }
 
   try {
     const packet = await chrome.runtime.sendMessage({
-      type: "ARC_GET_PACKET",
+      type: "INSTELA_GET_PACKET",
       pageUrl: location.href,
     });
     if (packet?.state !== "ready") {
-      reply({ type: "ARC_EMBED_RESULT", state: packet?.state ?? "error" });
+      reply({ type: "INSTELA_EMBED_RESULT", state: packet?.state ?? "error" });
       return;
     }
     // `values` is built server-side by the same `buildAutofillValues` the
@@ -309,13 +309,13 @@ window.addEventListener("message", async (event) => {
      */
     const watching = await watchForSubmission(() =>
       event.source.postMessage(
-        { type: "ARC_EMBED_SUBMITTED", postingId },
+        { type: "INSTELA_EMBED_SUBMITTED", postingId },
         event.origin,
       ),
     );
 
     reply({
-      type: "ARC_EMBED_RESULT",
+      type: "INSTELA_EMBED_RESULT",
       state: "filled",
       report,
       blockedLabels,
@@ -323,7 +323,7 @@ window.addEventListener("message", async (event) => {
       watching,
     });
   } catch (err) {
-    reply({ type: "ARC_EMBED_RESULT", state: "error", reason: err?.message ?? "fill failed" });
+    reply({ type: "INSTELA_EMBED_RESULT", state: "error", reason: err?.message ?? "fill failed" });
   }
 });
 
