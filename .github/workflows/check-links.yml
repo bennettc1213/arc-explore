@@ -1,4 +1,29 @@
 ####
+# WHY `npm install` AND NOT `npm ci` IN THIS FILE.
+#
+# `npm ci` fails here, and it is not a stale lockfile. `package-lock.json` is
+# generated on Windows, where npm installs the native `win32` binding for
+# Tailwind's oxide and for sharp and therefore never materialises the
+# `wasm32-wasi` subtrees. Those optional packages ARE listed in the lock, and
+# they declare `@emnapi/core ^1.11.1` / `@emnapi/runtime ^1.11.1` — but the only
+# @emnapi entries the lock actually carries are 1.10.0, nested under a different
+# package. On Linux `npm ci` validates the whole tree, finds the hole, and
+# refuses:  `Missing: @emnapi/runtime@1.11.3 from lock file`.
+#
+# No amount of regenerating the lock on Windows fixes that; Windows npm will
+# never expand a subtree it does not need. `npm install` resolves the missing
+# entries instead of asserting the lock is complete, which is why it works.
+#
+# THE COST, STATED: we lose `npm ci`'s guarantee that CI installs byte-identical
+# dependencies to the lock. That is acceptable *for these workflows specifically*
+# because none of them builds the app or runs the test suite — every one runs a
+# `tsx` script that needs dotenv, drizzle and postgres. It would not be
+# acceptable for a build or a release job.
+#
+# TO RESTORE `npm ci`: regenerate the lockfile once on Linux (any x64 box, WSL,
+# or a container) and commit it. Recorded in FIXES.md.
+####
+####
 # Apply-URL health.
 #
 # The ATS poll already closes an internship within ~20 minutes of it vanishing
@@ -52,7 +77,8 @@ jobs:
           node-version: "24"
           cache: npm
 
-      - run: npm ci
+      # `npm install`, NOT `npm ci` — see the note at the top of this file.
+      - run: npm install --no-audit --no-fund
 
       - name: check apply urls
         env:

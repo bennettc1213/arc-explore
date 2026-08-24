@@ -1396,6 +1396,35 @@ reason, not an omission.
   required — the link checker does not call GitHub — but noted so the two
   rate-limit stories are not confused with each other.
 
+- [ ] **CI installs with `npm install`, not `npm ci`, because the lockfile is
+  generated on Windows and is incomplete for Linux.** Found 2026-08-23 when the
+  first real `ingest-fast` run on GitHub failed before polling anything:
+  `Missing: @emnapi/runtime@1.11.3 from lock file`.
+
+  _Not a stale lockfile, and **not** the Node version — that was my first
+  diagnosis and it was wrong; the second run used Node 24 and failed
+  identically. The actual cause: `@tailwindcss/oxide-wasm32-wasi` and
+  `@img/sharp-wasm32` are optional packages that declare
+  `@emnapi/core ^1.11.1` / `@emnapi/runtime ^1.11.1`, and the only @emnapi
+  entries the lock carries are **1.10.0**, nested under an unrelated package.
+  On Windows npm installs the native `win32` bindings and never materialises
+  those wasm subtrees, so it never writes their dependencies into the lock;
+  on Linux `npm ci` validates the whole tree, finds the hole, and refuses.
+  Regenerating on Windows cannot fix it — Windows npm will never expand a
+  subtree it does not need._
+
+  _Worked around by switching all seven workflows to
+  `npm install --no-audit --no-fund`, with the reasoning written at the top of
+  each file. **The cost, stated plainly: CI no longer installs byte-identical
+  dependencies to the lock.** That is acceptable for these workflows
+  specifically — none builds the app or runs the test suite; every one runs a
+  `tsx` script needing dotenv, drizzle and postgres — and would not be
+  acceptable for a build or release job._
+
+  _**To close:** regenerate `package-lock.json` once on Linux (any x64 box, a
+  WSL distro, or a container) and commit it, then put `npm ci` back in the
+  seven workflows. Neither WSL (present, no distro) nor Docker is installed on
+  the dev machine, which is why this was not simply fixed at the source._
 - [ ] **Nothing has been pushed.** `master` is well ahead of `origin/master` —
   everything since `49f1981` is committed but has never left this machine.
   Check with `git status -sb` before assuming a number.
