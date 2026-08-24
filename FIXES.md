@@ -87,10 +87,33 @@ only you can make, and the feature on the other side of it is already written.
   re-running `npm run ingest:scholarships -- --source scholarshipportal`.
 - [ ] **Smart Resume structuring logic (Phase 03).** The roadmap line says "the
   logic you provide" and it has not landed. Do not invent a structure for it.
-- [ ] **`DATABASE_URL` repo secret — and this is now the single most
-  user-visible blocker, not a housekeeping item.** The `ingest-fast` /
-  `ingest-daily` workflows need it to run in CI, and because nothing has ever
-  been pushed to `origin` either, **the 20-minute cron has never fired once.**
+- [~] **`DATABASE_URL` repo secret — the push half is done, the secret half is
+  yours.** `master` was pushed 2026-08-23 (`65b9d72..13049f3`), so all seven
+  workflows are now on the default branch, which is where GitHub requires them
+  to be for a `schedule` trigger to fire at all. **What remains is one repo
+  secret**: `DATABASE_URL`, at
+  `github.com/bennettc1213/arc-explore/settings/secrets/actions`, copied from
+  local `.env`. Until it is set, `ingest-fast` runs every 20 minutes and fails
+  immediately, which is loud but harmless.
+
+  _Deliberately NOT recommended alongside it: **`PARSE_API_KEY`**.
+  `ingest-scholarships.yml` runs weekly with no `--source` filter, so a present
+  key would automatically spend ~19+ Parse credits every Sunday against a
+  200/month budget — the balance-check-first rule above, defeated by a cron.
+  Without the key that workflow reports 3/5 sources ok and exits 0, which is
+  the intended state. **`RESEND_API_KEY` likewise stays off**; `reminders.yml`
+  always takes the `--send` branch on a schedule, and `reminders/email.ts:91`
+  throws without a key, so the job will go red daily and mail nothing. That is
+  fail-safe as designed but it is also daily noise, and noise on Actions trains
+  you to ignore the ingest failures that do matter — worth disabling that one
+  workflow until a verified sender exists._
+
+  _Committing was a prerequisite, not bookkeeping: the two-observation fix in
+  `lib/ingest/reconcile.ts` was **entirely uncommitted** (0 references to
+  `missingStrikes` in the committed file, 10 in the working tree), so enabling
+  a 20-minute cron on the old code would have closed a live posting on a single
+  absence, 72 times a day, against the live database. Found by auditing before
+  pushing rather than after._
 
   _Measured 2026-08-22 after "every time I log on I'm getting the same
   scholarships and internships, no new ones": the newest ingest run in the
