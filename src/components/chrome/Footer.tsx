@@ -12,7 +12,7 @@ export function Footer() {
         <div className="flex items-center gap-4">
           <Mascot size={40} />
           <div>
-            <div className="mono-strong chrome">internship tracker</div>
+            <div className="mono-strong chrome">Instela</div>
             <div className="mono" style={{ marginTop: 2 }}>
               every listing polled from the employer&apos;s own ATS
             </div>

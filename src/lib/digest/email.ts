@@ -11,7 +11,7 @@
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 function fromAddress(): string {
-  return process.env.REMINDER_FROM_EMAIL ?? "alerts@arc-explore.dev";
+  return process.env.REMINDER_FROM_EMAIL ?? "alerts@instela.org";
 }
 
 function siteUrl(): string {

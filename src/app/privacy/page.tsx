@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BackLink } from "@/components/BackLink";
 
 export const metadata = {
-  title: "Privacy — internship tracker",
+  title: "Privacy — Instela",
   description: "What we store, what leaves our systems, and what we will never do.",
 };
 

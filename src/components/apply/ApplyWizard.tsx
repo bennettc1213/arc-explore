@@ -109,7 +109,7 @@ export function ApplyWizard({ boot }: { boot: WizardBoot }) {
   return (
     <>
       <button type="button" className="btn btn-primary press" onClick={() => setOpen(true)}>
-        apply with arc explorer
+        apply with Instela
       </button>
 
       {/*
@@ -127,7 +127,7 @@ export function ApplyWizard({ boot }: { boot: WizardBoot }) {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="apply with arc explorer"
+          aria-label="apply with Instela"
           className="wizard-overlay"
           onClick={(e) => {
             if (e.target === e.currentTarget) setOpen(false);
@@ -136,7 +136,7 @@ export function ApplyWizard({ boot }: { boot: WizardBoot }) {
           <div className="wizard-panel">
             <div className="flex items-baseline justify-between gap-4" style={{ marginBottom: 18 }}>
               <div>
-                <div className="eyebrow chrome">apply with arc explorer</div>
+                <div className="eyebrow chrome">apply with Instela</div>
                 <div className="t-base" style={{ marginTop: 8, color: "var(--text)" }}>
                   {boot.postingTitle}
                 </div>

@@ -20,7 +20,7 @@ const RESEND_ENDPOINT = "https://api.resend.com/emails";
 /** Resend rejects a send from an unverified domain, so this is configuration
  *  rather than a constant — a fresh install has no domain of ours. */
 function fromAddress(): string {
-  return process.env.REMINDER_FROM_EMAIL ?? "reminders@arc-explore.dev";
+  return process.env.REMINDER_FROM_EMAIL ?? "reminders@instela.org";
 }
 
 function siteUrl(): string {

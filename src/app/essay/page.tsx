@@ -15,7 +15,7 @@ const PAID = TIER_LABELS.apply;
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Essay review — internship tracker",
+  title: "Essay review — Instela",
   description: "Structured feedback on a scholarship essay or statement of purpose.",
 };
 

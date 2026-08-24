@@ -32,7 +32,7 @@ import type { ConfirmationDraft } from "./wizard";
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 function fromAddress(): string {
-  return process.env.REMINDER_FROM_EMAIL ?? "reminders@arc-explore.dev";
+  return process.env.REMINDER_FROM_EMAIL ?? "reminders@instela.org";
 }
 
 export type ConfirmationResult =

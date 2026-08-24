@@ -170,7 +170,7 @@ async function fill(values) {
     const type = (el.type || "").toLowerCase();
 
     // Never in scope: hidden plumbing, buttons, and the file input we could
-    // not fill anyway (Arc stores the parsed structure of a resume, not the
+    // not fill anyway (Instela stores the parsed structure of a resume, not the
     // original document — see /privacy).
     if (["hidden", "submit", "button", "reset", "image"].includes(type)) continue;
     if (el.disabled || el.readOnly) continue;
@@ -226,10 +226,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 });
 
 /* ------------------------------------------------------------------ *
- * The embedded path — filling a form Arc has framed in its own page
+ * The embedded path — filling a form Instela has framed in its own page
  *
  * `all_frames: true` puts this script inside the employer's form even when
- * that form is a child frame of an Arc page, which is what lets a student
+ * that form is a child frame of an Instela page, which is what lets a student
  * apply without leaving the site. The parent cannot reach in — the frame is
  * cross-origin, so `iframe.contentDocument` is null there — and `postMessage`
  * is the one channel that crosses. This is the receiving end of it.
@@ -240,13 +240,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
  * "fill" at it, and this script would obligingly fetch the signed-in student's
  * real name, school and contact details into a document that site controls.
  * Three conditions must all hold: the sender is our immediate parent, that
- * parent is the top-level document, and its origin is an Arc origin the
+ * parent is the top-level document, and its origin is an Instela origin the
  * student configured. `event.origin` is set by the browser and cannot be
  * forged by the sender, which is what makes it worth checking.
  *
  * Note what is NOT sent across this channel: the parent never passes values
  * down. It sends a verb. The facts travel the existing path — service worker
- * to Arc's API with the student's own cookie — so an Arc page embedding a form
+ * to Instela's API with the student's own cookie — so an Instela page embedding a form
  * still never holds the packet in its own JavaScript.
  */
 
@@ -265,7 +265,7 @@ async function isTrustedEmbedder(event) {
   if (window === window.top) return false;
   if (event.source !== window.parent) return false;
   if (window.parent !== window.top) return false;
-  // 2. …and that document must be Arc.
+  // 2. …and that document must be Instela.
   const allowed = await allowedParentOrigins();
   return allowed.includes(event.origin);
 }
@@ -332,13 +332,13 @@ window.addEventListener("message", async (event) => {
  * ------------------------------------------------------------------ */
 
 /**
- * WHY THIS RUNS HERE. Arc's own JavaScript cannot read a cross-origin frame —
+ * WHY THIS RUNS HERE. Instela's own JavaScript cannot read a cross-origin frame —
  * `contentDocument` is null — so the parent page has no way to see that the
  * employer's form was replaced by a thank-you panel. The content script is
  * already inside that document, which makes it the only thing that can.
  *
  * IT NEVER SUBMITS ANYTHING. It observes. The student presses the employer's
- * own button; this notices afterwards and tells Arc, which stamps the tracker
+ * own button; this notices afterwards and tells Instela, which stamps the tracker
  * and sends the confirmation email. The invariant that there is no `.click()`
  * anywhere in this extension is unaffected and still asserted by test.
  *

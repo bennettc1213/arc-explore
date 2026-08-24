@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Arc Explorer \u2014 apply with your own facts",
+  "name": "Instela \u2014 apply with your own facts",
   "version": "0.1.0",
-  "description": "Fills an internship or scholarship application with the facts you already gave Arc Explorer. You review every field and press submit yourself.",
+  "description": "Fills an internship or scholarship application with the facts you already gave Instela. You review every field and press submit yourself.",
   "permissions": [
     "activeTab",
     "storage",
@@ -24,7 +24,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Arc Explorer"
+    "default_title": "Instela"
   },
   "content_scripts": [
     {

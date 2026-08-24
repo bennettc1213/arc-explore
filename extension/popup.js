@@ -2,7 +2,7 @@
  * The panel.
  *
  * Renders one of six states, and names each one precisely. "Not signed in",
- * "cannot reach Arc" and "we do not have this posting" are three different
+ * "cannot reach Instela" and "we do not have this posting" are three different
  * problems with three different fixes, and collapsing them into one "something
  * went wrong" would leave the student with no idea which.
  */
@@ -41,7 +41,7 @@ async function activeTab() {
 
 function signedOut(origin) {
   render(
-    el("p", { className: "muted" }, "You are not signed in to Arc Explorer."),
+    el("p", { className: "muted" }, "You are not signed in to Instela."),
     el("hr"),
     el(
       "button",
@@ -55,7 +55,7 @@ function signedOut(origin) {
 
 function unreachable(origin) {
   render(
-    el("p", { className: "muted" }, `Could not reach Arc Explorer at ${origin}.`),
+    el("p", { className: "muted" }, `Could not reach Instela at ${origin}.`),
     el(
       "p",
       { className: "muted" },
@@ -66,7 +66,7 @@ function unreachable(origin) {
 
 function noMatch() {
   render(
-    el("p", { className: "muted" }, "Arc Explorer does not have this posting."),
+    el("p", { className: "muted" }, "Instela does not have this posting."),
     el(
       "p",
       { className: "muted" },
@@ -187,7 +187,7 @@ function ready(packet, tabId) {
 /**
  * The one-click-per-site grant, for anything outside the four ATS families.
  *
- * WHY THE BUTTON IS HERE AND NOT ON THE ARC PAGE. `chrome.permissions.request`
+ * WHY THE BUTTON IS HERE AND NOT ON THE INSTELA PAGE. `chrome.permissions.request`
  * must run inside a user gesture in an extension surface — a content script
  * cannot call it at all, and forwarding a click from a web page through the
  * service worker loses the gesture, so Chrome refuses. This popup is the only
@@ -225,7 +225,7 @@ function needsSiteAccess(tab, packet) {
         }
         if (!granted) {
           button.disabled = false;
-          button.textContent = `allow Arc on ${host}`;
+          button.textContent = `allow Instela on ${host}`;
           return;
         }
         // A freshly granted origin injects nothing into the tab already open,
@@ -235,7 +235,7 @@ function needsSiteAccess(tab, packet) {
         ready(packet, tab.id);
       },
     },
-    `allow Arc on ${host}`,
+    `allow Instela on ${host}`,
   );
 
   render(
@@ -243,7 +243,7 @@ function needsSiteAccess(tab, packet) {
     el(
       "p",
       { className: "muted", style: "margin-top:8px" },
-      `Arc has your facts ready, but it has never been allowed to touch ${host}.`,
+      `Instela has your facts ready, but it has never been allowed to touch ${host}.`,
     ),
     el(
       "p",
@@ -289,7 +289,7 @@ async function main() {
   }
 }
 
-/* Settings — one field, the Arc address, so this works against localhost. */
+/* Settings — one field, the Instela address, so this works against localhost. */
 document.getElementById("settings-toggle").addEventListener("click", () => {
   const panel = document.getElementById("settings");
   panel.hidden = !panel.hidden;

@@ -32,9 +32,9 @@ export async function Nav() {
             word takes the accent, and "home" slides out to name the
             destination outright. `aria-label` carries the same fact for a
             screen reader, which never sees the hover. */}
-        <Link href="/" className="brand" aria-label="internship tracker — home">
+        <Link href="/" className="brand" aria-label="Instela — home">
           <Mascot size={26} className="brand-mark" />
-          <span className="mono-strong chrome brand-word">internship tracker</span>
+          <span className="mono-strong chrome brand-word">Instela</span>
           <span className="mono brand-hint" aria-hidden>
             home
           </span>

@@ -16,7 +16,7 @@
  *
  * Pure — it takes a URL and a bit of page text, never a document — so every
  * platform's rule is testable without a browser. The content script is the
- * only thing that reads the DOM, and it does so inside the frame where Arc's
+ * only thing that reads the DOM, and it does so inside the frame where Instela's
  * own JavaScript cannot reach.
  */
 

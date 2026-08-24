@@ -9,9 +9,9 @@ import { Footer } from "@/components/chrome/Footer";
 import { Nav } from "@/components/chrome/Nav";
 
 export const metadata: Metadata = {
-  title: "internship tracker",
+  title: "Instela",
   description:
-    "Internships sourced directly from employers' applicant-tracking systems, with the date we last confirmed each one live.",
+    "Instela helps students find internships and scholarships, prepare applications, and keep track of what they have sent.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

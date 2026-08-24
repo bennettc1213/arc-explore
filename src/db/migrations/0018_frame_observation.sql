@@ -1,7 +1,7 @@
 -- Framing observation, read off the response the link checker already fetches.
 --
 -- Replaces the four-host `FRAMEABLE_ATS_HOSTS` allowlist as the source of
--- truth for whether an application can be embedded in an Arc page. An
+-- truth for whether an application can be embedded in an Instela page. An
 -- allowlist can cover four ATS families; it cannot cover the ~300 distinct
 -- scholarship hosts in this corpus (one row per host), and it silently
 -- excluded every source added after it was written.

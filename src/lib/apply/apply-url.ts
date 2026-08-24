@@ -100,7 +100,7 @@ export function isSupportedAtsUrl(raw: string): boolean {
 }
 
 /**
- * The hosts we actually embed in an Arc page.
+ * The hosts we actually embed in an Instela page.
  *
  * TWO CONDITIONS, BOTH MEASURED — 2026-08-20, four employers sampled per host
  * against the live corpus. A host must allow framing *and* have been observed
@@ -137,7 +137,7 @@ export const FRAMEABLE_ATS_HOSTS = [
  * Hosts whose headers permit embedding but which we deliberately do not embed.
  *
  * PERMISSION IS NOT EVIDENCE. Lever sends no `X-Frame-Options` and its form
- * renders inside an Arc page perfectly well — but the thing that has to work
+ * renders inside an Instela page perfectly well — but the thing that has to work
  * for an embedded application to be worth anything is the *captcha*, and
  * Lever's was never proven. Greenhouse's reCAPTCHA minted a full token in a
  * frame, identical to top-level (2382 chars, measured 2026-08-20). Lever's

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { applyUrlHost } from "@/lib/apply/apply-url";
 
 /**
- * The employer's real application form, embedded in an Arc page.
+ * The employer's real application form, embedded in an Instela page.
  *
  * ── WHAT THIS COMPONENT CAN AND CANNOT DO ───────────────────────────────────
  *

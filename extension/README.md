@@ -1,7 +1,7 @@
-# Arc Explorer — browser extension
+# Instela — browser extension
 
 Fills an internship or scholarship application with the facts the student
-already gave Arc Explorer, **in their own browser, on the employer's real
+already gave Instela, **in their own browser, on the employer's real
 form**, with them reviewing every field and pressing submit themselves.
 
 ---
@@ -58,16 +58,16 @@ Then in Chrome:
 EXTENSION_ORIGINS=chrome-extension://<the id chrome showed you>
 ```
 
-5. Restart `npm run dev`, and sign in to Arc Explorer in the same browser.
+5. Restart `npm run dev`, and sign in to Instela in the same browser.
 
 `npm run build:extension` is required and is not optional — `extension/vendor/`
 is gitignored. The field-matching rules are compiled from
 `src/lib/apply/autofill.ts`, which is unit-tested, rather than reimplemented in
 JavaScript here. There is one definition of what is safe to fill.
 
-### Pointing it at a deployed Arc
+### Pointing it at a deployed Instela
 
-The popup has a **settings** link with one field: the Arc address. It defaults
+The popup has a **settings** link with one field: the Instela address. It defaults
 to `http://localhost:3000`. Set it to the deployed origin and add that origin to
 `host_permissions` in `manifest.json`.
 
@@ -88,9 +88,9 @@ happens in the background service worker, in the extension's own origin. The
 content script receives only the specific values being typed, and only when the
 student presses the button.
 
-Authentication is the student's ordinary Arc session cookie — they are signed in
+Authentication is the student's ordinary Instela session cookie — they are signed in
 to the site in the same browser. The extension stores no token and no personal
-data; `chrome.storage` holds exactly one thing, the Arc address.
+data; `chrome.storage` holds exactly one thing, the Instela address.
 
 ---
 
@@ -111,7 +111,7 @@ data; `chrome.storage` holds exactly one thing, the Arc address.
   content-script matches, and a test asserts the host list stays clean.
   `CLAUDE.md` says never a live fetch against LinkedIn in any form; a content
   script reading their DOM is that rule broken by a different mechanism.
-- **It cannot attach a resume file.** Arc stores the *parsed structure* of a
+- **It cannot attach a resume file.** Instela stores the *parsed structure* of a
   resume, not the original document — exactly as `/privacy` says. So the file
   input is skipped and the student attaches their own PDF. The cover letter,
   which we do hold as text, is filled where the form takes one.

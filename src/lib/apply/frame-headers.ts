@@ -1,5 +1,5 @@
 /**
- * Whether a page's own response headers permit us to embed it in an Arc page.
+ * Whether a page's own response headers permit us to embed it in an Instela page.
  *
  * WHY THIS EXISTS AS AN OBSERVATION RATHER THAN A LIST. Embedding used to be a
  * four-host allowlist, and the comment on it gave the right reason: a browser

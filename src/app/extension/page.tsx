@@ -8,7 +8,7 @@ import { evaluateFeature, TIER_LABELS, TIER_PRICE_USD } from "@/lib/pricing/tier
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Browser extension — internship tracker",
+  title: "Browser extension — Instela",
   description:
     "Fill an employer's application with the facts you already gave us, in your own browser.",
 };
@@ -91,7 +91,7 @@ export default async function ExtensionPage() {
         </h1>
         <p className="t-base" style={{ color: "var(--muted)", maxWidth: "66ch", marginTop: 14 }}>
           Open any internship in your feed on Greenhouse, Lever, Ashby or SmartRecruiters, click
-          the Arc button, and the form fills with what you have already told us — name, school,
+          the Instela button, and the form fills with what you have already told us — name, school,
           major, graduation year, contact details, your links, and your cover letter for that
           role. You read it, attach your resume, and press submit.
         </p>

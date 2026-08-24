@@ -73,7 +73,7 @@ const HEADERS: Record<string, string> = {
  * One probe answers two questions, because the response is already in hand.
  *
  * The status decides liveness; the framing headers decide whether the page can
- * be embedded in an Arc page (see `lib/apply/frame-headers.ts`). Reading both
+ * be embedded in an Instela page (see `lib/apply/frame-headers.ts`). Reading both
  * off one response is the whole reason framing became an observation rather
  * than a hand-maintained four-host allowlist — it costs no extra request and
  * therefore no extra politeness budget.

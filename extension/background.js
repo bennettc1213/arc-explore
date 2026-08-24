@@ -1,5 +1,5 @@
 /**
- * The only part of the extension that talks to Arc Explorer.
+ * The only part of the extension that talks to Instela.
  *
  * WHY THE FETCHES LIVE HERE AND NOT IN THE CONTENT SCRIPT. A content script
  * runs in the employer's page, so its requests carry the employer's origin and
@@ -10,10 +10,10 @@
  * being typed into a specific field are ever passed down, and only when the
  * student presses the button.
  *
- * The session is the student's ordinary Arc cookie: they are signed in to the
+ * The session is the student's ordinary Instela cookie: they are signed in to the
  * site in the same browser, and `credentials: "include"` reuses that. The
  * extension stores no token, no password and no personal data of its own —
- * `chrome.storage` holds one thing, the Arc origin to talk to, so a developer
+ * `chrome.storage` holds one thing, the Instela origin to talk to, so a developer
  * can point it at localhost.
  */
 
@@ -33,20 +33,20 @@ async function fetchPacket(pageUrl) {
       { credentials: "include" },
     );
     if (res.status === 401) return { state: "signed-out", origin };
-    if (!res.ok) return { state: "error", reason: `Arc replied ${res.status}`, origin };
+    if (!res.ok) return { state: "error", reason: `Instela replied ${res.status}`, origin };
 
     const body = await res.json();
     if (!body.posting) return { state: "no-match", origin };
     return { state: "ready", packet: body, origin };
   } catch {
-    // Arc not running, or no network. Named precisely: "cannot reach" is a
+    // Instela not running, or no network. Named precisely: "cannot reach" is a
     // different problem from "not signed in", and telling them apart is the
     // difference between starting the dev server and signing in.
     return { state: "unreachable", origin };
   }
 }
 
-/** Tell Arc the student submitted it. */
+/** Tell Instela the student submitted it. */
 async function markApplied(postingId) {
   const origin = await arcOrigin();
   try {
@@ -56,10 +56,10 @@ async function markApplied(postingId) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ postingId }),
     });
-    if (!res.ok) return { ok: false, reason: `Arc replied ${res.status}` };
+    if (!res.ok) return { ok: false, reason: `Instela replied ${res.status}` };
     return await res.json();
   } catch {
-    return { ok: false, reason: "could not reach Arc Explorer" };
+    return { ok: false, reason: "could not reach Instela" };
   }
 }
 

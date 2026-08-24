@@ -291,7 +291,7 @@ export function composeConfirmation(input: {
   const lines: string[] = [
     greeting,
     "",
-    `You started an application to a ${noun} you found on Arc Explorer.`,
+    `You started an application to a ${noun} you found on Instela.`,
     "",
     `${input.title}${who}`,
     `Application: ${input.url}`,
