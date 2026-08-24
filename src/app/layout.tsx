@@ -12,6 +12,9 @@ export const metadata: Metadata = {
   title: "Instela",
   description:
     "Instela helps students find internships and scholarships, prepare applications, and keep track of what they have sent.",
+  icons: {
+    icon: "/instela-mark.svg",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
