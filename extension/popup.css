@@ -1,0 +1,108 @@
+/* Deliberately close to the site's own chrome — mono type, hard edges, one
+   accent — so the panel reads as part of Arc Explorer rather than as a
+   third-party toolbar that happened to appear on the employer's page. */
+
+:root {
+  --bg: #0d0d0f;
+  --surface: #151517;
+  --line: #26262b;
+  --line-strong: #3a3a42;
+  --text: #e8e8ea;
+  --muted: #8b8b95;
+  --accent: #2f81f7;
+  --warn: #d29922;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  width: 340px;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.mark { color: var(--accent); font-weight: 700; letter-spacing: 0.04em; }
+.wordmark { color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-size: 10px; }
+
+main { padding: 14px; }
+
+h1 {
+  font-size: 13px;
+  margin: 0 0 2px;
+  line-height: 1.35;
+  font-weight: 600;
+}
+.company { color: var(--muted); margin: 0 0 12px; }
+.muted { color: var(--muted); margin: 0; }
+
+button {
+  font: inherit;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+button:hover { opacity: 0.88; }
+button:disabled { opacity: 0.45; cursor: default; }
+
+button.secondary { background: transparent; color: var(--text); border-color: var(--line-strong); }
+button.link {
+  width: auto;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  padding: 0;
+  text-decoration: underline;
+  font-size: 11px;
+}
+
+.report {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  background: var(--surface);
+  border-left: 2px solid var(--accent);
+  color: var(--muted);
+  word-break: break-word;
+}
+
+.yours {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  background: var(--surface);
+  border-left: 2px solid var(--warn);
+}
+.yours strong { color: var(--warn); display: block; margin-bottom: 4px; font-weight: 600; }
+.yours ul { margin: 0; padding-left: 16px; color: var(--muted); }
+.yours li { margin: 2px 0; }
+
+.stack > * + * { margin-top: 8px; }
+
+hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
+
+a { color: var(--accent); }
+
+footer { padding: 10px 14px 14px; border-top: 1px solid var(--line); }
+footer label { display: block; color: var(--muted); margin: 8px 0 4px; }
+footer input {
+  width: 100%;
+  font: inherit;
+  padding: 6px 8px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  margin-bottom: 6px;
+}

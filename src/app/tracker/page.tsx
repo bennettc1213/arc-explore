@@ -10,6 +10,8 @@ import {
   responseRate,
   statusMeta,
 } from "@/lib/applications/types";
+import { getUserTier } from "@/lib/pricing/entitlements";
+import { evaluateFeature, TIER_LABELS } from "@/lib/pricing/tiers";
 
 import { ApplicationCard, type CardApplication } from "./ApplicationCard";
 import { ComparePicker } from "./ComparePicker";
@@ -43,6 +45,13 @@ export default async function TrackerPage() {
 
   const counts = countByStatus(rows);
   const rate = responseRate(rows);
+
+  // Read-only: the cap is enforced in `setStatusAction` when a NEW posting is
+  // tracked (see tracker/actions.ts). This only tells the student where they
+  // stand before they hit it, rather than letting the feed's save button fail
+  // as a surprise.
+  const tier = await getUserTier(user.id);
+  const trackerAccess = evaluateFeature(tier, "tracker", rows.length);
 
   // Sorted by where each application sits in a real process, then by
   // most-recently-touched inside each group.
@@ -103,6 +112,37 @@ export default async function TrackerPage() {
         </section>
       )}
 
+      {!trackerAccess.unlimited && trackerAccess.limit !== null && (
+        <div
+          className={trackerAccess.usable ? "slot" : "border"}
+          style={{
+            padding: "14px 16px",
+            marginBottom: 24,
+            ...(trackerAccess.usable ? {} : { borderColor: "var(--accent)" }),
+          }}
+        >
+          <span>
+            {trackerAccess.usable ? (
+              <>
+                tracking {rows.length} of {trackerAccess.limit} on {TIER_LABELS[tier]} ·{" "}
+                <Link href="/pricing" style={{ color: "var(--accent)" }}>
+                  upgrade for unlimited
+                </Link>
+              </>
+            ) : (
+              <>
+                you&rsquo;ve reached the {trackerAccess.limit}-posting limit on{" "}
+                {TIER_LABELS[tier]} — saving another will be refused until you{" "}
+                <Link href="/pricing" style={{ color: "var(--accent)" }}>
+                  upgrade
+                </Link>{" "}
+                or remove one below
+              </>
+            )}
+          </span>
+        </div>
+      )}
+
       {apps.length === 0 ? (
         <div className="slot" style={{ padding: "24px", gap: 16 }}>
           <Mascot size={32} />
@@ -120,11 +160,13 @@ export default async function TrackerPage() {
           {/* Comparing is what you do with a shortlist, and the tracker is the
               shortlist. Closed rows are excluded — there is no decision left to
               make about those. */}
-          <ComparePicker
-            options={apps
-              .filter((a) => !a.closed)
-              .map((a) => ({ postingId: a.postingId, title: a.title, company: a.company }))}
-          />
+          <div style={{ marginBottom: 16 }}>
+            <ComparePicker
+              options={apps
+                .filter((a) => !a.closed)
+                .map((a) => ({ postingId: a.postingId, title: a.title, company: a.company }))}
+            />
+          </div>
 
           {apps.map((app) => (
             <ApplicationCard key={app.id} app={app} />

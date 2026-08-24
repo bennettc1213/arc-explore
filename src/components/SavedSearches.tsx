@@ -11,6 +11,8 @@ import {
 } from "@/app/searches-actions";
 import { describeFilters, filtersToQuery, type SavedFilters } from "@/lib/searches/types";
 
+import { PendingButton } from "./PendingButton";
+
 const INITIAL: SaveSearchState = { status: "idle" };
 
 export interface SavedSearchView {
@@ -32,10 +34,16 @@ export function SavedSearches({
   current,
   currentIsEmpty,
   searches,
+  canSave = true,
 }: {
   current: SavedFilters;
   currentIsEmpty: boolean;
   searches: SavedSearchView[];
+  /** Whether this viewer's tier includes saved-search alerts. Decided
+   *  server-side (see app/page.tsx); `saveSearchAction` re-checks it anyway,
+   *  because a Server Action is a public POST endpoint and a hidden button
+   *  is not a check. */
+  canSave?: boolean;
 }) {
   const [state, action, pending] = useActionState(saveSearchAction, INITIAL);
   const [naming, setNaming] = useState(false);
@@ -51,17 +59,26 @@ export function SavedSearches({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <span className="mono chrome">saved searches</span>
-        {!currentIsEmpty && !alreadySaved && !naming && (
+        {!canSave && (
+          <span className="mono" style={{ color: "var(--faint-readable)" }}>
+            🔒{" "}
+            <Link href="/pricing" style={{ color: "var(--accent)" }}>
+              Edge
+            </Link>{" "}
+            — a saved search exists to alert you, and alerts are a paid feature
+          </span>
+        )}
+        {canSave && !currentIsEmpty && !alreadySaved && !naming && (
           <button type="button" className="btn press" onClick={() => setNaming(true)}>
             save this search
           </button>
         )}
-        {alreadySaved && (
+        {canSave && alreadySaved && (
           <span className="mono" style={{ color: "var(--faint-readable)" }}>
             this one is already saved
           </span>
         )}
-        {currentIsEmpty && (
+        {canSave && currentIsEmpty && (
           <span className="mono" style={{ color: "var(--faint-readable)" }}>
             filter the feed first — an empty search matches everything
           </span>
@@ -124,8 +141,9 @@ export function SavedSearches({
                 <form action={toggleNotifyAction}>
                   <input type="hidden" name="id" value={s.id} />
                   <input type="hidden" name="notify" value={s.notify ? "0" : "1"} />
-                  <button
+                  <PendingButton
                     type="submit"
+                    pendingLabel={s.notify ? "turning off…" : "turning on…"}
                     className="mono press"
                     style={{
                       background: "none",
@@ -140,13 +158,14 @@ export function SavedSearches({
                     }
                   >
                     {s.notify ? "alerts on" : "alerts off"}
-                  </button>
+                  </PendingButton>
                 </form>
 
                 <form action={deleteSearchAction}>
                   <input type="hidden" name="id" value={s.id} />
-                  <button
+                  <PendingButton
                     type="submit"
+                    pendingLabel="deleting…"
                     className="mono press"
                     style={{
                       background: "none",
@@ -156,7 +175,7 @@ export function SavedSearches({
                     }}
                   >
                     delete
-                  </button>
+                  </PendingButton>
                 </form>
               </div>
             </li>

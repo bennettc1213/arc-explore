@@ -59,33 +59,34 @@ describe("reconcile", () => {
 
   it("touches a posting it already knows", () => {
     const p = preparePosting(posting());
-    const existing: ExistingPosting[] = [{ canonicalHash: p.canonicalHash, closedAt: null }];
+    const existing: ExistingPosting[] = [{ canonicalHash: p.canonicalHash, closedAt: null, missingStrikes: 0 }];
     const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
     assert.equal(plan.toInsert.length, 0);
     assert.equal(plan.toTouch.length, 1);
   });
 
-  it("closes a posting that vanished from the board", () => {
-    // The headline behaviour: snapshot a feed, remove an entry, reconcile,
-    // and the missing posting is marked closed. This is our "already filled"
-    // signal, and no upstream source provides it.
+  it("does not close on a single absence — only increments a strike", () => {
+    // The two-observation rule: one scrape that loses a row is as flaky as a
+    // single 404 on the apply URL (linkcheck.ts). The posting is not closed;
+    // it is given a strike so a second consecutive absence can close it.
     const gone = preparePosting(posting({ title: "Data Science Intern", sourceId: "2" }));
     const stillThere = preparePosting(posting());
     const existing: ExistingPosting[] = [
-      { canonicalHash: gone.canonicalHash, closedAt: null },
-      { canonicalHash: stillThere.canonicalHash, closedAt: null },
+      { canonicalHash: gone.canonicalHash, closedAt: null, missingStrikes: 0 },
+      { canonicalHash: stillThere.canonicalHash, closedAt: null, missingStrikes: 0 },
     ];
 
     const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
 
-    assert.deepEqual(plan.toClose, [gone.canonicalHash]);
+    assert.deepEqual(plan.toClose, []);
+    assert.deepEqual(plan.toIncrementMissing, [gone.canonicalHash]);
     assert.equal(plan.toTouch.length, 1);
   });
 
   it("does not re-close something already closed", () => {
     const p = preparePosting(posting());
     const existing: ExistingPosting[] = [
-      { canonicalHash: p.canonicalHash, closedAt: new Date("2026-01-01") },
+      { canonicalHash: p.canonicalHash, closedAt: new Date("2026-01-01"), missingStrikes: 0 },
     ];
     const plan = reconcile({ incoming: [], existing, totalOnBoard: 50 });
     assert.equal(plan.toClose.length, 0);
@@ -94,7 +95,7 @@ describe("reconcile", () => {
   it("reopens a reposted role instead of duplicating it", () => {
     const p = preparePosting(posting());
     const existing: ExistingPosting[] = [
-      { canonicalHash: p.canonicalHash, closedAt: new Date("2026-01-01") },
+      { canonicalHash: p.canonicalHash, closedAt: new Date("2026-01-01"), missingStrikes: 0 },
     ];
     const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
     assert.equal(plan.toReopen.length, 1);
@@ -106,7 +107,7 @@ describe("reconcile", () => {
     // upstream hiccup or a renamed slug than every job vanishing at once.
     // Wiping the user's view on that signal would be the worst possible bug.
     const p = preparePosting(posting());
-    const existing: ExistingPosting[] = [{ canonicalHash: p.canonicalHash, closedAt: null }];
+    const existing: ExistingPosting[] = [{ canonicalHash: p.canonicalHash, closedAt: null, missingStrikes: 0 }];
 
     const plan = reconcile({ incoming: [], existing, totalOnBoard: 0 });
 
@@ -114,10 +115,14 @@ describe("reconcile", () => {
     assert.equal(plan.toClose.length, 0);
   });
 
-  it("DOES close when the board is alive but has no internships left", () => {
-    // The legitimate case: the company still lists 50 jobs, none early-career.
+  it("DOES close on the second consecutive absence", () => {
+    // The legitimate case: the company still lists 50 jobs, none early-career,
+    // and this is the *second* scrape in a row that omits a row we hold. A
+    // single absence only increments; only the second consecutive one closes.
     const p = preparePosting(posting());
-    const existing: ExistingPosting[] = [{ canonicalHash: p.canonicalHash, closedAt: null }];
+    const existing: ExistingPosting[] = [
+      { canonicalHash: p.canonicalHash, closedAt: null, missingStrikes: 1 },
+    ];
 
     const plan = reconcile({ incoming: [], existing, totalOnBoard: 50 });
 
@@ -146,5 +151,50 @@ describe("reconcile", () => {
       totalOnBoard: 50,
     });
     assert.equal(plan.toInsert.length, 1);
+  });
+
+  it("recovers: a return after one strike clears the counter", () => {
+    // Posting was absent last scrape (strike 1), is present this scrape — it
+    // touched and its strike must be cleared rather than carried forward.
+    const p = preparePosting(posting());
+    const existing: ExistingPosting[] = [
+      { canonicalHash: p.canonicalHash, closedAt: null, missingStrikes: 1 },
+    ];
+
+    const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
+
+    assert.equal(plan.toTouch.length, 1);
+    assert.equal(plan.toClose.length, 0);
+    assert.equal(plan.toIncrementMissing.length, 0);
+    assert.deepEqual(plan.toResetMissing, [p.canonicalHash]);
+  });
+
+  it("does not re-strike a posting that is already closed", () => {
+    // A closed posting is out of the liveness engine; re-appearing reopens it.
+    const p = preparePosting(posting());
+    const existing: ExistingPosting[] = [
+      { canonicalHash: p.canonicalHash, closedAt: new Date("2026-01-01"), missingStrikes: 0 },
+    ];
+
+    const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
+
+    assert.equal(plan.toReopen.length, 1);
+    assert.equal(plan.toIncrementMissing.length, 0);
+  });
+
+  it("suppresses strikes too, not just closes, when the board is empty", () => {
+    // The liveness guard protects the whole close path — including the
+    // increment — so a hiccup that returns zero postings never advances a
+    // strike toward a closing that should not happen.
+    const p = preparePosting(posting());
+    const existing: ExistingPosting[] = [
+      { canonicalHash: p.canonicalHash, closedAt: null, missingStrikes: 1 },
+    ];
+
+    const plan = reconcile({ incoming: [], existing, totalOnBoard: 0 });
+
+    assert.equal(plan.closeSuppressed, true);
+    assert.equal(plan.toClose.length, 0);
+    assert.equal(plan.toIncrementMissing.length, 0);
   });
 });

@@ -17,6 +17,7 @@
  */
 
 import type { FeedItem } from "./feed";
+import { presentFit, type TierId } from "./pricing/tiers";
 
 /** Two or three. Four columns stops being a comparison and becomes a feed. */
 export const MAX_COMPARE = 3;
@@ -130,19 +131,39 @@ function row(label: string, cells: CompareCell[], note?: string): CompareRow {
  * page already, and a comparison whose first three rows are the things the
  * student is already looking at buries the answer.
  */
-export function buildComparison(items: FeedItem[], now: Date = new Date()): Comparison {
+export function buildComparison(
+  items: FeedItem[],
+  now: Date = new Date(),
+  tier: TierId = "free",
+): Comparison {
   const rows: CompareRow[] = [];
 
-  const fitScores = items.map((i) => i.fit.score);
+  /*
+   * The fit row goes through `presentFit` like every other place a score is
+   * shown. It is easy to miss that this file renders a score at all — it
+   * builds strings rather than using `ScoreBadge` — and a paywall that holds
+   * on the feed and the listing page while `/compare` prints the exact
+   * number is not a paywall. Found by grepping for the score after the
+   * badge-level gate was already working.
+   *
+   * `markBest` is fed the presented scores, so on a bucketed tier no column
+   * is marked as the winner: declaring one would rank two postings against
+   * each other on a number this viewer is not being shown, which is a
+   * stronger claim than the row is allowed to make.
+   */
+  const presented = items.map((i) => presentFit(i.fit, tier));
+  const fitScores = presented.map((p) => p.score);
   rows.push(
     row(
       "fit",
       markBest(
-        items.map((i) => ({
+        presented.map((p) => ({
           value:
-            i.fit.score === null
-              ? null
-              : `${i.fit.score} · ${i.fit.knownDimensions}/${i.fit.totalDimensions} known`,
+            p.bucketLabel !== null
+              ? `${p.bucketLabel} · ${p.known}/${p.total} known`
+              : p.score === null
+                ? null
+                : `${p.score} · ${p.known}/${p.total} known`,
         })),
         fitScores,
       ),

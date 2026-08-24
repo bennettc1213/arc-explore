@@ -9,7 +9,7 @@ import {
   generateDraft,
   regenerateParagraph,
 } from "@/lib/cover-letter/generate";
-import { getCoverLetter, saveCoverLetter } from "@/lib/cover-letter/store";
+import { getCoverLetter, listCoverLetters, saveCoverLetter } from "@/lib/cover-letter/store";
 import {
   CoverLetterValidationError,
   LETTER_ROLES,
@@ -18,6 +18,8 @@ import {
   type LetterRole,
 } from "@/lib/cover-letter/types";
 import { getPosting, type FeedItem } from "@/lib/feed";
+import { getUserTier } from "@/lib/pricing/entitlements";
+import { evaluateFeature } from "@/lib/pricing/tiers";
 import { ensureProfile, getLatestResume, getProfile } from "@/lib/profile/store";
 import { toScoreProfile, type UserProfile } from "@/lib/profile/types";
 import { EMPTY_PARSED_RESUME, coerceParsedResume, type ParsedResume } from "@/lib/resume/types";
@@ -81,6 +83,29 @@ export async function generateCoverLetterAction(
   const grounding = await loadGrounding(user.id, postingId);
   if (!grounding.hasResume) {
     return { status: "error", message: "upload a resume on your profile first — every claim in the letter must come from it" };
+  }
+
+  // Quantity cap, not fidelity — the other of the roadmap's two gating
+  // patterns. Only a NEW posting's draft counts against it: regenerating a
+  // letter the student already has is not a second draft, it is the same
+  // one. `listCoverLetters` reads the real table rather than a usage
+  // counter, because a cover letter already has exactly one row per unit —
+  // counting it twice in a separate table would be the second, driftable
+  // copy `USAGE_FEATURE_KEYS`'s own comment warns against.
+  const existingLetter = await getCoverLetter(user.id, postingId);
+  if (!existingLetter) {
+    const tier = await getUserTier(user.id);
+    const draftCount = (await listCoverLetters(user.id)).length;
+    const access = evaluateFeature(tier, "cover_letter", draftCount);
+    if (!access.usable) {
+      return {
+        status: "error",
+        message:
+          access.reason === "limit_reached"
+            ? "you've used your free cover letter draft — upgrade to Edge for unlimited drafts"
+            : "cover letter drafts require the Edge plan",
+      };
+    }
   }
 
   await ensureProfile(user.id);

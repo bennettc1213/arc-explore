@@ -32,6 +32,8 @@ import type { SourcePosting } from "./types";
 export interface ExistingPosting {
   canonicalHash: string;
   closedAt: Date | null;
+  /** Consecutive prior-scrape absences — see `postings.missingStrikes`. */
+  missingStrikes: number;
 }
 
 /** A source posting after normalization, ready to upsert. */
@@ -79,6 +81,10 @@ export interface ReconcilePlan {
   toClose: string[];
   /** Previously closed and back on the board: clear `closedAt`. */
   toReopen: PreparedPosting[];
+  /** Postings absent this scrape on a non-closing strike: bump the counter. */
+  toIncrementMissing: string[];
+  /** Postings that returned after a prior absence: clear `missingStrikes`. */
+  toResetMissing: string[];
   /** Postings dropped by the early-career filter. */
   filteredOut: number;
   /** True when the close step was skipped by the liveness guard. */
@@ -163,12 +169,57 @@ export function reconcile(input: ReconcileInput): ReconcilePlan {
     }
   }
 
+  /*
+   * The liveness guard from the docstring: a board that returns zero postings
+   * in total is far more likely an upstream hiccup, a renamed slug, or a
+   * rate-limit page than every job vanishing at once — so we suppress closing
+   * entirely and leave the data alone. A board that is genuinely alive but has
+   * no early-career matches still returns totalOnBoard > 0, and those missing
+   * postings are subject to the two-observation rule below.
+   */
   const closeSuppressed = totalOnBoard === 0;
-  const toClose = closeSuppressed
-    ? []
-    : existing
-        .filter((e) => !e.closedAt && !byHash.has(e.canonicalHash))
-        .map((e) => e.canonicalHash);
 
-  return { toInsert, toTouch, toClose, toReopen, filteredOut, closeSuppressed };
+  /*
+   * Two-observation close rule.
+   *
+   * A posting absent from one scrape is not closed — that single absence is
+   * exactly as flaky as a single 404 on an apply URL (see linkcheck.ts). We
+   * increment a strike and wait. Only the second consecutive absence closes it.
+   *
+   * Concretely: an open posting missing from this scrape gets missingStrikes
+   * bumped to (prev + 1). It is closed at the same time the strike crosses the
+   * threshold (>= MISSING_STRIKES_REQUIRED), so a single dropout is never
+   * destructive and a posting that flaps back into the feed on the very next
+   * scrape is never closed at all.
+   *
+   * Any posting that *is* present in this scrape but carries a prior strike
+   * must have it cleared — it recovered, and the counter must not linger to
+   * pre-dispose a future dropout. That reset is folded into toTouch: a
+   * returning posting is refreshed anyway, so the strike-clear rides the same
+   * write rather than demanding a second pass.
+   */
+  const MISSING_STRIKES_REQUIRED = 2;
+  const toClose: string[] = [];
+  const toIncrementMissing: string[] = [];
+  const toResetMissing: string[] = [];
+
+  if (!closeSuppressed) {
+    for (const e of existing) {
+      if (e.closedAt) continue; // already closed; only reopen can touch it
+      if (byHash.has(e.canonicalHash)) {
+        // Present this scrape — a prior strike, if any, must clear.
+        if (e.missingStrikes > 0) toResetMissing.push(e.canonicalHash);
+        continue;
+      }
+      // Absent this scrape. Bump and maybe close.
+      const strikes = e.missingStrikes + 1;
+      if (strikes >= MISSING_STRIKES_REQUIRED) {
+        toClose.push(e.canonicalHash);
+      } else {
+        toIncrementMissing.push(e.canonicalHash);
+      }
+    }
+  }
+
+  return { toInsert, toTouch, toClose, toReopen, filteredOut, closeSuppressed, toIncrementMissing, toResetMissing };
 }

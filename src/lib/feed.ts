@@ -17,17 +17,26 @@ import { desc, eq, isNull, and, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { organizations, postings, type FreshnessTier, type PostingKind } from "@/db/schema";
 import { escapeLike, parseSearchQuery, type DeadlineFilter } from "./feed-search";
+import { trimWithReservation } from "./feed-trim";
 import { isFlaggedDead } from "./ingest/linkcheck";
 import {
   fieldsForPosting,
+  NEUTRAL_PRIOR,
   rankingScore,
   scoreFit,
   type FieldKey,
   type ScoreProfile,
   type FitResult,
 } from "./score/fit";
+import { dayIndex, rotationRank } from "./score/rotation";
 import { scholarshipFields, scoreScholarshipFit } from "./score/scholarship-fit";
-import { scoreTiming, type TimingResult } from "./score/timing";
+import {
+  describeTiming,
+  rankingTiming,
+  scoreTiming,
+  type TimingDisplay,
+  type TimingResult,
+} from "./score/timing";
 
 export interface FeedItem {
   id: string;
@@ -43,6 +52,14 @@ export interface FeedItem {
   skills: string[];
   /** Employer-stated application deadline, when the source publishes one. */
   deadlineAt: Date | null;
+  /**
+   * Employer-stated posting date, when the source publishes one.
+   *
+   * Believed only inside `POSTED_PLAUSIBLE_DAYS` — see `score/timing.ts`. The
+   * row renders it through `describeTiming`, which omits it entirely rather
+   * than showing a date we do not stand behind.
+   */
+  postedAt: Date | null;
   /** Scholarship dollar bounds. Null means "amount varies" or unstated. */
   amountMin: number | null;
   amountMax: number | null;
@@ -55,6 +72,13 @@ export interface FeedItem {
    * labelled, than hide an opportunity on the strength of two HTTP responses.
    */
   applyLinkDead: boolean;
+  /**
+   * Consecutive observations that this page's headers permit framing.
+   *
+   * Carried so the apply wizard can decide whether to embed the employer's
+   * form without a second query — see `lib/apply/frame-headers.ts`.
+   */
+  frameAllowStrikes: number;
   /** Raw eligibility bullets, as the source stated them. */
   eligibility: string[];
   isContentMarketing: boolean;
@@ -71,6 +95,16 @@ export interface FeedItem {
   fields: FieldKey[];
   fit: FitResult;
   timing: TimingResult;
+  /**
+   * The three date phrases a row renders — verified / posted / closes.
+   *
+   * Built here rather than in the component because `describeTiming` needs
+   * `now`, and React's purity rule rejects `Date.now()` during render (the
+   * same reason `newSinceFromDays` lives in this module). It also means every
+   * row in one response dates itself against a single instant, so a long feed
+   * cannot straddle midnight and report two different "today"s.
+   */
+  dates: TimingDisplay;
 }
 
 /** "set" = any stated upcoming deadline; "30"/"60"/"90" = closing within N days. */
@@ -99,6 +133,8 @@ export interface FeedFilters {
   category?: FieldKey | null;
   /** Hide roles the profile is hard-blocked from. */
   hideBlocked?: boolean;
+  /** Drop scholarship "awards" that are really sponsor content marketing. */
+  excludeMarketing?: boolean;
   /**
    * Only postings we first saw after this moment.
    *
@@ -111,7 +147,23 @@ export interface FeedFilters {
   /** Max rows to return. Applied AFTER ranking, so the list is never
    *  truncated in a way that silently drops one kind. */
   limit?: number;
+  /**
+   * Guarantee at least this many slots to each kind before `limit` trims.
+   *
+   * Only meaningful on a genuinely short list, which is why the full feed
+   * does not set it. See `trimWithReservation` for why a short list needs it
+   * and a long one does not.
+   */
+  reservePerKind?: number;
+  /**
+   * How far timing may move a posting in the ranking, in points on the fit
+   * scale. The paid entitlement — pass `TIMING_PRIORITY_POINTS[tier]`.
+   * Defaults to 0, which is byte-for-byte the ranking that existed before this
+   * was added.
+   */
+  timingPoints?: number;
 }
+
 
 export interface FeedResult {
   items: FeedItem[];
@@ -127,6 +179,15 @@ export interface FeedResult {
    * were unreadable, not irrelevant.
    */
   categoryUnclassified: number;
+  /**
+   * How many rows matched, before `limit` trimmed them for display.
+   *
+   * Reported because the feed now renders a page rather than everything, and
+   * "showing 50" without "of 3,788" is the kind of number that quietly lies —
+   * a student would read the page size as the size of the corpus. `items`
+   * says what is on screen; this says what the filters actually matched.
+   */
+  total: number;
 }
 
 export interface FeedStats {
@@ -136,8 +197,37 @@ export interface FeedStats {
   withUnknownTerm: number;
 }
 
+/** One posting's position on the ranking scale — see `makeRank` below. */
+function sortKey(item: FeedItem, timingPoints: number): number {
+  // Confidence-weighted, not the raw score — see rankingScore. Sorting on the
+  // displayed number puts the postings we understand *least* at the top.
+  const fit = rankingScore(item.fit);
+
+  /*
+   * A posting we cannot score at all keeps its sentinel and sorts below
+   * everything scored. Giving it a timing bonus would let a listing we know
+   * nothing about climb over one we understand purely for closing soon — and
+   * "closes in 3 days" is not a reason to recommend something that may not fit
+   * at all. Unknown stays unknown; it does not borrow confidence from a
+   * different dimension.
+   */
+  if (fit < 0 || timingPoints === 0) return fit;
+
+  /*
+   * Centred on the neutral prior, so average timing is worth nothing and the
+   * bonus is genuinely a bonus rather than a rescaling. `rankingTiming` has
+   * already shrunk toward that same prior by its own confidence, so a row
+   * whose timing rests on 1 of 3 signals cannot claim the full swing.
+   *
+   * Bounded at ±`timingPoints` by construction: `rankingTiming` is 0–100 and
+   * the prior is its midpoint.
+   */
+  const bonus = (timingPoints * (rankingTiming(item.timing) - NEUTRAL_PRIOR)) / NEUTRAL_PRIOR;
+  return fit + bonus;
+}
+
 /**
- * Ranks by blocked status, then fit, then timing.
+ * Ranks by blocked status, then the fit/timing blend, then timing.
  *
  * Blocked postings sort last regardless of score. A role requiring U.S.
  * citizenship still scores well on term, field and location, so it can land a
@@ -151,16 +241,43 @@ export interface FeedStats {
  * list: `rankingScore` shrinks toward a neutral prior by how many dimensions
  * a score rests on, so a confident internship match and a field-matched
  * scholarship rank against each other on the same yardstick.
+ *
+ * `timingPoints` is the paid entitlement (`TIMING_PRIORITY_POINTS`) — how far
+ * timing may move a posting, in points on the fit scale. **At 0 — the free
+ * tier, and every caller that does not ask — this function is exactly what it
+ * was before the entitlement existed**, timing included as the tiebreaker it
+ * always was. Paid plans add a bounded bonus to the primary key instead, so
+ * what is still worth acting on rises among comparable matches without
+ * anything unsuitable being promoted past them.
  */
-function rank(a: FeedItem, b: FeedItem): number {
-  if (a.fit.blocked !== b.fit.blocked) return a.fit.blocked ? 1 : -1;
+function makeRank(timingPoints: number, day: number) {
+  return function rank(a: FeedItem, b: FeedItem): number {
+    if (a.fit.blocked !== b.fit.blocked) return a.fit.blocked ? 1 : -1;
 
-  // Confidence-weighted, not the raw score — see rankingScore. Sorting on the
-  // displayed number puts the postings we understand *least* at the top.
-  const af = rankingScore(a.fit);
-  const bf = rankingScore(b.fit);
-  if (bf !== af) return bf - af;
-  return b.timing.score - a.timing.score;
+    const ak = sortKey(a, timingPoints);
+    const bk = sortKey(b, timingPoints);
+    if (bk !== ak) return bk - ak;
+
+    // Still the tiebreaker at every weight, including 0 — two postings whose
+    // fit we understand identically are separated by which one is closing.
+    const byTiming = b.timing.score - a.timing.score;
+    // Guarded rather than returned outright: an unscored timing yields NaN
+    // here, and returning NaN to `sort` makes the whole ordering undefined.
+    // Falling through to the rotation is both defined and more useful.
+    if (byTiming) return byTiming;
+
+    /*
+     * FULLY TIED — and that is the common case, not an edge one. 1,529 rows
+     * of the live corpus share one sort key, and 37 of the first 50 ranks sit
+     * in a tie group. Without this the tie resolved to V8's stable sort, i.e.
+     * to Postgres row order, i.e. to the same feed every day forever.
+     *
+     * Rotating is not a preference we are inventing — a tie means we hold no
+     * evidence to prefer either row, so any fixed order is equally arbitrary
+     * and merely staler. See score/rotation.ts.
+     */
+    return rotationRank(a.id, day) - rotationRank(b.id, day);
+  };
 }
 
 /** The `{ criteria: string[] }` blob persist writes is all the schema has. */
@@ -191,10 +308,15 @@ const FEED_SELECT = {
   workAuth: postings.workAuth,
   skills: postings.skills,
   deadlineAt: postings.deadlineAt,
+  // Selected so the timing score can read it — it was previously left out
+  // entirely, which is half of why that score had four distinct values across
+  // the whole corpus. See score/timing.ts.
+  postedAt: postings.postedAt,
   amountMin: postings.amountMin,
   amountMax: postings.amountMax,
   amountNeedsReview: postings.amountNeedsReview,
   urlDeadStrikes: postings.urlDeadStrikes,
+  frameAllowStrikes: postings.frameAllowStrikes,
   eligibility: postings.eligibility,
   isContentMarketing: postings.isContentMarketing,
   freshnessTier: postings.freshnessTier,
@@ -221,10 +343,12 @@ interface FeedRow {
   workAuth: string | null;
   skills: string[];
   deadlineAt: Date | null;
+  postedAt: Date | null;
   amountMin: number | null;
   amountMax: number | null;
   amountNeedsReview: boolean;
   urlDeadStrikes: number;
+  frameAllowStrikes: number;
   eligibility: unknown;
   isContentMarketing: boolean;
   freshnessTier: FreshnessTier;
@@ -248,10 +372,12 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
     workAuth: r.workAuth,
     skills: r.skills,
     deadlineAt: r.deadlineAt,
+    postedAt: r.postedAt,
     amountMin: r.amountMin,
     amountMax: r.amountMax,
     amountNeedsReview: r.amountNeedsReview,
     applyLinkDead: isFlaggedDead({ urlDeadStrikes: r.urlDeadStrikes }),
+    frameAllowStrikes: r.frameAllowStrikes,
     eligibility: criteria,
     isContentMarketing: r.isContentMarketing,
     freshnessTier: r.freshnessTier,
@@ -289,8 +415,19 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
       lastSeenAt: r.lastSeenAt,
       closedAt: r.closedAt,
       deadlineAt: r.deadlineAt,
+      postedAt: r.postedAt,
       now,
     }),
+    dates: describeTiming(
+      {
+        lastSeenAt: r.lastSeenAt,
+        postedAt: r.postedAt,
+        deadlineAt: r.deadlineAt,
+        closedAt: r.closedAt,
+        freshnessTier: r.freshnessTier,
+      },
+      now,
+    ),
   };
 }
 
@@ -314,6 +451,7 @@ export async function getFeed(
   if (filters.term) conditions.push(eq(postings.term, filters.term));
   if (filters.remoteOnly) conditions.push(eq(postings.isRemote, true));
   if (filters.kind) conditions.push(eq(postings.kind, filters.kind));
+  if (filters.excludeMarketing) conditions.push(eq(postings.isContentMarketing, false));
 
   if (filters.deadline) {
     conditions.push(isNotNull(postings.deadlineAt));
@@ -397,8 +535,23 @@ export async function getFeed(
     });
   }
 
-  filtered.sort(rank);
-  return { items: filtered.slice(0, filters.limit ?? 500), categoryUnclassified };
+  /*
+   * One `day` for the whole request, computed here rather than inside the
+   * comparator. Same reason `buildFeedItem` takes one `now`: a feed that
+   * straddled midnight would otherwise be sorted against two different days
+   * mid-comparison, which is not merely inconsistent but an incoherent
+   * ordering — `sort` may do anything at all with a comparator that
+   * contradicts itself.
+   */
+  filtered.sort(makeRank(filters.timingPoints ?? 0, dayIndex()));
+  // Rank first, then trim — never a SQL LIMIT. See the comment on the query
+  // above: trimming before ranking lets whichever kind was ingested last crowd
+  // the other out of the top N entirely.
+  return {
+    items: trimWithReservation(filtered, filters.limit ?? 500, filters.reservePerKind ?? 0),
+    categoryUnclassified,
+    total: filtered.length,
+  };
 }
 
 /**
@@ -528,9 +681,19 @@ export async function getCompletionCorpus(): Promise<CompletionCorpusCounts> {
   return value;
 }
 
+/**
+ * A cutoff `Date` N days before now.
+ *
+ * Lives here, not in the page: the page is a component and React's purity rule
+ * rejects `Date.now()` during render, whereas this module already computes
+ * dates inside its query builders. Keeps the impure call out of render.
+ */
+export function newSinceFromDays(days: number): Date {
+  return new Date(Date.now() - days * 86_400_000);
+}
+
 /** Distinct terms present in the corpus, for the filter control. */
-export async function getAvailableTerms(): Promise<string[]> {
-  const rows = await db
+export async function getAvailableTerms(): Promise<string[]> {  const rows = await db
     .selectDistinct({ term: postings.term })
     .from(postings)
     .where(isNull(postings.closedAt));

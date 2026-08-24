@@ -1,7 +1,14 @@
 import Link from "next/link";
 
 import { BackLink } from "@/components/BackLink";
+import { UpgradeWall } from "@/components/pricing/UpgradeGate";
+import { getSessionUser } from "@/lib/auth";
+import { getUserTier } from "@/lib/pricing/entitlements";
+import { evaluateFeature } from "@/lib/pricing/tiers";
+
 import { EssayReviewer } from "./EssayReviewer";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Essay review — internship tracker",
@@ -11,11 +18,20 @@ export const metadata = {
 /**
  * The essay reviewer.
  *
- * Open signed-out, because nothing here touches an account and requiring one
- * would be a login wall in front of a tool that runs entirely in the visitor's
- * own browser.
+ * AN EDGE-TIER GATE, NOT A CONTENT GATE. The reviewer itself is still a pure
+ * client component with no endpoint that takes an essay — that privacy
+ * property (see EssayReviewer/the "this never leaves your browser" banner
+ * below) is unrelated to and unweakened by requiring a plan to reach the
+ * tool at all. The gate happens here, server-side, BEFORE the reviewer is
+ * ever rendered: a free-tier or signed-out visitor gets an upgrade wall
+ * instead of the component, so there is nothing client-side to bypass — no
+ * essay text is read, held, or evaluated for someone who isn't entitled to
+ * the tool, because the component doing that reading never mounts.
  */
-export default function EssayPage() {
+export default async function EssayPage() {
+  const user = await getSessionUser();
+  const tier = await getUserTier(user?.id);
+  const access = evaluateFeature(tier, "essay_reviewer");
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 900 }}>
       <BackLink href="/" label="back to the feed" />
@@ -46,7 +62,15 @@ export default function EssayPage() {
         </p>
       </div>
 
-      <EssayReviewer />
+      {access.usable ? (
+        <EssayReviewer />
+      ) : (
+        <UpgradeWall
+          feature="essay_reviewer"
+          access={access}
+          reasonNote={user ? "the essay reviewer is an Edge feature" : "sign in and upgrade to Edge to use the essay reviewer"}
+        />
+      )}
 
       <section style={{ border: "1px solid var(--line)", padding: 22, marginBottom: 28 }}>
         <div className="eyebrow chrome" style={{ marginBottom: 6 }}>

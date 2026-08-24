@@ -1,12 +1,5 @@
 {
   "mcpServers": {
-    "fetch": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-server-fetch"
-      ]
-    },
     "context7": {
       "url": "https://mcp.context7.com/mcp"
     },
@@ -35,13 +28,6 @@
         "@modelcontextprotocol/server-sequential-thinking"
       ]
     },
-    "git": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-server-git"
-      ]
-    },
     "sqlite": {
       "command": "npx",
       "args": [
@@ -62,6 +48,30 @@
         "-y",
         "time-mcp-server"
       ]
+    },
+    "fetch": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-fetch"
+      ]
+    },
+    "git": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@cyanheads/git-mcp-server"
+      ]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ]
+    },
+    "deepwiki": {
+      "url": "https://mcp.deepwiki.com/mcp"
     }
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useOptimistic, useState } from "react";
 
 import type { ApplicationStatus } from "@/db/schema";
 import { STATUSES, statusMeta } from "@/lib/applications/types";
@@ -30,18 +30,34 @@ export interface CardApplication {
 }
 
 export function ApplicationCard({ app }: { app: CardApplication }) {
-  const [statusState, statusAction, statusPending] = useActionState(setStatusAction, INITIAL);
+  const [statusState, statusAction] = useActionState(setStatusAction, INITIAL);
   const [detailState, detailAction, detailPending] = useActionState(updateDetailsAction, INITIAL);
   const [, removeFormAction, removePending] = useActionState(removeAction, INITIAL);
   const [open, setOpen] = useState(false);
 
-  const meta = statusMeta(app.status);
+  /*
+   * Optimistic status, for the same reason as `TrackButton`.
+   *
+   * `setStatusAction` revalidates BOTH `/` and `/tracker`, so the true status
+   * could not come back until the feed had been rebuilt too — a card on this
+   * page was waiting on a render of a different one. The select used to dim
+   * and freeze for that whole time, which reads as "did that work?" on an
+   * action that is a single-row write.
+   *
+   * The label and the pip beside it are driven from the same optimistic value,
+   * so the whole card moves at once. Anything less is worse than waiting: a
+   * dropdown that jumps to "submitted" above a label still reading "applying"
+   * looks broken in a way the honest delay did not.
+   */
+  const [status, setStatus] = useOptimistic(
+    app.status,
+    (_prev, next: ApplicationStatus) => next,
+  );
+
+  const meta = statusMeta(status);
 
   return (
-    <article
-      className={`border-b ${app.closed ? "is-closed" : ""}`}
-      style={{ borderColor: "var(--line)", padding: "16px 0" }}
-    >
+    <article className={`card ${app.closed ? "is-closed" : ""}`}>
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -78,16 +94,30 @@ export function ApplicationCard({ app }: { app: CardApplication }) {
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <form action={statusAction}>
+          <form
+            action={(formData) => {
+              const next = String(formData.get("status") ?? "");
+              // Guarded rather than cast: the value comes off a form, and a
+              // status the app does not know must not become the optimistic
+              // one — the server would reject it and the card would have shown
+              // a state that never existed.
+              if (STATUSES.some((s) => s.value === next)) {
+                setStatus(next as ApplicationStatus);
+              }
+              return statusAction(formData);
+            }}
+          >
             <input type="hidden" name="postingId" value={app.postingId} />
             <select
               name="status"
-              defaultValue={app.status}
+              value={status}
               className="field"
-              style={{ width: "auto", padding: "6px 9px", fontFamily: "var(--font-mono)", fontSize: "0.75rem" }}
-              disabled={statusPending}
-              // Auto-submit: a separate "update" button for a control whose
-              // only purpose is to change one value is friction, not safety.
+              style={{
+                width: "auto",
+                padding: "6px 9px",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.75rem",
+              }}
               onChange={(e) => e.currentTarget.form?.requestSubmit()}
             >
               {STATUSES.map((s) => (

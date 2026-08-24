@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { checkLinkedIn, type Finding } from "@/lib/linkedin/check";
 import {
@@ -11,6 +11,8 @@ import {
   type LinkedInInput,
 } from "@/lib/linkedin/types";
 import { canonicalSkill } from "@/lib/score/skills";
+
+import { consumeLinkedInCheckAction } from "./actions";
 
 /**
  * The LinkedIn checker.
@@ -89,6 +91,22 @@ export function LinkedInChecker({
     input.experience.trim().length > 0 ||
     input.skills.trim().length > 0 ||
     input.recommendations !== null;
+
+  // Marks one use of the free tier's quota the first time this goes from
+  // empty to non-empty — not on page load (viewing an empty form is not a
+  // "run") and not on every keystroke (typing is not repeated runs). The
+  // action carries no content; see its own comment for why. `firedRef`
+  // rather than the returned `{usable}` gating anything further: the page
+  // already decided this account could start before rendering the form at
+  // all (see linkedin/page.tsx), so there is nothing left to block here —
+  // this only records that the one allowed run happened.
+  const firedRef = useRef(false);
+  useEffect(() => {
+    if (touched && !firedRef.current) {
+      firedRef.current = true;
+      void consumeLinkedInCheckAction();
+    }
+  }, [touched]);
 
   const check = useMemo(() => checkLinkedIn(input), [input]);
 

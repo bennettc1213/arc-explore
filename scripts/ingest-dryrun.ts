@@ -120,6 +120,7 @@ async function main() {
     const existing: ExistingPosting[] = allEarly.map((p) => ({
       canonicalHash: p.canonicalHash,
       closedAt: null,
+      missingStrikes: 0,
     }));
     const removed = allEarly[0];
 

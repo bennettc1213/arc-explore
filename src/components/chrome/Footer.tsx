@@ -19,7 +19,15 @@ export function Footer() {
           </div>
         </div>
         <div className="flex items-center gap-5">
-          <Link href="/privacy" className="mono chrome press" style={{ color: "var(--accent)" }}>
+          {/* Same treatment as the nav — it navigates, so it highlights.
+              Pricing lives here rather than in the nav: the nav was already
+              called out as over-full in FIXES.md §5 and the fix for that was
+              collapsing three links into one menu, so adding a top-level link
+              back would undo it. */}
+          <Link href="/pricing" className="navlink press">
+            pricing
+          </Link>
+          <Link href="/privacy" className="navlink press">
             privacy
           </Link>
           <span className="mono chrome">tech vertical · business vertical next</span>

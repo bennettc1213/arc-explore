@@ -98,6 +98,32 @@ export function slotsFromText(text: string): string[] {
   return out;
 }
 
+const MARKER_SLOT_RE = /\[YOUR SPECIFIC DETAIL: [^\]\n]+\]/g;
+
+/**
+ * Every canonical `[YOUR SPECIFIC DETAIL: …]` marker across the given texts,
+ * deduped in first-seen order.
+ *
+ * The strict counterpart to `slotsFromText`, for generators whose output is
+ * markdown (the README and LinkedIn builders): the loose pattern matches any
+ * bracketed capitalised phrase, which in markdown means every link label
+ * (`[LinkedIn](…)`) would be reported as a missing fact. Same marker format,
+ * stricter scan — one definition, so the three generators cannot drift.
+ */
+export function markerSlotsFromText(...texts: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const text of texts) {
+    for (const match of text.matchAll(MARKER_SLOT_RE)) {
+      const slot = match[0];
+      if (seen.has(slot)) continue;
+      seen.add(slot);
+      out.push(slot);
+    }
+  }
+  return out;
+}
+
 function truncateSlot(slot: string): string {
   if (slot.length <= MAX_SLOT_CHARS) return slot;
   return `${slot.slice(0, MAX_SLOT_CHARS - 4).trimEnd()}…]`;

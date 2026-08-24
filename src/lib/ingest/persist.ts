@@ -57,13 +57,18 @@ export async function persistPoll(
 ): Promise<PollOutcome> {
   return db.transaction(async (tx) => {
     const existingRows = await tx
-      .select({ canonicalHash: postings.canonicalHash, closedAt: postings.closedAt })
+      .select({
+        canonicalHash: postings.canonicalHash,
+        closedAt: postings.closedAt,
+        missingStrikes: postings.missingStrikes,
+      })
       .from(postings)
       .where(eq(postings.orgId, orgId));
 
     const existing: ExistingPosting[] = existingRows.map((r) => ({
       canonicalHash: r.canonicalHash,
-      closedAt: r.closedAt,
+      closedAt: r.closedAt ?? null,
+      missingStrikes: Number(r.missingStrikes ?? 0),
     }));
 
     const plan = reconcile({ incoming, existing, totalOnBoard });
@@ -81,11 +86,35 @@ export async function persistPoll(
       await reopenPostings(tx, plan.toReopen, now);
     }
 
-    if (plan.toClose.length > 0) {
+    if (plan.toResetMissing.length > 0) {
       await tx
         .update(postings)
-        .set({ closedAt: now })
+        .set({ missingStrikes: 0, missingSince: null })
+        .where(inArray(postings.canonicalHash, plan.toResetMissing));
+    }
+
+    if (plan.toClose.length > 0) {
+      /*
+       * Stamp missingSince on the crossing observation and never move it again,
+       * mirroring urlDeadSince in linkcheck.ts: "dead since we first had enough
+       * evidence", not "since last night". closedAt is the employer telling us
+       * it's gone, so the strike bookkeeping is moot once it's set.
+       */
+      await tx
+        .update(postings)
+        .set({
+          closedAt: now,
+          missingStrikes: 0,
+          missingSince: sql`COALESCE(${postings.missingSince}, ${now})`,
+        })
         .where(inArray(postings.canonicalHash, plan.toClose));
+    }
+
+    if (plan.toIncrementMissing.length > 0) {
+      await tx
+        .update(postings)
+        .set({ missingStrikes: sql`${postings.missingStrikes} + 1` })
+        .where(inArray(postings.canonicalHash, plan.toIncrementMissing));
     }
 
     await tx

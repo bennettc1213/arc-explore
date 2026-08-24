@@ -1,0 +1,66 @@
+{
+  "manifest_version": 3,
+  "name": "Arc Explorer \u2014 apply with your own facts",
+  "version": "0.1.0",
+  "description": "Fills an internship or scholarship application with the facts you already gave Arc Explorer. You review every field and press submit yourself.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://boards.greenhouse.io/*",
+    "https://job-boards.greenhouse.io/*",
+    "https://boards.eu.greenhouse.io/*",
+    "https://job-boards.eu.greenhouse.io/*",
+    "https://jobs.lever.co/*",
+    "https://jobs.ashbyhq.com/*",
+    "https://jobs.smartrecruiters.com/*",
+    "http://localhost:3000/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Arc Explorer"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://boards.greenhouse.io/*",
+        "https://job-boards.greenhouse.io/*",
+        "https://boards.eu.greenhouse.io/*",
+        "https://job-boards.eu.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://jobs.ashbyhq.com/*",
+        "https://jobs.smartrecruiters.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "vendor/*.js"
+      ],
+      "matches": [
+        "https://boards.greenhouse.io/*",
+        "https://job-boards.greenhouse.io/*",
+        "https://boards.eu.greenhouse.io/*",
+        "https://job-boards.eu.greenhouse.io/*",
+        "https://jobs.lever.co/*",
+        "https://jobs.ashbyhq.com/*",
+        "https://jobs.smartrecruiters.com/*"
+      ]
+    }
+  ],
+  "optional_host_permissions": [
+    "https://*/*"
+  ]
+}

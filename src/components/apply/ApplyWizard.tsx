@@ -1,13 +1,14 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { createPortal, useFormStatus } from "react-dom";
 
 import {
   markAppliedAction,
   saveApplyFieldAction,
   type ApplyActionState,
 } from "@/app/listing/[id]/apply/actions";
+import { embedStatus } from "@/lib/apply/apply-url";
 import type { PacketField } from "@/lib/apply/packet";
 import {
   planApplySteps,
@@ -18,6 +19,8 @@ import {
   type PromptTarget,
 } from "@/lib/apply/wizard";
 
+import { EmbeddedApplyFrame } from "./EmbeddedApplyFrame";
+
 /* ------------------------------------------------------------------ *
  * What the server hands us
  * ------------------------------------------------------------------ */
@@ -27,6 +30,15 @@ export interface WizardBoot {
   postingTitle: string;
   postingUrl: string;
   kind: string;
+  /**
+   * What the link checker observed about this page's framing headers.
+   *
+   * Optional: with no observation `embedStatus` falls back to the four-host
+   * ATS allowlist, which is exactly the behaviour that existed before framing
+   * became a measurement — so an unchecked row degrades to its own tab rather
+   * than to a blank rectangle.
+   */
+  frameAllowStrikes?: number;
   /** The packet's fact fields, for the review step. */
   fields: PacketField[];
   attestations: PacketField[];
@@ -100,7 +112,18 @@ export function ApplyWizard({ boot }: { boot: WizardBoot }) {
         apply with arc explorer
       </button>
 
-      {open && (
+      {/*
+        Portaled to document.body rather than rendered in place. This component
+        sits inside <main>, which globals.css gives its own stacking context
+        (position: relative + z-index: 2) so the tools-menu dropdown in <header>
+        can out-paint it — see the comment on `body > header` there. That same
+        rule traps anything nested in <main>: no z-index declared in here, no
+        matter how large, can escape main's context to paint over the header.
+        A fixed, full-viewport modal has to win against literally everything on
+        the page, including the header, so it cannot live inside main's box —
+        it has to leave the tree entirely and render as a sibling of it.
+      */}
+      {open && createPortal(
         <div
           role="dialog"
           aria-modal="true"
@@ -164,7 +187,8 @@ export function ApplyWizard({ boot }: { boot: WizardBoot }) {
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
@@ -229,88 +253,94 @@ function ReviewStep({
         Everything below is already assembled for you. Check it, then open the real application.
       </p>
 
-      {/* What's attached — resume and cover letter. */}
-      <div style={{ marginTop: 16 }}>
-        <div className="mono chrome" style={{ marginBottom: 6 }}>attached to your application</div>
-        <div className="flex flex-col gap-2">
-          <a href="/resume" className="btn press"
-            style={{ textDecoration: "none", display: "flex", justifyContent: "space-between" }}>
-            <span>resume</span>
-            <span className="mono" style={{ color: "var(--accent)" }}>view ↗</span>
-          </a>
-          <a href={`/listing/${boot.postingId}#cover-letter`} onClick={onClose} className="btn press"
-            style={{ textDecoration: "none", display: "flex", justifyContent: "space-between" }}>
-            <span>cover letter · {letter.status}</span>
-            <span className="mono" style={{ color: "var(--accent)" }}>{letter.cta} →</span>
-          </a>
+      <div className="mt-4 grid gap-x-8 gap-y-5 md:grid-cols-2">
+        <div>
+          {/* What's attached — resume and cover letter. */}
+          <div>
+            <div className="mono chrome" style={{ marginBottom: 6 }}>attached to your application</div>
+            <div className="flex flex-col gap-2">
+              <a href="/resume" className="btn press"
+                style={{ textDecoration: "none", display: "flex", justifyContent: "space-between" }}>
+                <span>resume</span>
+                <span className="mono" style={{ color: "var(--accent)" }}>view ↗</span>
+              </a>
+              <a href={`/listing/${boot.postingId}#cover-letter`} onClick={onClose} className="btn press"
+                style={{ textDecoration: "none", display: "flex", justifyContent: "space-between" }}>
+                <span>cover letter · {letter.status}</span>
+                <span className="mono" style={{ color: "var(--accent)" }}>{letter.cta} →</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Facts we fill. */}
+          {held.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div className="mono chrome" style={{ marginBottom: 6 }}>we fill these from your profile</div>
+              <div style={{ maxHeight: 180, overflowY: "auto" }}>
+                {held.map((f) => (
+                  <div key={f.key} className="flex items-baseline justify-between gap-4 border"
+                    style={{ borderColor: "var(--line)", padding: "8px 12px", marginBottom: 6 }}>
+                    <span className="mono chrome">{f.label}</span>
+                    <span className="t-sm" style={{ color: "var(--text)", textAlign: "right", wordBreak: "break-word" }}>
+                      {f.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div>
+          {/* Resume-only notes, folded in here rather than their own step. */}
+          {notes.length > 0 && (
+            <div className="slot" style={{ padding: "10px 12px" }}>
+              <div className="mono chrome" style={{ marginBottom: 4 }}>worth adding to your resume</div>
+              <ul className="t-sm" style={{ paddingLeft: 18, color: "var(--text)" }}>
+                {notes.map((n) => (
+                  <li key={n.fieldKey}>{n.prompt}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* The legal declarations — read and confirmed once, here. */}
+          {boot.attestations.length > 0 && (
+            <div style={{ marginTop: notes.length > 0 ? 16 : 0 }}>
+              <div className="mono chrome" style={{ marginBottom: 6 }}>by submitting you confirm</div>
+              <ul className="t-sm" style={{ paddingLeft: 18, color: "var(--text)" }}>
+                {boot.attestations.map((a) => (
+                  <li key={a.key}>
+                    {a.label}
+                    {a.value != null ? `: ${a.value}` : " — answer this on the real form"}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <label className="flex items-center gap-2" style={{ marginTop: 16, cursor: "pointer" }}>
+            <input
+              type="checkbox"
+              checked={confirmed}
+              onChange={(e) => setConfirmed(e.target.checked)}
+            />
+            <span className="t-sm" style={{ color: "var(--text)" }}>
+              the statements above are true
+            </span>
+          </label>
+
+          <button
+            type="button"
+            className="btn btn-primary press"
+            disabled={!confirmed}
+            onClick={onAdvance}
+            style={{ marginTop: 14 }}
+          >
+            continue
+          </button>
         </div>
       </div>
-
-      {/* Facts we fill. */}
-      {held.length > 0 && (
-        <div style={{ marginTop: 16 }}>
-          <div className="mono chrome" style={{ marginBottom: 6 }}>we fill these from your profile</div>
-          <div style={{ maxHeight: 180, overflowY: "auto" }}>
-            {held.map((f) => (
-              <div key={f.key} className="flex items-baseline justify-between gap-4 border"
-                style={{ borderColor: "var(--line)", padding: "8px 12px", marginBottom: 6 }}>
-                <span className="mono chrome">{f.label}</span>
-                <span className="t-sm" style={{ color: "var(--text)", textAlign: "right", wordBreak: "break-word" }}>
-                  {f.value}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Resume-only notes, folded in here rather than their own step. */}
-      {notes.length > 0 && (
-        <div className="slot" style={{ padding: "10px 12px", marginTop: 12 }}>
-          <div className="mono chrome" style={{ marginBottom: 4 }}>worth adding to your resume</div>
-          <ul className="t-sm" style={{ paddingLeft: 18, color: "var(--text)" }}>
-            {notes.map((n) => (
-              <li key={n.fieldKey}>{n.prompt}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* The legal declarations — read and confirmed once, here. */}
-      {boot.attestations.length > 0 && (
-        <div style={{ marginTop: 16 }}>
-          <div className="mono chrome" style={{ marginBottom: 6 }}>by submitting you confirm</div>
-          <ul className="t-sm" style={{ paddingLeft: 18, color: "var(--text)" }}>
-            {boot.attestations.map((a) => (
-              <li key={a.key}>
-                {a.label}
-                {a.value != null ? `: ${a.value}` : " — answer this on the real form"}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <label className="flex items-center gap-2" style={{ marginTop: 16, cursor: "pointer" }}>
-        <input
-          type="checkbox"
-          checked={confirmed}
-          onChange={(e) => setConfirmed(e.target.checked)}
-        />
-        <span className="t-sm" style={{ color: "var(--text)" }}>
-          the statements above are true
-        </span>
-      </label>
-
-      <button
-        type="button"
-        className="btn btn-primary press"
-        disabled={!confirmed}
-        onClick={onAdvance}
-        style={{ marginTop: 14 }}
-      >
-        continue
-      </button>
     </div>
   );
 }
@@ -395,6 +425,40 @@ function GapInput({ input, current }: { input: string; current: string }) {
 }
 
 function HandoffStep({ boot, onAdvance }: { boot: WizardBoot; onAdvance: () => void }) {
+  // Greenhouse embeds. Ashby and SmartRecruiters send X-Frame-Options and
+  // cannot. Lever could, and deliberately does not yet — its captcha was never
+  // observed minting a token in a frame. See `embedStatus`.
+  const status = embedStatus(
+    boot.postingUrl,
+    boot.frameAllowStrikes === undefined
+      ? undefined
+      : { frameAllowStrikes: boot.frameAllowStrikes },
+  );
+
+  if (status === "embedded") {
+    return (
+      <div>
+        <div className="mono-strong" style={{ color: "var(--text)" }}>the real application</div>
+        <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "60ch" }}>
+          This is the employer&rsquo;s own form, loaded here rather than in another tab. Fill it with
+          what you have already given Arc, read every line, then press <em>their</em> submit button —
+          the application goes out under your name, so you are the one who sends it.
+        </p>
+        <div style={{ marginTop: 14 }}>
+          {/* When the employer's own confirmation appears inside the frame, the
+              content script reports it and we advance for them — the same step
+              they would otherwise click "I sent it" on. Only fires where a
+              submission rule exists (today Greenhouse); everywhere else the
+              button below is still how this completes, unchanged. */}
+          <EmbeddedApplyFrame url={boot.postingUrl} onSubmitted={() => onAdvance()} />
+        </div>
+        <div className="flex items-center gap-3" style={{ marginTop: 14 }}>
+          <WizardContinue label="I sent it" onAdvance={onAdvance} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mono-strong" style={{ color: "var(--text)" }}>the real application</div>
@@ -402,6 +466,15 @@ function HandoffStep({ boot, onAdvance }: { boot: WizardBoot; onAdvance: () => v
         Everything above is on screen with its source attached. Open the employer&rsquo;s form, paste
         each field in, answer the attestations yourself, and send it — the application goes out
         under your name, so you are the one who submits it.
+      </p>
+      <p className="mono" style={{ color: "var(--muted)", marginTop: 8, maxWidth: "56ch" }}>
+        {/* Two different true sentences, not one convenient one. Saying a board
+            "refuses" when it plainly allows framing — and we are the ones
+            holding back — would be exactly the kind of small false claim this
+            project spends its comments avoiding. */}
+        {status === "refused"
+          ? "this employer’s board cannot be embedded, so it opens in its own tab"
+          : "we have not yet confirmed this board’s captcha works inside an embedded form, so it opens in its own tab"}
       </p>
       <div className="flex items-center gap-3" style={{ marginTop: 14 }}>
         <a href={boot.postingUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary press"

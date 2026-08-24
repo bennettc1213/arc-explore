@@ -2,6 +2,7 @@ import { eq, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { profiles } from "@/db/schema";
+import type { TierId } from "@/lib/pricing/tiers";
 
 /**
  * Reads and writes for the weekly digest.
@@ -16,6 +17,10 @@ export interface DigestCandidate {
   displayName: string | null;
   lastDigestAt: Date;
   unsubscribeToken: string;
+  /** Their plan, so the digest ranks on the same timing weight their feed
+   *  does. Two surfaces recommending from one corpus must not disagree about
+   *  what "best" means. */
+  plan: TierId;
 }
 
 /**
@@ -33,6 +38,7 @@ interface RawDigestRow extends Record<string, unknown> {
   display_name: string | null;
   last_digest_iso: string;
   unsubscribe_token: string;
+  plan: string;
 }
 
 /**
@@ -55,12 +61,19 @@ export async function digestCandidates(limit = 1000): Promise<DigestCandidate[]>
       u.email             as email,
       p.display_name      as display_name,
       to_char(p.last_digest_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as last_digest_iso,
-      p.unsubscribe_token as unsubscribe_token
+      p.unsubscribe_token as unsubscribe_token,
+      p.plan              as plan
     from profiles p
       join auth.users u on u.id = p.id
     where p.weekly_digest_enabled
       and u.email is not null
       and u.email_confirmed_at is not null
+      -- The weekly digest is an Edge+ entitlement (src/lib/pricing/tiers.ts,
+      -- "weekly_digest"). Free-tier profiles still default weekly_digest_enabled
+      -- to true (see schema.ts) since that default predates pricing tiers, so
+      -- this filter — not the column — is what actually keeps free accounts
+      -- off the send list.
+      and p.plan in ('edge', 'apply')
     order by p.last_digest_at asc
     limit ${limit}`);
 
@@ -76,6 +89,10 @@ export async function digestCandidates(limit = 1000): Promise<DigestCandidate[]>
         displayName: r.display_name,
         lastDigestAt,
         unsubscribeToken: r.unsubscribe_token,
+        // The SQL above already restricts to edge/apply; this parse is the
+        // same fail-closed reading `getUserTier` does, so an unexpected value
+        // degrades to the least capable tier rather than throwing.
+        plan: r.plan === "apply" ? "apply" : r.plan === "edge" ? "edge" : "free",
       },
     ];
   });

@@ -100,13 +100,47 @@ test("every row lands in exactly one of differing or shared", () => {
  * ------------------------------------------------------------------ */
 
 test("the higher fit score is marked", () => {
+  // Tier passed explicitly: the fit row goes through `presentFit`, and a
+  // viewer who is not shown the numbers cannot be shown a winner derived
+  // from them — see the free-tier case below.
   const c = buildComparison(
     [item({ fit: { ...item().fit, score: 80 } }), item({ id: "b", fit: { ...item().fit, score: 40 } })],
     NOW,
+    "edge",
   );
   const fit = c.rows.find((r) => r.label === "fit");
   assert.equal(fit?.cells[0].best, true);
   assert.equal(fit?.cells[1].best, undefined);
+});
+
+test("free tier sees the buckets, the confidence marker, and no winner", () => {
+  /*
+   * `/compare` renders the score as a plain string rather than through
+   * `ScoreBadge`, so it was the one surface the badge-level paywall missed —
+   * found by grepping for `fit.score` after the feed and listing gates were
+   * already working, not by any test.
+   *
+   * No winner is marked, deliberately. Marking one would rank two postings
+   * against each other on a number this viewer is not being shown, which is
+   * a stronger claim than the row is allowed to make — the same rule that
+   * makes an unstated column mark nobody.
+   */
+  const c = buildComparison(
+    [item({ fit: { ...item().fit, score: 80 } }), item({ id: "b", fit: { ...item().fit, score: 40 } })],
+    NOW,
+    "free",
+  );
+  const fit = c.rows.find((r) => r.label === "fit");
+  const rendered = fit?.cells.map((x) => String(x.value)).join(" | ") ?? "";
+
+  assert.ok(rendered.includes("Strong Fit"), rendered);
+  assert.ok(rendered.includes("Good Fit"), rendered);
+  // The exact numbers must not survive anywhere in the row.
+  assert.ok(!rendered.includes("80"), rendered);
+  assert.ok(!rendered.includes("40"), rendered);
+  // The confidence marker still does — bucketing lowers precision, never honesty.
+  assert.ok(rendered.includes("known"), rendered);
+  assert.equal(fit?.cells.some((x) => x.best), false);
 });
 
 test("a tie marks nobody", () => {

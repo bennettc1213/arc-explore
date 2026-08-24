@@ -2,6 +2,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { profiles, savedSearches } from "@/db/schema";
+import type { TierId } from "@/lib/pricing/tiers";
 
 import {
   MAX_SAVED_SEARCHES,
@@ -108,6 +109,10 @@ export interface AlertCandidate {
   lastNotifiedAt: Date;
   email: string;
   unsubscribeToken: string;
+  /** Their plan, so an alert ranks on the same timing weight their feed does.
+   *  Two surfaces recommending from one corpus must not disagree about what
+   *  "best" means. */
+  plan: TierId;
 }
 
 /**
@@ -132,6 +137,7 @@ interface RawAlertRow extends Record<string, unknown> {
   last_notified_iso: string;
   email: string;
   unsubscribe_token: string;
+  plan: string;
 }
 
 export async function alertCandidates(limit = 500): Promise<AlertCandidate[]> {
@@ -143,13 +149,19 @@ export async function alertCandidates(limit = 500): Promise<AlertCandidate[]> {
       s.filters            as filters,
       to_char(s.last_notified_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as last_notified_iso,
       u.email              as email,
-      p.unsubscribe_token  as unsubscribe_token
+      p.unsubscribe_token  as unsubscribe_token,
+      p.plan               as plan
     from saved_searches s
     join profiles p on p.id = s.user_id
     join auth.users u on u.id = s.user_id
     where s.notify = true
       and u.email is not null
       and u.email_confirmed_at is not null
+      -- Saved-search alerts are an Edge+ entitlement (src/lib/pricing/tiers.ts,
+      -- "saved_search_alerts"). A free-tier row can exist here — saveSearchAction
+      -- already refuses to CREATE one on free, but a downgrade after saving
+      -- must also stop the mail, not just the button that started it.
+      and p.plan in ('edge', 'apply')
     order by s.last_notified_at asc
     limit ${limit}`);
 
@@ -161,6 +173,10 @@ export async function alertCandidates(limit = 500): Promise<AlertCandidate[]> {
     lastNotifiedAt: new Date(r.last_notified_iso),
     email: r.email,
     unsubscribeToken: r.unsubscribe_token,
+    // Fail-closed parse, the same reading `getUserTier` does — the SQL above
+    // already restricts to edge/apply, so this only guards against a value
+    // nobody expected.
+    plan: r.plan === "apply" ? "apply" : r.plan === "edge" ? "edge" : "free",
   }));
 }
 

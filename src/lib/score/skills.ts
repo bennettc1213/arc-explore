@@ -30,7 +30,8 @@ export type SkillGroup =
   | "backend"
   | "data"
   | "infra"
-  | "business";
+  | "business"
+  | "general";
 
 /**
  * The vocabulary.
@@ -121,6 +122,33 @@ export const SKILLS: readonly Skill[] = [
   { name: "Bloomberg", group: "business", aliases: ["bloomberg terminal", "bloomberg"] },
   { name: "Market Research", group: "business", aliases: ["market research", "competitive analysis"] },
   { name: "Figma", group: "business", aliases: ["figma"] },
+
+  // --- general / non-technical (retail, hospitality, trades, creative) ---
+  // Same anchored-alias discipline as above: multi-word where a bare word would
+  // be noise. "retail" on its own is a real claim in a skills list, so it stays,
+  // but "customer" never does — only the paired phrases match.
+  { name: "Customer Service", group: "general", aliases: ["customer service", "customer support", "guest services", "client service"] },
+  { name: "Customer Communication", group: "general", aliases: ["customer communication", "client communication"] },
+  { name: "Retail Sales", group: "general", aliases: ["retail sales", "retail"] },
+  { name: "Inventory Management", group: "general", aliases: ["inventory management", "inventory"] },
+  { name: "Warehouse Operations", group: "general", aliases: ["warehouse operations", "warehouse"] },
+  { name: "Order Fulfillment", group: "general", aliases: ["order fulfillment", "fulfillment"] },
+  { name: "Cash Handling", group: "general", aliases: ["cash handling"] },
+  { name: "Microsoft Word", group: "general", aliases: ["microsoft word", "ms word"] },
+  { name: "Adobe Photoshop", group: "general", aliases: ["adobe photoshop", "photoshop"] },
+  { name: "Video Editing", group: "general", aliases: ["video editing", "video production"] },
+  { name: "Social Media", group: "general", aliases: ["social media", "social media management"] },
+  { name: "Graphic Design", group: "general", aliases: ["graphic design"] },
+  { name: "Content Creation", group: "general", aliases: ["content creation", "content writing", "copywriting"] },
+  { name: "Landscaping", group: "general", aliases: ["landscaping", "lawn care"] },
+  { name: "Painting", group: "general", aliases: ["interior painting", "exterior painting", "painting"] },
+  { name: "Custodial", group: "general", aliases: ["custodial", "janitorial", "cleaning"] },
+  { name: "Pressure Washing", group: "general", aliases: ["pressure washing"] },
+  { name: "Furniture Assembly", group: "general", aliases: ["furniture assembly"] },
+  { name: "Rigging", group: "general", aliases: ["rigging"] },
+  { name: "Box Truck Operation", group: "general", aliases: ["box truck", "truck operation"] },
+  { name: "Light Electrical", group: "general", aliases: ["light electrical", "electrical"] },
+  { name: "Hand Tools", group: "general", aliases: ["hand tools"] },
 ];
 
 /**
@@ -203,8 +231,9 @@ export function skillsFromList(items: readonly unknown[]): string[] {
   const found = new Set<string>();
   for (const item of items) {
     if (typeof item !== "string") continue;
-    // Split "Go, Python" and "Python / SQL" — resumes vary.
-    for (const part of item.split(/[,/]| and /i)) {
+    // Split "Go, Python", "Python / SQL", "Docker and Kubernetes", and
+    // "Microsoft Word & Excel" — resumes vary their separators.
+    for (const part of item.split(/[,/&]| and | & /i)) {
       const canonical = canonicalSkill(part);
       if (canonical) found.add(canonical);
     }

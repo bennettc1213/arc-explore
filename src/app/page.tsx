@@ -1,28 +1,43 @@
 import Link from "next/link";
 
 import { Mascot } from "@/components/chrome/Mascot";
+import { FilterPanel } from "@/components/FilterPanel";
 import { PostingRow } from "@/components/PostingRow";
 import { SavedSearches } from "@/components/SavedSearches";
+import { ToolsTease } from "@/components/ToolsTease";
 import { recordEvent } from "@/lib/analytics/record";
 import { statusesForPostings } from "@/lib/applications/store";
 import { getSessionUser } from "@/lib/auth";
-import { getAvailableTerms, getFeed, getFeedStats, type DeadlineFilter } from "@/lib/feed";
+import { getAvailableTerms, getFeed, getFeedStats, newSinceFromDays } from "@/lib/feed";
+import { FEED_MIN_PER_KIND, FREE_DAILY_RESULTS } from "@/lib/feed-trim";
+import { getUserTier } from "@/lib/pricing/entitlements";
+import { evaluateFeature, TIER_PRICE_USD, TIMING_PRIORITY_POINTS } from "@/lib/pricing/tiers";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 import { listSearches } from "@/lib/searches/store";
 import { filtersFromParams, isEmptyFilters } from "@/lib/searches/types";
 import {
   INTEREST_OPTIONS,
-  INTEREST_VALUES,
   WORK_AUTH_OPTIONS,
   isProfileUsable,
   parseLocations,
   toScoreProfile,
   type UserProfile,
 } from "@/lib/profile/types";
-import type { FieldKey, ScoreProfile } from "@/lib/score/fit";
+import type { ScoreProfile } from "@/lib/score/fit";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * How many rows the feed renders before asking you to say "show more".
+ *
+ * Fifty, because that is roughly where a ranked list stops being read and
+ * starts being scrolled past — and because the row below fifty was never the
+ * reason anyone found anything, while it was costing everyone six seconds.
+ * `getFeed` still scores and ranks every matched row; this trims only what is
+ * turned into HTML.
+ */
+const FEED_PAGE_SIZE = 50;
 
 /**
  * The feed.
@@ -90,21 +105,17 @@ function ProfileSummary({
   if (profile?.targetLocations.length) bits.push(profile.targetLocations.join(" / "));
 
   return (
-    <div
-      className="flex flex-wrap items-center justify-between gap-4 border"
-      style={{ borderColor: "var(--line-strong)", padding: "14px 18px", marginBottom: 32 }}
-    >
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
       <div>
         <div className="mono chrome">scoring against</div>
         <div className="t-sm" style={{ marginTop: 4, color: "var(--text)" }}>
           {bits.length > 0 ? bits.join(" · ") : "nothing yet — your profile is empty"}
         </div>
         {resumeSkills.length > 0 ? (
-          <div className="mono" style={{ marginTop: 6 }}>
-            resume: {resumeSkills.length} skills read —{" "}
-            {resumeSkills.slice(0, 6).join(" · ")}
-            {resumeSkills.length > 6 && ` +${resumeSkills.length - 6}`}
-          </div>
+          <details className="disclosure" style={{ marginTop: 6 }}>
+            <summary>resume: {resumeSkills.length} skills read</summary>
+            <div className="disclosure-body mono">{resumeSkills.join(" · ")}</div>
+          </details>
         ) : (
           <div className="mono" style={{ marginTop: 6 }}>
             no resume yet — upload one and these get matched skill by skill
@@ -136,9 +147,24 @@ export default async function FeedPage({
   const deleted = deletedParam === "1" || deletedParam === "partial" ? deletedParam : null;
 
   const user = await getSessionUser();
-  const [stored, resume, savedSearches] = user
-    ? await Promise.all([getProfile(user.id), getLatestResume(user.id), listSearches(user.id)])
-    : [null, null, []];
+  /*
+   * The tier is resolved through `getUserTier` on BOTH branches, deliberately.
+   * Substituting a literal `"free"` for the signed-out case looks equivalent —
+   * that is exactly what the function returns for a missing user id — but it
+   * makes a second definition of how a tier is decided, and the first thing
+   * that definition missed was the DEV_TIER override, which lives inside the
+   * function. The signed-out feed stayed capped and bucketed while the nav
+   * beside it correctly read "dev · apply". One definition per rule.
+   */
+  const [stored, resume, savedSearches, tier] = await Promise.all([
+    user ? getProfile(user.id) : null,
+    user ? getLatestResume(user.id) : null,
+    user ? listSearches(user.id) : [],
+    // Kept inside the same Promise.all rather than awaited after it: the feed
+    // was just brought from 6.1s to 0.92s and a serial round trip here would
+    // give some of that back for nothing.
+    getUserTier(user?.id),
+  ]);
 
   // Read from the same params the feed filters on, so "save this search" saves
   // exactly what is on screen.
@@ -181,17 +207,70 @@ export default async function FeedPage({
 
   // Not saveable, so not part of the shared shape — see savedFiltersSchema.
   const includeClosed = sp.includeClosed === "1";
+  // View preferences, like includeClosed: read here, never stored on a saved
+  // search. `new` is time-relative (so saving it would mean nothing), and
+  // `hideBlocked` depends on the profile the search is scored against.
+  const hideBlocked = sp.hideBlocked === "1";
+  const excludeMarketing = sp.excludeMarketing === "1";
+  const newDaysRaw = Number(Array.isArray(sp.new) ? sp.new[0] : sp.new);
+  const newSinceDays = Number.isFinite(newDaysRaw) && newDaysRaw > 0 ? Math.round(newDaysRaw) : null;
+
+  // How many rows to RENDER. Not how many to score — `getFeed` still ranks the
+  // whole matched set before trimming, so this cannot change what comes first.
+  //
+  // WHY THIS EXISTS. The feed used to render every row it was given, which was
+  // 500, which was **4.16MB of HTML and ~6 seconds** per request — measured.
+  // That cost was not mainly the query (~300ms) but the rendering, and it was
+  // paid again on every mutation, because nine Server Actions call
+  // `revalidatePath("/")`. So saving one posting rebuilt four megabytes before
+  // the button could stop saying "saving…". A page size is the fix for all
+  // nine at once.
+  //
+  // A view preference, like `limit` and `includeClosed`, so it is deliberately
+  // not saveable into a saved search — see `filtersFromParams`.
+  const showRaw = Number(Array.isArray(sp.show) ? sp.show[0] : sp.show);
+  const requested =
+    Number.isFinite(showRaw) && showRaw > 0 ? Math.min(Math.round(showRaw), 500) : FEED_PAGE_SIZE;
+
+  /*
+   * THE FREE PLAN'S DAILY SET.
+   *
+   * Free sees the top `FREE_DAILY_RESULTS` ranked matches; paid sees the whole
+   * list, a page at a time. Deliberately a **depth** cap rather than a
+   * per-listing view counter: a counter needs a row written on every listing
+   * open, punishes exploring, resets awkwardly, and would be the first
+   * behavioural log of what a named student looked at — which is exactly what
+   * `events` was designed not to be (see its schema comment). This needs no
+   * new table and cannot be gamed by refreshing.
+   *
+   * It is genuinely a *daily* set without any date arithmetic: the ranking
+   * reads timing, timing now moves every day (deadlines approach, postings
+   * age), and `ingest-fast` adds rows every 20 minutes. So the twenty change
+   * on their own. The UI says that rather than claiming a midnight reset,
+   * which would be a schedule we do not actually run.
+   */
+  const dailyCapped = !evaluateFeature(tier, "feed_full_depth").usable;
+  const show = dailyCapped ? FREE_DAILY_RESULTS : requested;
 
   const [feed, stats, terms] = await Promise.all([
     getFeed(profile, {
       ...currentFilters,
       includeClosed,
-      hideBlocked: false,
+      hideBlocked,
+      excludeMarketing,
+      newSince: newSinceDays ? newSinceFromDays(newSinceDays) : null,
+      limit: show,
+      // Only on the capped list — see FEED_MIN_PER_KIND. The full feed shows
+      // everything, so nothing can be crowded out of it.
+      reservePerKind: dailyCapped ? FEED_MIN_PER_KIND : 0,
+      // The paid entitlement: how much of the ranking comes from timing rather
+      // than fit. 0 on free, which is the ranking that existed before this.
+      timingPoints: TIMING_PRIORITY_POINTS[tier],
     }),
     getFeedStats(kind),
     getAvailableTerms(),
   ]);
-  const { items, categoryUnclassified } = feed;
+  const { items, categoryUnclassified, total } = feed;
 
   // A search, not a page view: a bare `/` is browsing and is not counted. What
   // is recorded is which filter *keys* were used and whether the result was
@@ -206,9 +285,28 @@ export default async function FeedPage({
     term,
     category,
     remote: remoteOnly ? "1" : null,
+    new: newSinceDays ? "1" : null,
+    hideBlocked: hideBlocked ? "1" : null,
+    excludeMarketing: excludeMarketing ? "1" : null,
   })
     .filter(([, v]) => v !== null)
     .map(([k]) => k);
+
+  // How many refinements are live — drives the count chip on the trigger, so a
+  // collapsed panel still tells you it is filtering. `includeClosed` widens
+  // rather than narrows, so it is not counted.
+  const activeCount =
+    (q ? 1 : 0) +
+    (kind ? 1 : 0) +
+    (deadline ? 1 : 0) +
+    (minAmount !== null ? 1 : 0) +
+    (location ? 1 : 0) +
+    (category ? 1 : 0) +
+    (remoteOnly ? 1 : 0) +
+    (term ? 1 : 0) +
+    (newSinceDays ? 1 : 0) +
+    (hideBlocked ? 1 : 0) +
+    (excludeMarketing ? 1 : 0);
 
   if (activeFilters.length > 0) {
     await recordEvent("search_run", {
@@ -259,193 +357,54 @@ export default async function FeedPage({
       </header>
 
       <section
-        className="flex flex-wrap gap-x-12 gap-y-6 border-y"
+        className="border-y"
         style={{ borderColor: "var(--line)", padding: "22px 0", marginBottom: 32 }}
       >
-        <Stat value={stats.open} label="open now" />
-        <Stat value={stats.newToday} label="found today" />
-        <Stat value={stats.total} label="tracked total" />
-        <Stat value={stats.withUnknownTerm} label="term not stated" />
+        <div className="flex flex-wrap gap-x-12 gap-y-6">
+          <Stat value={stats.open} label="open now" />
+          <Stat value={stats.newToday} label="found today" />
+          <Stat value={stats.total} label="tracked total" />
+          <Stat value={stats.withUnknownTerm} label="term not stated" />
+        </div>
+        {user && <ProfileSummary profile={stored} resumeSkills={resumeSkills} />}
       </section>
 
-      {user && <ProfileSummary profile={stored} resumeSkills={resumeSkills} />}
+      {/* Signed-out visitors land here with nothing but the filter form ahead —
+          and the three profile tools are now parked in the nav's "tools" menu,
+          which is only any good if you already know the word. Tease them here,
+          before the profile form, so a first visitor has something to try with
+          no account. */}
+      {!user && <ToolsTease />}
 
-      {/* GET so filter state lives in the URL and is shareable. Signed out,
-          the profile answers ride along in it too. */}
-      <form
-        method="GET"
-        className="border"
-        style={{ borderColor: "var(--line)", padding: 20, marginBottom: 32 }}
-      >
-        {!user && (
-          <>
-            <div className="eyebrow chrome" style={{ marginBottom: 16 }}>
-              02 — your profile
-            </div>
-            <div className="grid gap-4 md:grid-cols-4">
-              <label className="field-row">
-                <span className="mono chrome">major</span>
-                <input
-                  className="field"
-                  name="major"
-                  defaultValue={profile.major ?? ""}
-                  placeholder="computer science"
-                />
-              </label>
-
-              <label className="field-row">
-                <span className="mono chrome">graduation year</span>
-                <input
-                  className="field"
-                  name="gradYear"
-                  type="number"
-                  defaultValue={profile.gradYear ?? ""}
-                  placeholder="2027"
-                />
-              </label>
-
-              <label className="field-row">
-                <span className="mono chrome">work authorization</span>
-                <select className="field" name="workAuth" defaultValue={profile.workAuth ?? ""}>
-                  <option value="">prefer not to say</option>
-                  {WORK_AUTH_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="field-row">
-                <span className="mono chrome">preferred locations</span>
-                <input
-                  className="field"
-                  name="locations"
-                  defaultValue={(profile.targetLocations ?? []).join(", ")}
-                  placeholder="San Francisco, New York"
-                />
-              </label>
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-              {INTEREST_OPTIONS.map((o) => (
-                <label key={o.value} className="mono chrome flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    name="targetVerticals"
-                    value={o.value}
-                    defaultChecked={guestVerticals.has(o.value)}
-                  />
-                  {o.label}
-                </label>
-              ))}
-            </div>
-          </>
-        )}
-
-        <label className={`field-row ${user ? "" : "mt-5"}`}>
-          <span className="mono chrome">search</span>
-          <input
-            className="field"
-            name="q"
-            defaultValue={q ?? ""}
-            placeholder="nursing · Stripe · first-generation · machine learning"
-          />
-        </label>
-
-        <div className="mt-4 grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-          <label className="field-row">
-            <span className="mono chrome">kind</span>
-            <select className="field" name="kind" defaultValue={kind ?? ""}>
-              <option value="">internships + scholarships</option>
-              <option value="internship">internships</option>
-              <option value="scholarship">scholarships</option>
-            </select>
-          </label>
-
-          <label className="field-row">
-            <span className="mono chrome">category</span>
-            <select className="field" name="category" defaultValue={category ?? ""}>
-              <option value="">any</option>
-              {INTEREST_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="field-row">
-            <span className="mono chrome">deadline</span>
-            <select className="field" name="deadline" defaultValue={deadline ?? ""}>
-              <option value="">any</option>
-              <option value="set">has a deadline</option>
-              <option value="30">closing within 30 days</option>
-              <option value="60">closing within 60 days</option>
-              <option value="90">closing within 90 days</option>
-            </select>
-          </label>
-
-          <label className="field-row">
-            <span className="mono chrome">min award</span>
-            <select className="field" name="minAmount" defaultValue={minAmount ?? ""}>
-              <option value="">any</option>
-              <option value="1000">$1,000+</option>
-              <option value="2500">$2,500+</option>
-              <option value="5000">$5,000+</option>
-              <option value="10000">$10,000+</option>
-            </select>
-          </label>
-
-          <label className="field-row">
-            <span className="mono chrome">location</span>
-            <input
-              className="field"
-              name="location"
-              defaultValue={location ?? ""}
-              placeholder="New York"
-            />
-          </label>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-5">
-          <label className="mono chrome flex items-center gap-2">
-            {/* `remote`, matching `filtersToQuery` — one name for one filter. */}
-            <input type="checkbox" name="remote" value="1" defaultChecked={remoteOnly} />
-            remote only
-          </label>
-          <label className="mono chrome flex items-center gap-2">
-            <input type="checkbox" name="includeClosed" value="1" defaultChecked={includeClosed} />
-            show closed
-          </label>
-
-          <label className="mono chrome flex items-center gap-2">
-            term
-            <select
-              name="term"
-              defaultValue={term ?? ""}
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--line-strong)",
-                color: "var(--text)",
-                padding: "5px 8px",
-                colorScheme: "dark",
-              }}
-            >
-              <option value="">any</option>
-              {terms.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <button type="submit" className="btn btn-primary press">
-            {user ? "apply filters" : "score my feed"}
-          </button>
-        </div>
-      </form>
+      {/* GET so filter state lives in the URL and is shareable. The whole
+          surface is now a dropdown behind the "filters" trigger; its inputs
+          still serialize on submit even while collapsed. Signed out, the
+          profile answers ride along inside the same form. */}
+      <FilterPanel
+        user={Boolean(user)}
+        profile={{
+          major: profile.major ?? null,
+          gradYear: profile.gradYear ?? null,
+          workAuth: profile.workAuth ?? null,
+          targetLocations: profile.targetLocations ?? [],
+          targetVerticals: profile.targetVerticals ?? [],
+        }}
+        guestVerticals={[...guestVerticals]}
+        terms={terms}
+        q={q}
+        kind={kind}
+        deadline={deadline}
+        minAmount={minAmount}
+        location={location}
+        category={category}
+        remoteOnly={remoteOnly}
+        includeClosed={includeClosed}
+        term={term}
+        newSinceDays={newSinceDays}
+        hideBlocked={hideBlocked}
+        excludeMarketing={excludeMarketing}
+        activeCount={activeCount}
+      />
 
       {!hasProfile && (
         <div className="slot" style={{ marginBottom: 24, padding: "14px 16px" }}>
@@ -487,6 +446,7 @@ export default async function FeedPage({
         <SavedSearches
           current={currentFilters}
           currentIsEmpty={isEmptyFilters(currentFilters)}
+          canSave={evaluateFeature(tier, "saved_search_alerts").usable}
           searches={savedSearches.map((s) => ({
             id: s.id,
             name: s.name,
@@ -512,8 +472,78 @@ export default async function FeedPage({
               tracked={tracked.get(item.id) ?? null}
               signedIn={Boolean(user)}
               hasResume={resumeSkills.length > 0}
+              tier={tier}
             />
           ))}
+
+          {/*
+            The page marker. Says what is on screen AND what matched, because
+            "50 results" read alone is the page size masquerading as the corpus.
+            Only rendered when there is actually more — a list showing
+            everything it found should not imply something is being withheld.
+          */}
+          {total > items.length && dailyCapped && (
+            <div
+              className="border"
+              style={{ borderColor: "var(--accent)", padding: "16px 18px", marginTop: 18 }}
+            >
+              <div className="mono-strong" style={{ color: "var(--accent)" }}>
+                your top {items.length} of {total.toLocaleString()} matches
+              </div>
+              <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "64ch" }}>
+                {/* Says what actually changes the set, rather than promising a
+                    midnight reset we do not run. Ingest is every 20 minutes and
+                    timing moves daily, so these twenty genuinely turn over. */}
+                The free plan shows your twenty highest-ranked matches. They re-rank as we poll
+                each employer&rsquo;s board and as deadlines approach, so this set changes day to
+                day{stats.newToday > 0 ? ` — ${stats.newToday.toLocaleString()} of the corpus was found in the last day` : ""}.
+                Searching, filtering and opening any listing are never limited.
+              </p>
+              <Link
+                href="/pricing?feature=feed_full_depth"
+                className="btn btn-primary press"
+                style={{ textDecoration: "none", display: "inline-block", marginTop: 12 }}
+              >
+                see all {total.toLocaleString()} — from ${TIER_PRICE_USD.edge}/mo
+              </Link>
+            </div>
+          )}
+
+          {total > items.length && !dailyCapped && (
+            <div
+              className="mono"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+                flexWrap: "wrap",
+                padding: "18px 0 4px",
+                color: "var(--faint-readable)",
+              }}
+            >
+              <span>
+                showing {items.length.toLocaleString()} of {total.toLocaleString()} ranked matches
+              </span>
+              <Link
+                href={`?${new URLSearchParams({
+                  ...Object.fromEntries(
+                    Object.entries(sp).flatMap(([k, v]) =>
+                      v === undefined || k === "show"
+                        ? []
+                        : [[k, Array.isArray(v) ? v[0] : v] as [string, string]],
+                    ),
+                  ),
+                  show: String(Math.min(items.length + FEED_PAGE_SIZE * 2, 500)),
+                }).toString()}`}
+                className="mono press"
+                style={{ color: "var(--accent)", textDecoration: "none", whiteSpace: "nowrap" }}
+                scroll={false}
+              >
+                show more →
+              </Link>
+            </div>
+          )}
         </div>
       )}
 

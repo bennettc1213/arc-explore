@@ -56,6 +56,7 @@ export function CoverLetterEditor({
   const [draft, setDraft] = useState<CoverLetterDraft | null>(initialDraft);
   const [notice, setNotice] = useState<{ kind: "saved" | "error"; message?: string } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [view, setView] = useState<"edit" | "preview">("edit");
 
   function applyResult(result: LetterActionState) {
     if (result.draft) setDraft(result.draft);
@@ -152,7 +153,24 @@ export function CoverLetterEditor({
           </div>
         )}
 
-        <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2" style={{ marginBottom: 16 }}>
+          <button
+            type="button"
+            className={view === "edit" ? "btn btn-primary press" : "btn press"}
+            onClick={() => setView("edit")}
+          >
+            edit
+          </button>
+          <button
+            type="button"
+            className={view === "preview" ? "btn btn-primary press" : "btn press"}
+            onClick={() => setView("preview")}
+          >
+            preview
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4" style={{ display: view === "edit" ? undefined : "none" }}>
           {draft.paragraphs.map((p) => (
             <label className="field-row" key={p.id}>
               <span className="mono chrome">{LETTER_ROLE_LABELS[p.role]}</span>
@@ -170,7 +188,7 @@ export function CoverLetterEditor({
                   <input type="hidden" name="role" value={p.role} />
                   <input type="hidden" name="text" value={p.text} />
                   <button type="submit" className="btn press" disabled={isPending}>
-                    rewrite
+                    {isPending ? "rewriting…" : "rewrite"}
                   </button>
                 </form>
               </div>
@@ -195,7 +213,7 @@ export function CoverLetterEditor({
               disabled={isPending}
               title="Regenerate the whole letter from the same facts"
             >
-              start over
+              {isPending ? "regenerating…" : "start over"}
             </button>
           </form>
 
@@ -209,8 +227,14 @@ export function CoverLetterEditor({
       </div>
 
       {/* The sheet is what gets printed; it renders from the same state as the
-          textareas so print always matches the edits on screen. */}
-      <div className="letter-sheet" style={{ marginTop: 32 }}>
+          textareas so print always matches the edits on screen. Hidden on
+          screen while the edit tab is active — the print stylesheet forces it
+          back on regardless of `view`, see the .letter-sheet override in
+          globals.css. */}
+      <div
+        className="letter-sheet"
+        style={{ marginTop: 32, display: view === "preview" ? undefined : "none" }}
+      >
         <div className="mono chrome" style={{ marginBottom: 24, color: "#55555c" }}>
           preview
         </div>

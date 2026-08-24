@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { applications, organizations, postings, type ApplicationStatus } from "@/db/schema";
@@ -54,6 +54,15 @@ export async function listApplications(userId: string): Promise<TrackedApplicati
     .innerJoin(organizations, eq(postings.orgId, organizations.id))
     .where(eq(applications.userId, userId))
     .orderBy(desc(applications.updatedAt));
+}
+
+/** How many postings this user is tracking, for the tracker's tier cap. */
+export async function countApplications(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(applications)
+    .where(eq(applications.userId, userId));
+  return row?.n ?? 0;
 }
 
 /** Status of the given postings for this user, for rendering feed rows. */

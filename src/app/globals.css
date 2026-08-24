@@ -200,6 +200,66 @@ body {
    the opposite motion language from the smooth entrances elsewhere */
 .press:hover { translate: 1px 1px; }
 
+/* ==========================================================================
+   brand — the logo lockup in the nav, which is also the home link
+
+   IT DID NOT LOOK LIKE A LINK. A mark and a wordmark sitting in the top-left
+   are what every site puts there whether or not they are clickable, so this
+   one has to say so on hover rather than rely on the convention. Three things
+   arrive together: the mark grows, the wordmark takes the accent, and the
+   word "home" slides out from behind it — the last being the only one that
+   states the destination outright.
+
+   `max-width` + `opacity` rather than `display`, so the reveal can animate
+   and, more importantly, so the hint occupies no width at rest and cannot
+   shove the nav's right-hand links around when it appears.
+   ========================================================================== */
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.brand-mark {
+  transition: transform 160ms var(--ease-out);
+  transform-origin: center;
+}
+.brand:hover .brand-mark {
+  transform: scale(1.18);
+}
+
+.brand-word {
+  font-size: 0.9rem;
+  transition: color 160ms var(--ease-out);
+}
+.brand:hover .brand-word {
+  color: var(--accent);
+}
+
+.brand-hint {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  color: var(--accent);
+  transition:
+    max-width 200ms var(--ease-out),
+    opacity 160ms var(--ease-out);
+}
+.brand:hover .brand-hint,
+.brand:focus-visible .brand-hint {
+  max-width: 7ch;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The hint still appears — it is the affordance, not decoration. It simply
+     appears rather than sliding. */
+  .brand:hover .brand-mark { transform: none; }
+}
+
 .btn {
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -211,7 +271,111 @@ body {
   color: var(--text);
   cursor: pointer;
 }
-.btn:hover { border-color: var(--accent); translate: 1px 1px; }
+/* Hover FILLS as well as outlining. A border colour change alone is a ~1px
+   signal on a dark ground and reads as nothing on a trackpad flick; the dim
+   accent wash is the cheapest way to say "this one, and it is armed". */
+.btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  translate: 1px 1px;
+}
+/* NOTE: `.btn-primary` already carries a solid accent fill and overrides the
+   wash above with `--accent-hot` — its hover rule is defined once, below,
+   beside the rest of the primary-button styling. */
+
+/* ==========================================================================
+   backlink — "← back to the feed", on 13 pages
+
+   IT WAS 11px OF UNBOXED TEXT. `.mono` is 0.6875rem and the old markup added
+   nothing but a colour, so the single control that undoes a navigation was
+   smaller than the timestamps around it and had no hover state at all. This
+   gives it a real hit area, a border so it reads as a control rather than as a
+   caption, and a fill on hover.
+
+   THE ARROW SLIDES LEFT on hover. It is the one piece of motion here that is
+   not decorative — direction *is* the meaning of a back control, so moving it
+   the way it will move you is the affordance restating itself.
+   ========================================================================== */
+
+.backlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  text-decoration: none;
+  color: var(--accent);
+  padding: 10px 18px 10px 14px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  transition:
+    background-color 150ms var(--ease-out),
+    border-color 150ms var(--ease-out),
+    color 150ms var(--ease-out);
+}
+
+.backlink:hover,
+.backlink:focus-visible {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent-hot);
+}
+
+.backlink-arrow {
+  display: inline-block;
+  font-size: 1.05em;
+  line-height: 1;
+  transition: transform 150ms var(--ease-out);
+}
+
+.backlink:hover .backlink-arrow,
+.backlink:focus-visible .backlink-arrow {
+  transform: translateX(-4px);
+}
+
+/* ==========================================================================
+   navlink — nav and footer links that navigate somewhere
+
+   Same job as `.backlink` at nav scale: these were bare accent text with no
+   hover state, so nothing confirmed the pointer was on target before the
+   click. The transparent border is always present so the box does not grow on
+   hover and shove its neighbours along the bar.
+   ========================================================================== */
+
+.navlink {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  text-decoration: none;
+  color: var(--accent);
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  transition:
+    background-color 140ms var(--ease-out),
+    border-color 140ms var(--ease-out),
+    color 140ms var(--ease-out);
+}
+
+.navlink:hover,
+.navlink:focus-visible {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent-hot);
+}
+
+/* The admin link keeps its softer hue at rest — it is the one nav item most
+   people never see — but highlights identically. */
+.navlink-quiet { color: var(--accent-lite); }
+
+@media (prefers-reduced-motion: reduce) {
+  /* The fill still arrives; only the arrow's travel is dropped. The fill is
+     the affordance, the slide is the flourish. */
+  .backlink:hover .backlink-arrow,
+  .backlink:focus-visible .backlink-arrow { transform: none; }
+}
 
 .btn-primary {
   background: var(--accent);
@@ -276,6 +440,176 @@ input[type="file"] {
 }
 
 /* ==========================================================================
+   card — one shared surface for every ad hoc "box" in the product
+   (ApplicationCard, SavedSearches, ToolsTease tiles, wizard field rows).
+   Square, hairline border, one step up from --bg via --surface.
+   ========================================================================== */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 18px 20px;
+}
+.card + .card {
+  margin-top: 12px;
+}
+
+/* ==========================================================================
+   posting row — the feed's click target
+
+   THE WHOLE ROW IS ONE LINK. Only the title text used to be, which in a
+   ~200px-tall row meant hunting for one short string; it was reported as
+   having to "click in an exact spot". `.row-target::after` stretches the
+   title's own <a> over the entire article, and `.row-raise` lifts the few
+   genuinely separate actions (external apply, badges, track, disclosure)
+   back above it.
+
+   NOTHING HERE REFLOWS. The feed renders 50 of these, so hover must not
+   touch padding, margin, height or font-size — the growth is an absolutely
+   positioned ::before bleeding *outward* past the row, plus a 2px lift.
+   Animating padding instead would shove every row below it down the page
+   every time the pointer crossed one.
+   ========================================================================== */
+
+.posting-row {
+  position: relative;
+  /* Transform and colour only — both compositor-friendly, neither reflows. */
+  transition:
+    transform 160ms var(--ease-out),
+    border-color 160ms var(--ease-out);
+}
+
+/*
+ * The "sand" surface, matching the cursor trail's language: the same accent,
+ * the same small-square grain, appearing under the row as the pointer arrives.
+ * It is one element doing three jobs — the raised surface, the grain, and the
+ * accent edge that says "this whole strip is the target".
+ *
+ * `z-index: -1` (not 0) is load-bearing: a positioned pseudo-element at 0
+ * paints ABOVE non-positioned inline text, so the row's own title would end up
+ * behind it. The article has no background of its own, so -1 still shows.
+ *
+ * `inset: -2px -16px` is the expansion — the surface grows wider than the row
+ * on both sides rather than the row growing, which is what keeps it free.
+ */
+.posting-row::before {
+  content: "";
+  position: absolute;
+  inset: -2px -16px;
+  z-index: -1;
+  background-color: var(--surface);
+  background-image: radial-gradient(rgba(255, 77, 0, 0.11) 1px, transparent 1.4px);
+  background-size: 9px 9px;
+  border-left: 2px solid var(--accent);
+  opacity: 0;
+  transition: opacity 160ms var(--ease-out);
+}
+
+.posting-row:hover::before,
+.posting-row:focus-within::before {
+  opacity: 1;
+}
+
+.posting-row:hover,
+.posting-row:focus-within {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+}
+
+/* A closed or ineligible row still highlights — it is still a real page you
+   can open — but without the accent edge implying it is worth applying to. */
+.posting-row.is-closed::before {
+  border-left-color: var(--line-strong);
+  background-image: none;
+}
+
+/* The stretched target. Sits above the row's surface and below `.row-raise`. */
+.row-target::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.row-target:hover {
+  color: var(--accent) !important;
+}
+
+/* Anything that is its own action rather than "open this listing". */
+.row-raise {
+  position: relative;
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The surface and the accent edge still appear — they are the affordance,
+     and someone who asked for less motion still needs to see what is
+     clickable. Only the travel is dropped. */
+  .posting-row:hover,
+  .posting-row:focus-within {
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   skeleton — the `loading.tsx` bars. See components/chrome/Skeleton.tsx for
+   why these exist (Next skips prefetch entirely on a dynamic route with no
+   loading boundary, so every click used to paint nothing until the server
+   answered).
+
+   A slow pulse, not a sweeping shimmer: a gradient travelling across 20 bars
+   draws the eye to the loading state, which is the opposite of the job.
+   ========================================================================== */
+
+.skel {
+  background: var(--surface-2);
+  animation: skel-pulse 1.5s var(--ease-out) infinite;
+}
+
+@keyframes skel-pulse {
+  0%,
+  100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
+
+/* ==========================================================================
+   disclosure — native <details>/<summary>, for INLINE reveal-in-place
+   content only (never a floating panel — FilterPanel and ToolsMenu stay
+   hand-rolled because they need click-outside + roving focus that <details>
+   cannot give them). Zero JS, safe to repeat once per feed row.
+   ========================================================================== */
+
+.disclosure summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--faint-readable);
+  padding: 2px 0;
+}
+.disclosure summary::-webkit-details-marker {
+  display: none;
+}
+.disclosure summary::before {
+  content: "▸";
+  display: inline-block;
+  transition: transform 150ms var(--ease-inout);
+}
+.disclosure[open] summary::before {
+  transform: rotate(90deg);
+}
+.disclosure summary:hover {
+  color: var(--accent);
+}
+.disclosure-body {
+  margin-top: 8px;
+}
+
+/* ==========================================================================
    status — carried WITHOUT a second hue (see plan: one-accent conflict)
    ========================================================================== */
 
@@ -305,8 +639,9 @@ input[type="file"] {
 }
 
 .focus-ring {
-  /* position is set inline per-instance — fixed inside the nav, absolute
-     (with a scroll offset baked in) everywhere else on this scrolling page */
+  /* position is set inline per-instance — fixed when the focused element sits
+     in a fixed context (the wizard overlay), absolute with a scroll offset
+     baked in for everything in normal flow, the nav included */
   pointer-events: none;
   z-index: 9990;
 }
@@ -352,6 +687,13 @@ main,
 footer {
   position: relative;
   z-index: 2;
+}
+
+/* The tools menu drops below the bar, so the layout's own header must
+   out-paint `main` — both sit at z-index 2 and the later DOM element wins,
+   which would silently cover any menu that extends past the 72px bar. */
+body > header {
+  z-index: 20;
 }
 
 .cursor-trail {
@@ -408,6 +750,86 @@ html {
     background-image: radial-gradient(rgba(255, 77, 0, 0.075) 1px, transparent 1.5px);
     background-size: 28px 28px;
   }
+}
+
+/* ==========================================================================
+   apply wizard — one-button apply on the listing page
+
+   Square corners, the one accent, mono chrome labels — same language as the
+   rest of the app. The progress bar is stepped in pixels rather than a smooth
+   gradient so it reads as "a map of what's done" rather than a spinner, and
+   the paused state carries the animated sheen so the eye lands on what the
+   bar is waiting for. All motion collapses to instant under reduced-motion
+   via the global rule above.
+   ========================================================================== */
+
+.wizard-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500; /* above the cursor trail, below the focus ring */
+  background: rgba(10, 10, 11, 0.72);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 96px var(--gutter) 40px;
+  overflow-y: auto;
+  animation: wizard-fade 180ms var(--ease-out);
+}
+
+.wizard-panel {
+  width: 100%;
+  max-width: 720px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  padding: 26px 28px 22px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.55);
+  animation: wizard-rise 240ms var(--ease-out);
+}
+
+@keyframes wizard-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes wizard-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* the bar itself: a hairline track, an accent fill, square ends */
+.wizard-bar {
+  height: 8px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  position: relative;
+  overflow: hidden;
+}
+
+.wizard-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 420ms var(--ease-out);
+}
+
+/* paused-on-you state: a slow sheen sweeps the filled portion, so "the bar
+   stopped" is a visible event rather than a static screenshot */
+.wizard-bar-fill.is-waiting::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  animation: wizard-sheen 1.6s var(--ease-inout) infinite;
+}
+
+@keyframes wizard-sheen {
+  from { background-position: 180% 0; }
+  to { background-position: -80% 0; }
 }
 
 /* ==========================================================================
@@ -559,6 +981,13 @@ html {
     max-width: none !important;
     background: #ffffff !important;
     color: #000000 !important;
+  }
+
+  /* the edit/preview toggle hides the sheet on screen via an inline
+     display:none when "edit" is active — print must always show it
+     regardless of which view the student left the page in */
+  .letter-sheet {
+    display: block !important;
   }
   .letter-contact,
   .resume-contact {

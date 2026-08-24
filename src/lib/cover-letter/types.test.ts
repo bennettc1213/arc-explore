@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   CoverLetterValidationError,
   coerceCoverLetter,
+  markerSlotsFromText,
   normalizeDraft,
   slotMarker,
   slotsFromText,
@@ -46,6 +47,38 @@ describe("slotsFromText", () => {
     });
     assert.equal(draft.unfilledSlots.length, 1);
     assert.ok(draft.unfilledSlots[0].length <= 200);
+  });
+});
+
+describe("markerSlotsFromText", () => {
+  it("finds canonical markers and dedupes them", () => {
+    const text = `One ${slotMarker("portfolio link")} here, and ${slotMarker("portfolio link")} again.`;
+    assert.deepEqual(markerSlotsFromText(text), ["[YOUR SPECIFIC DETAIL: portfolio link]"]);
+  });
+
+  it("scans across multiple texts in order", () => {
+    assert.deepEqual(
+      markerSlotsFromText(
+        "headline with [YOUR SPECIFIC DETAIL: a number]",
+        "about with [YOUR SPECIFIC DETAIL: a project name]",
+      ),
+      ["[YOUR SPECIFIC DETAIL: a number]", "[YOUR SPECIFIC DETAIL: a project name]"],
+    );
+  });
+
+  it("does not mistake markdown link labels for slots", () => {
+    const markdown =
+      "Find me on [LinkedIn](https://linkedin.com/in/x) or [My Portfolio](https://x.dev).";
+    assert.deepEqual(markerSlotsFromText(markdown), []);
+  });
+
+  it("ignores bracketed prose that is not the marker format", () => {
+    assert.deepEqual(markerSlotsFromText("We shipped [Redacted] last spring."), []);
+  });
+
+  it("agrees with slotsFromText on text that only holds canonical markers", () => {
+    const text = `Intro ${slotMarker("the role's team name")} outro.`;
+    assert.deepEqual(markerSlotsFromText(text), slotsFromText(text));
   });
 });
 

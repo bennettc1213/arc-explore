@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth";
+import { getUserTier } from "@/lib/pricing/entitlements";
+import { evaluateFeature } from "@/lib/pricing/tiers";
 import { deleteSearch, saveSearch, setNotify } from "@/lib/searches/store";
 import { MAX_SAVED_SEARCHES, isEmptyFilters, saveSearchSchema } from "@/lib/searches/types";
 
@@ -23,6 +25,17 @@ export async function saveSearchAction(
   formData: FormData,
 ): Promise<SaveSearchState> {
   const user = await requireUser("/");
+
+  // A saved search only exists to be alerted on, and alerts are Edge+ (see
+  // "saved_search_alerts" in src/lib/pricing/tiers.ts and the plan filter in
+  // lib/searches/store.ts's alertCandidates). Refusing the save rather than
+  // silently accepting a search that can never notify is the honest failure
+  // — a free user who saved one would reasonably assume it works.
+  const tier = await getUserTier(user.id);
+  const access = evaluateFeature(tier, "saved_search_alerts");
+  if (!access.usable) {
+    return { status: "error", message: "saved-search alerts are an Edge feature — upgrade to save this search" };
+  }
 
   let raw: unknown;
   try {

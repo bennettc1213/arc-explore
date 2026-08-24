@@ -1,8 +1,11 @@
 import Link from "next/link";
 
 import { BackLink } from "@/components/BackLink";
+import { UpgradeWall } from "@/components/pricing/UpgradeGate";
 import { requireUser } from "@/lib/auth";
 import { getCompletionCorpus } from "@/lib/feed";
+import { getUserTier } from "@/lib/pricing/entitlements";
+import { consumeUsage } from "@/lib/pricing/usage";
 import { profileCompletion } from "@/lib/profile/completion";
 import { routePresence } from "@/lib/profile/routing";
 import { getEmailPrefs, getLatestResume, getProfile } from "@/lib/profile/store";
@@ -32,9 +35,23 @@ export default async function ProfilePage() {
 
   const resumeSkills = resume ? skillsFromParsedResume(resume.parsed) : [];
   const competitiveness = await resumeCompetitiveness(resumeSkills);
+
+  const tier = await getUserTier(user.id);
+  // Keyed on the resume id, not consumed on every render: re-opening /profile
+  // to look at the same resume's critique again is not a second "run" of the
+  // free tier's one — only critiquing a genuinely different resume is. See
+  // src/lib/pricing/usage.ts.
+  const critiqueAccess = resume
+    ? await consumeUsage(user.id, tier, "resume_critique", resume.id)
+    : null;
   // Pure function over the stored parse — no model call, no query, so it costs
-  // nothing to recompute and always reflects the current checks.
-  const critique = resume ? critiqueResume(coerceParsedResume(resume.parsed)) : null;
+  // nothing to recompute and always reflects the current checks. Only
+  // computed at all when the gate says this viewer may see it: a locked
+  // critique renders an upgrade wall, never the findings underneath it.
+  const critique =
+    resume && critiqueAccess?.access.usable
+      ? critiqueResume(coerceParsedResume(resume.parsed))
+      : null;
   const routing = routePresence(profile, resumeSkills);
   const completion = profileCompletion(profile, resumeSkills, corpus);
 
@@ -148,6 +165,13 @@ export default async function ProfilePage() {
       />
 
       {critique && <ResumeCritique critique={critique} />}
+      {resume && critiqueAccess && !critiqueAccess.access.usable && (
+        <UpgradeWall
+          feature="resume_critique"
+          access={critiqueAccess.access}
+          reasonNote="you've used your free resume critique"
+        />
+      )}
 
       <ProfileEditor
         profile={profile}

@@ -1,4 +1,5 @@
 import { getFeed } from "../feed";
+import { TIMING_PRIORITY_POINTS } from "../pricing/tiers";
 import { toScoreProfile } from "../profile/types";
 import { getProfile, getLatestResume } from "../profile/store";
 import { skillsFromParsedResume } from "../score/skills";
@@ -64,6 +65,10 @@ export async function planAlerts(
       // The whole point: only rows we first saw since we last wrote to them.
       newSince: c.lastNotifiedAt,
       limit: MAX_MATCHES,
+      // The subscriber's own timing weight — an alert that ranked differently
+      // from the feed they saved the search on would be two answers to one
+      // question.
+      timingPoints: TIMING_PRIORITY_POINTS[c.plan],
     });
 
     if (items.length === 0) continue;

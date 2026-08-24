@@ -106,6 +106,34 @@
       "when": 1786812834881,
       "tag": "0014_reflective_human_robot",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1786891200000,
+      "tag": "0015_missing_strikes",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1787034598764,
+      "tag": "0016_drop_dead_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1787120000000,
+      "tag": "0017_pricing_tiers",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1787206400000,
+      "tag": "0018_frame_observation",
+      "breakpoints": true
     }
   ]
 }

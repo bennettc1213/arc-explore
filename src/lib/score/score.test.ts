@@ -241,7 +241,30 @@ describe("scoreTiming", () => {
   it("scores a brand-new posting at the top", () => {
     const r = scoreTiming({ firstSeenAt: hoursAgo(2), lastSeenAt: hoursAgo(0.1), now: base });
     assert.equal(r.score, 100);
-    assert.equal(r.label, "new today");
+    // "found", not "new": with no employer-stated posting date the only fact
+    // we hold is when our own crawler arrived. See the label block in timing.ts.
+    assert.equal(r.label, "found today");
+  });
+
+  it("says 'posted' only when the employer actually stated a date", () => {
+    /*
+     * The distinction the old version collapsed. On a bulk-ingested corpus,
+     * labelling rows "new today" off `firstSeenAt` marked 2,080
+     * simultaneously-imported listings as new on the same day — the same
+     * overclaim the saved-search alerts avoid by saying new means new *to us*.
+     */
+    const stated = scoreTiming({
+      firstSeenAt: hoursAgo(400),
+      lastSeenAt: base,
+      postedAt: hoursAgo(2),
+      now: base,
+    });
+    assert.equal(stated.label, "posted today");
+    assert.equal(stated.ageBasis, "posted");
+
+    const ours = scoreTiming({ firstSeenAt: hoursAgo(2), lastSeenAt: base, now: base });
+    assert.equal(ours.label, "found today");
+    assert.equal(ours.ageBasis, "first_seen");
   });
 
   it("decays with age", () => {
@@ -256,6 +279,73 @@ describe("scoreTiming", () => {
     const ancient = scoreTiming({ firstSeenAt: hoursAgo(50_000), lastSeenAt: base, now: base });
     assert.ok(ancient.score >= 15);
     assert.equal(ancient.isClosed, false);
+  });
+
+  it("a stated deadline moves the score continuously, not only inside 72 hours", () => {
+    /*
+     * THE BUG THIS PINS, measured on the live corpus: the old version only
+     * looked at a deadline inside 72 hours, and of 288 open rows carrying a
+     * real deadline exactly **2** were in that window. So 286 rows got no
+     * benefit at all from stating one, and a scholarship closing in three
+     * weeks scored identically to one closing in three years.
+     */
+    const soon = scoreTiming({ firstSeenAt: hoursAgo(3000), lastSeenAt: base, deadlineAt: new Date(base.getTime() + 5 * 86_400_000), now: base });
+    const mid = scoreTiming({ firstSeenAt: hoursAgo(3000), lastSeenAt: base, deadlineAt: new Date(base.getTime() + 30 * 86_400_000), now: base });
+    const far = scoreTiming({ firstSeenAt: hoursAgo(3000), lastSeenAt: base, deadlineAt: new Date(base.getTime() + 300 * 86_400_000), now: base });
+
+    assert.ok(soon.score > mid.score, `${soon.score} should exceed ${mid.score}`);
+    assert.ok(mid.score > far.score, `${mid.score} should exceed ${far.score}`);
+  });
+
+  it("an implausible posting date is dropped, never scored as ancient", () => {
+    /*
+     * Live corpus: a still-open "User Interface Designer (Entry level)"
+     * carries 2012-02-29, and 304 open rows claim to be over a year old.
+     * Employers reuse requisitions, so an ancient date means the req id is
+     * old, not that the vacancy is fourteen years old. Unknown is dropped,
+     * never scored as a miss — the Fit Score's rule, applied here.
+     */
+    const ancientDate = scoreTiming({
+      firstSeenAt: hoursAgo(48),
+      lastSeenAt: base,
+      postedAt: new Date("2012-02-29T00:00:00Z"),
+      now: base,
+    });
+    assert.equal(ancientDate.ageBasis, "first_seen");
+    // And it is not punished for it: same score as if no date were stated.
+    const noDate = scoreTiming({ firstSeenAt: hoursAgo(48), lastSeenAt: base, now: base });
+    assert.equal(ancientDate.score, noDate.score);
+  });
+
+  it("the confidence marker counts what we could read, not what scored well", () => {
+    // Getting this wrong first reported 1-of-3 on 3,777 of 3,788 live rows,
+    // which is a constant rather than a marker. Verification is always known.
+    const bare = scoreTiming({ firstSeenAt: hoursAgo(48), lastSeenAt: base, now: base });
+    assert.equal(bare.knownSignals, 1);
+
+    const full = scoreTiming({
+      firstSeenAt: hoursAgo(48),
+      lastSeenAt: base,
+      postedAt: hoursAgo(48),
+      deadlineAt: new Date(base.getTime() + 10 * 86_400_000),
+      now: base,
+    });
+    assert.equal(full.knownSignals, 3);
+    assert.equal(full.totalSignals, 3);
+  });
+
+  it("urgency is the stronger pressure, not the average of the two", () => {
+    // An old posting closing in two days is urgent. Averaging its age against
+    // its deadline would report a comfortable middle for something about to
+    // disappear.
+    const r = scoreTiming({
+      firstSeenAt: hoursAgo(20_000),
+      lastSeenAt: base,
+      postedAt: hoursAgo(20_000),
+      deadlineAt: new Date(base.getTime() + 2 * 86_400_000),
+      now: base,
+    });
+    assert.ok(r.score >= 90, `expected an imminent deadline to dominate, got ${r.score}`);
   });
 
   it("zeroes a closed posting", () => {
@@ -284,16 +374,41 @@ describe("scoreTiming", () => {
       now: base,
     });
     assert.equal(r.score, 100);
-    assert.equal(r.label, "closes soon");
+    assert.equal(r.label, "closes tomorrow");
   });
 
-  it("zeroes a passed deadline", () => {
+  it("zeroes a deadline that is genuinely in the past", () => {
+    const r = scoreTiming({
+      firstSeenAt: hoursAgo(100),
+      lastSeenAt: base,
+      // Two calendar days back, not merely an hour — see the test below.
+      deadlineAt: hoursAgo(48),
+      now: base,
+    });
+    assert.equal(r.score, 0);
+    assert.equal(r.label, "deadline passed");
+  });
+
+  it("a deadline earlier today has NOT passed", () => {
+    /*
+     * Deadlines are dates; the midnight is an artifact of parsing them. A
+     * source stating "deadline: August 12", read at noon on August 12, still
+     * has that day left — so this counts whole UTC calendar days, exactly as
+     * the deadline reminders were corrected to do after a live run produced a
+     * subject line reading "closes today" above a body reading
+     * "Closes: 2026-08-15".
+     *
+     * The elapsed-time comparison this replaces would have zeroed a
+     * scholarship at 00:01 on the very day it was due, and buried it in the
+     * ranking on the one day it was most urgent.
+     */
     const r = scoreTiming({
       firstSeenAt: hoursAgo(100),
       lastSeenAt: base,
       deadlineAt: hoursAgo(1),
       now: base,
     });
-    assert.equal(r.score, 0);
+    assert.equal(r.label, "closes today");
+    assert.equal(r.score, 100);
   });
 });

@@ -1,8 +1,11 @@
 import Link from "next/link";
 
 import { BackLink } from "@/components/BackLink";
+import { UpgradeWall } from "@/components/pricing/UpgradeGate";
 import { getSessionUser } from "@/lib/auth";
 import { buildLinkedInDraft } from "@/lib/linkedin/build";
+import { getUserTier } from "@/lib/pricing/entitlements";
+import { checkUsage } from "@/lib/pricing/usage";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { coerceParsedResume } from "@/lib/resume/types";
 import { topDemandedSkills } from "@/lib/score/competitiveness";
@@ -38,6 +41,16 @@ export default async function LinkedInPage() {
   const resume = storedResume ? coerceParsedResume(storedResume.parsed) : null;
   const draft = buildLinkedInDraft({ profile, resume, accountEmail: user?.email ?? null });
 
+  // Read-only check — does not spend a unit. The actual consumption happens
+  // client-side, from the checker's first keystroke (see LinkedInChecker and
+  // linkedin/actions.ts) — a page view is not a "run" of a tool that scores
+  // as you type, so gating access here and metering usage there are
+  // deliberately two different moments.
+  // Through `getUserTier` on both branches, never a literal "free" — see the
+  // note in `app/page.tsx`.
+  const tier = await getUserTier(user?.id);
+  const linkedInAccess = user ? await checkUsage(user.id, tier, "linkedin_tools") : null;
+
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
       <BackLink href="/" label="back to the feed" />
@@ -67,9 +80,31 @@ export default async function LinkedInPage() {
         </p>
       </div>
 
-      <LinkedInBuilder draft={draft} signedIn={Boolean(user)} hasResume={Boolean(resume)} />
+      {user && linkedInAccess?.usable && (
+        <>
+          <LinkedInBuilder draft={draft} signedIn={Boolean(user)} hasResume={Boolean(resume)} />
+          <LinkedInChecker demand={demand} />
+        </>
+      )}
 
-      <LinkedInChecker demand={demand} />
+      {user && linkedInAccess && !linkedInAccess.usable && (
+        <UpgradeWall
+          feature="linkedin_tools"
+          access={linkedInAccess}
+          reasonNote="you've used your free LinkedIn run"
+        />
+      )}
+
+      {!user && (
+        <div className="slot" style={{ padding: "14px 16px", marginBottom: 28 }}>
+          <span>
+            <Link href={`/login?next=/linkedin`} style={{ color: "var(--accent)" }}>
+              sign in
+            </Link>{" "}
+            to use the builder and checker — free accounts get one run
+          </span>
+        </div>
+      )}
 
       <section style={{ border: "1px solid var(--line)", padding: 22, marginBottom: 28 }}>
         <div className="eyebrow chrome" style={{ marginBottom: 6 }}>

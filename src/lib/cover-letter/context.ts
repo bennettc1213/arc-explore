@@ -76,6 +76,12 @@ export interface CoverLetterContext {
   evidence: EvidenceEntry[];
   /** Human-readable gaps the student must fill before sending. */
   gaps: string[];
+  /**
+   * True when at least one evidence entry actually matches a skill the posting
+   * named. False means the letter is standing on background, not a direct fit —
+   * the generator is told to write honestly rather than claim relevance.
+   */
+  directMatch: boolean;
 }
 
 /* ------------------------------------------------------------------ *
@@ -120,6 +126,7 @@ const MAX_EVIDENCE_BULLETS = 4;
 export function evidenceForPosting(
   parsed: ParsedResume,
   postingSkills: readonly string[],
+  candidateSkills: readonly string[] = [],
 ): EvidenceEntry[] {
   const wanted = new Set(postingSkills);
 
@@ -162,6 +169,24 @@ export function evidenceForPosting(
     });
   }
 
+  // A skill the candidate listed outright is itself evidence when the posting
+  // names it. The skills section is an explicit claim, so quoting it verbatim
+  // is honest even though it carries no story — it is what the resume actually
+  // says, and it is the one place a tidy skills header earns its keep.
+  if (postingSkills.length > 0) {
+    const matched = candidateSkills.filter((s) => wanted.has(s));
+    if (matched.length > 0) {
+      entries.push({
+        kind: "experience",
+        title: "Skills listed on your resume",
+        dates: null,
+        bullets: matched,
+        matchedSkills: matched,
+        count: matched.length,
+      });
+    }
+  }
+
   // Experiences before projects on ties — paid evidence outranks coursework.
   entries.sort((a, b) => b.count - a.count || (a.kind === "experience" ? -1 : 1));
   return entries
@@ -173,6 +198,53 @@ export function evidenceForPosting(
       bullets,
       matchedSkills,
     }));
+}
+
+/**
+ * Background evidence when nothing in the resume matches the posting's skills.
+ *
+ * A letter with no grounding at all collapses into placeholders, which reads as
+ * broken. Rather than invent a fit, we surface the candidate's most substantive
+ * real experience — quoted verbatim — so the letter has something honest to
+ * stand on. `directMatch` is false in this case, telling the generator not to
+ * claim a relevance the facts do not support.
+ */
+export function backgroundEvidence(parsed: ParsedResume): EvidenceEntry[] {
+  const items: Array<{
+    kind: "experience" | "project";
+    title: string;
+    dates: string | null;
+    bullets: string[];
+  }> = [];
+
+  for (const e of parsed.experiences) {
+    if (!e.role && !e.organization) continue;
+    const bullets = (e.bullets ?? []).filter((b): b is string => typeof b === "string");
+    if (bullets.length === 0) continue;
+    items.push({
+      kind: "experience",
+      title: [e.role, e.organization].filter(Boolean).join(" at "),
+      dates: e.dates ?? null,
+      bullets: bullets.slice(0, MAX_EVIDENCE_BULLETS),
+    });
+  }
+
+  for (const p of parsed.projects) {
+    const bullets = p.description ? [p.description] : [];
+    if (!p.name && bullets.length === 0) continue;
+    items.push({
+      kind: "project",
+      title: p.name || "a project",
+      dates: null,
+      bullets: bullets.slice(0, MAX_EVIDENCE_BULLETS),
+    });
+  }
+
+  // Rank by how much the entry actually says, so the thinnest filler loses.
+  items.sort((a, b) => b.bullets.join(" ").length - a.bullets.join(" ").length);
+  return items
+    .slice(0, MAX_EVIDENCE_ENTRIES)
+    .map((it) => ({ ...it, matchedSkills: [] }));
 }
 
 /* ------------------------------------------------------------------ *
@@ -229,8 +301,13 @@ export function buildCoverLetterContext(input: {
   };
 
   const posting = toPostingFacts(input.posting);
-  const evidence = evidenceForPosting(input.parsed, posting.skills);
-  const gaps = gapsToFlag({ candidate, evidence, posting });
+  const evidence = evidenceForPosting(input.parsed, posting.skills, candidate.skills);
+  const directMatch = evidence.some((e) => e.matchedSkills.length > 0);
 
-  return { candidate, posting, evidence, gaps };
+  // When nothing matches, fall back to the candidate's real experience as
+  // honest background rather than shipping a hollow, placeholder-filled draft.
+  const finalEvidence = evidence.length > 0 ? evidence : backgroundEvidence(input.parsed);
+  const gaps = gapsToFlag({ candidate, evidence: finalEvidence, posting });
+
+  return { candidate, posting, evidence: finalEvidence, gaps, directMatch };
 }

@@ -4,6 +4,7 @@ import { BackLink } from "@/components/BackLink";
 import { getSessionUser } from "@/lib/auth";
 import { MIN_COMPARE, buildComparison, parseCompareIds } from "@/lib/compare";
 import { getPosting } from "@/lib/feed";
+import { getUserTier } from "@/lib/pricing/entitlements";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { toScoreProfile } from "@/lib/profile/types";
 import { skillsFromParsedResume } from "@/lib/score/skills";
@@ -119,7 +120,7 @@ export default async function ComparePage({
     );
   }
 
-  const comparison = buildComparison(found);
+  const comparison = buildComparison(found, new Date(), await getUserTier(user?.id));
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>

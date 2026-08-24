@@ -27,7 +27,7 @@
  * audit gives one panel away.
  */
 
-import { slotMarker } from "../cover-letter/types";
+import { markerSlotsFromText, slotMarker } from "../cover-letter/types";
 import type { ParsedResume } from "../resume/types";
 import type { UserProfile } from "../profile/types";
 
@@ -59,18 +59,15 @@ export interface GeneratedReadme {
   sources: Array<{ fact: string; from: "github" | "profile" | "resume" | "account" }>;
 }
 
-const SLOT_RE = /\[YOUR SPECIFIC DETAIL: [^\]\n]+\]/g;
-
 /**
  * Placeholders in generated markdown.
  *
- * Deliberately not the cover letter's `slotsFromText`: its pattern matches any
- * bracketed capitalised phrase, which in markdown means every link label
- * (`[LinkedIn](…)`) would be reported as a missing fact. Same marker format,
- * stricter scan.
+ * Uses the strict scanner from the cover-letter module — `slotsFromText` would
+ * match any bracketed capitalised phrase, which in markdown means every link
+ * label (`[LinkedIn](…)`) would be reported as a missing fact.
  */
 export function readmeSlots(markdown: string): string[] {
-  return [...new Set(markdown.match(SLOT_RE) ?? [])];
+  return markerSlotsFromText(markdown);
 }
 
 /** Languages the student's own repositories are actually written in. */

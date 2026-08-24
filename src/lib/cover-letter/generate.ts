@@ -116,7 +116,16 @@ export function buildUserMessage(ctx: CoverLetterContext): string {
     );
   }
 
-  return [
+   const relevanceNote =
+    ctx.posting.skills.length > 0 && !ctx.directMatch
+      ? [
+          "",
+          "## Relevance",
+          "The candidate has NO skill that directly matches this posting's named skills. Do not claim the role's specific skills and do not pretend a fit the facts do not support. In the evidence paragraph, reference the candidate's background honestly as general experience they bring, not as proof they are a match.",
+        ]
+      : [];
+
+   return [
     "## Candidate facts (the ONLY facts you may assert about the candidate)",
     factLines.join("\n"),
     "",
@@ -128,6 +137,7 @@ export function buildUserMessage(ctx: CoverLetterContext): string {
     "",
     "## Gaps",
     gapInstructions(ctx.gaps),
+    ...relevanceNote,
   ].join("\n");
 }
 

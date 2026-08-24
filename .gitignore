@@ -42,3 +42,8 @@ next-env.d.ts
 
 # Playwright MCP session artifacts (snapshots, console logs, screenshots)
 .playwright-mcp/
+
+# Extension: compiled from src/lib/apply/*.ts by `npm run build:extension`.
+# Generated, never edited by hand — a committed copy is a second definition
+# of the autofill rules waiting to drift from the tested one.
+extension/vendor/

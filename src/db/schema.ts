@@ -55,7 +55,6 @@ export const organizations = pgTable(
     atsSlug: text("ats_slug"),
     /** Alternate spellings seen in the wild, for dedup. */
     aliases: text("aliases").array().notNull().default([]),
-    vertical: text("vertical"),
 
     /** Polling state. */
     pollIntervalSec: integer("poll_interval_sec").notNull().default(1200),
@@ -131,7 +130,6 @@ export const postings = pgTable(
     isRemote: boolean("is_remote").notNull().default(false),
     /** e.g. "Summer 2027" for internships, an academic year for scholarships. */
     term: text("term"),
-    category: text("category"),
     degrees: text("degrees").array().notNull().default([]),
 
     /** Scholarship dollar value. Both null means "amount varies" or unstated —
@@ -179,6 +177,24 @@ export const postings = pgTable(
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
     /** Set when it disappears from its ATS feed — our "filled/closed" signal. */
     closedAt: timestamp("closed_at", { withTimezone: true }),
+    /**
+     * Consecutive times this posting was absent from its source feed.
+     *
+     * Mirrors `urlDeadStrikes` from the apply-URL health checker: a single
+     * missing scrape is not enough to close a live scholarship. The first
+     * absence increments this to 1; only the second consecutive absence
+     * sets `closedAt`. Any scrape that lists the posting again resets it
+     * to 0, so a transient scrape that lost a row never hides a live award.
+     * Stamped in UTC, not session-local time, so the dry-run timestamp
+     * rule (see HANDOFF §6) holds in CI.
+     */
+    missingStrikes: integer("missing_strikes").notNull().default(0),
+    /**
+     * First scrape in the current run of consecutive absences, cleared on
+     * recovery. Stamped once, on the absence that crosses the threshold,
+     * and never moved afterwards — the same rule `urlDeadSince` follows.
+     */
+    missingSince: timestamp("missing_since", { withTimezone: true }),
     /** Employer-stated posting date, when a source provides one. May be null —
      *  we never invent one, per the honest-slots rule. */
     postedAt: timestamp("posted_at", { withTimezone: true }),
@@ -209,6 +225,22 @@ export const postings = pgTable(
     urlDeadSince: timestamp("url_dead_since", { withTimezone: true }),
     /** Consecutive hard-dead observations. Reset to 0 by any non-dead answer. */
     urlDeadStrikes: integer("url_dead_strikes").notNull().default(0),
+    /**
+     * Consecutive observations that this page's headers permit us to frame it.
+     *
+     * Read off the response the link checker was already fetching, so it costs
+     * no extra request. Two are required before we embed and a single refusal
+     * withdraws it — see `lib/apply/frame-headers.ts` for why that asymmetry.
+     *
+     * Replaces a four-host allowlist that could never have covered the ~300
+     * distinct scholarship hosts, one row per host, or any source added later.
+     * It says nothing about whether a captcha works inside a frame, which is a
+     * separate and unheadered question — `EMBED_WITHHELD_HOSTS` still outranks
+     * this.
+     */
+    frameAllowStrikes: integer("frame_allow_strikes").notNull().default(0),
+    /** When framing headers were last read. Null means never looked. */
+    frameCheckedAt: timestamp("frame_checked_at", { withTimezone: true }),
 
     /* --- human curation --- */
     /**
@@ -281,6 +313,13 @@ export const postingSources = pgTable(
  * Users
  * ------------------------------------------------------------------ */
 
+/**
+ * Subscription tier. See `src/lib/pricing/tiers.ts` for what each one
+ * unlocks — this file only needs to know the three names exist.
+ */
+export const PLAN_IDS = ["free", "edge", "apply"] as const;
+export type PlanId = (typeof PLAN_IDS)[number];
+
 /** Mirrors auth.users.id from Supabase. RLS scopes every row below to it. */
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
@@ -340,6 +379,22 @@ export const profiles = pgTable("profiles", {
    * anything else the user exposes.
    */
   unsubscribeToken: uuid("unsubscribe_token").notNull().defaultRandom(),
+  /**
+   * The seam a billing provider writes to.
+   *
+   * Defaults "free" — fail-closed, the same call `ADMIN_EMAILS` makes: an
+   * unset or unrecognised value must resolve to the least capable tier, never
+   * the most. Nothing in this codebase sets this to anything but "free" yet.
+   * No Stripe object, webhook or checkout flow exists — see FIXES.md. Whoever
+   * wires billing later flips this column on a successful charge and drops it
+   * back to "free" on cancellation/non-renewal; everything downstream of
+   * `getUserTier` already reads live from here.
+   */
+  plan: text("plan").$type<PlanId>().notNull().default("free"),
+  /** Stamped whenever `plan` changes, so a support conversation can ask "since
+   *  when" without a billing provider's own dashboard. Null until it moves
+   *  once — a profile created on "free" was never actually "changed" to it. */
+  planUpdatedAt: timestamp("plan_updated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -666,6 +721,62 @@ export const listingReports = pgTable(
     index("listing_report_open_idx").on(t.resolvedAt, t.createdAt),
     index("listing_report_posting_idx").on(t.postingId),
   ],
+);
+
+/* ------------------------------------------------------------------ *
+ * Pricing — usage counters for the run-capped free-tier tools
+ * ------------------------------------------------------------------ */
+
+/**
+ * Which quantity-capped tools this table can meter. Kept here, beside
+ * `PlanId`, rather than in `src/lib/pricing/tiers.ts` — the same split
+ * `EventName` makes with `analytics/props.ts`: the set of valid keys is a
+ * data-layer fact, and what each key is *worth* per tier is a product-layer
+ * fact that lives in `tiers.ts` and imports this type.
+ *
+ * Deliberately does NOT include cover letters or the tracker — both already
+ * have a real row per unit (`cover_letters`, `applications`), so counting
+ * again here would be a second, driftable copy of a number the schema
+ * already knows exactly. This table exists only for tools with no
+ * persisted artifact to count: a critique or an audit is computed fresh on
+ * every render, not stored.
+ *
+ * Named to match the feature keys in `src/lib/pricing/tiers.ts` exactly
+ * (`resume_critique`, `github_tools`, `linkedin_tools`) rather than a
+ * looser data-layer name of their own — `evaluateFeature` indexes its
+ * `FEATURES` record by the same strings this column holds, and a second
+ * naming scheme here would be the "restate the taxonomy" bug this codebase
+ * has already been burned by once (see the remote-only filter note in
+ * FIXES.md).
+ */
+export const USAGE_FEATURE_KEYS = ["resume_critique", "github_tools", "linkedin_tools"] as const;
+export type UsageFeatureKey = (typeof USAGE_FEATURE_KEYS)[number];
+
+/**
+ * One (user, feature) counter.
+ *
+ * `lastKey` is what makes this a *use* counter rather than a *view* counter.
+ * These tools compute their result fresh on every render — a critique panel
+ * re-renders every time `/profile` loads, an audit every time the page is
+ * requested — so incrementing unconditionally would burn a free user's one
+ * run on the act of looking at their own resume twice. Re-running against the
+ * same input (the same resume id, the same GitHub username) is a free replay
+ * and does not move `count`; only a genuinely different input does. See
+ * `src/lib/pricing/usage.ts`.
+ */
+export const featureUsage = pgTable(
+  "feature_usage",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    feature: text("feature").$type<UsageFeatureKey>().notNull(),
+    count: integer("count").notNull().default(0),
+    lastKey: text("last_key"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("feature_usage_user_feature_unique").on(t.userId, t.feature)],
 );
 
 /* ------------------------------------------------------------------ *

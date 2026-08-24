@@ -618,8 +618,10 @@ function scoreSkills(profile: ScoreProfile, posting: ScorePosting): Dimension & 
  * Ranking
  * ------------------------------------------------------------------ */
 
-/** What a posting is worth before we know anything about it. */
-const NEUTRAL_PRIOR = 50;
+/** What a posting is worth before we know anything about it. Exported so the
+ *  timing score can shrink toward the same prior — two rankings pulling toward
+ *  two different neutrals would not blend into a meaningful number. */
+export const NEUTRAL_PRIOR = 50;
 
 /**
  * The number to *sort* by. Never the number to show.

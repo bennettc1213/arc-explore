@@ -5,12 +5,16 @@ import { BackLink } from "@/components/BackLink";
 import { ApplyWizard } from "@/components/apply/ApplyWizard";
 import { CoverLetterEditor } from "@/components/CoverLetterEditor";
 import { ReportListing } from "@/components/ReportListing";
+import { ScoreBadge } from "@/components/ScoreBadge";
+import { ScoreReasons } from "@/components/ScoreReasons";
 import { TrackButton } from "@/components/TrackButton";
 import { recordEvent } from "@/lib/analytics/record";
 import { buildApplicationPacket } from "@/lib/apply/packet";
 import { getSessionUser } from "@/lib/auth";
 import { getCoverLetter } from "@/lib/cover-letter/store";
 import { getPosting } from "@/lib/feed";
+import { getUserTier, presentFit } from "@/lib/pricing/entitlements";
+import { evaluateFeature } from "@/lib/pricing/tiers";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { hasReported } from "@/lib/reports/store";
 import { toScoreProfile } from "@/lib/profile/types";
@@ -32,66 +36,6 @@ function formatDate(d: Date): string {
   return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
 }
 
-function livenessLabel(item: Awaited<ReturnType<typeof getPosting>> extends infer T
-  ? NonNullable<T>
-  : never) {
-  if (item.closedAt) return item.timing.liveness;
-  if (item.freshnessTier === "periodic_check") {
-    return `checked as of ${formatDate(item.lastSeenAt)}`;
-  }
-  if (item.freshnessTier === "unverified_static") {
-    return `imported ${formatDate(item.lastSeenAt)}, not re-checked`;
-  }
-  return item.timing.liveness;
-}
-
-function ScoreBox({
-  label,
-  value,
-  known,
-  total,
-}: {
-  label: string;
-  value: number | null;
-  known?: number;
-  total?: number;
-}) {
-  if (value === null) {
-    return (
-      <div className="slot">
-        <span className="mono">
-          {label} — not enough info
-        </span>
-      </div>
-    );
-  }
-  const partial = known !== undefined && total !== undefined && known < total;
-  const strong = value >= 70 && !partial;
-  return (
-    <div
-      className="flex items-baseline gap-2 border px-3 py-2"
-      style={{
-        borderColor: strong ? "var(--accent)" : "var(--line-strong)",
-        background: strong ? "var(--accent-dim)" : "transparent",
-      }}
-      title={
-        partial
-          ? `Based on ${known} of ${total} factors — the rest are not stated in this posting.`
-          : undefined
-      }
-    >
-      <span className="mono">{label}</span>
-      <span className="mono-strong" style={{ color: strong ? "var(--accent)" : "var(--text)" }}>
-        {value}
-      </span>
-      {partial && (
-        <span className="mono" style={{ color: "var(--faint-readable)" }}>
-          {known}/{total}
-        </span>
-      )}
-    </div>
-  );
-}
 
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
@@ -121,6 +65,9 @@ export default async function ListingPage({
   const item = await getPosting(id, profile);
   if (!item) notFound();
 
+  const tier = await getUserTier(user?.id);
+  const presented = presentFit(item.fit, tier);
+
   // After the 404 check, so a bad or hidden id is not counted as a view. The
   // kind is the only property worth keeping — the posting id is deliberately
   // not recorded, since "which listings are popular" is not a question worth
@@ -148,6 +95,7 @@ export default async function ListingPage({
           postingTitle: item.title,
           postingUrl: item.url,
           kind: item.kind,
+          frameAllowStrikes: item.frameAllowStrikes,
           fields: packet.fields,
           attestations: packet.attestations,
           letterState: (letter
@@ -178,7 +126,7 @@ export default async function ListingPage({
 
       <header className="print-hide" style={{ marginBottom: 24 }}>
           <div className="eyebrow chrome">04 — opportunity</div>
-          <div className="flex flex-wrap items-start justify-between gap-6">
+          <div className="mt-2 flex flex-wrap items-start justify-between gap-6">
             <div className="min-w-0 flex-1">
               <h1 className="section-title chrome" style={{ marginTop: 10 }}>
                 {item.title}
@@ -194,46 +142,96 @@ export default async function ListingPage({
                 {item.isRemote && <> · remote</>}
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2">
+                {/* Same three phrases as the feed row, from the same
+                    `describeTiming` call — one definition of how a date is
+                    worded, so the two pages cannot drift. */}
                 <span className="mono" style={{ color: "var(--faint-readable)" }}>
-                  {livenessLabel(item)}
+                  {item.dates.verified}
                 </span>
+                {item.dates.posted && (
+                  <span className="mono" style={{ color: "var(--faint-readable)" }}>
+                    · {item.dates.posted}
+                  </span>
+                )}
+                {item.dates.closes && (
+                  <span
+                    className="mono"
+                    style={{
+                      color:
+                        item.timing.daysUntilDeadline !== null &&
+                        item.timing.daysUntilDeadline >= 0 &&
+                        item.timing.daysUntilDeadline <= 14
+                          ? "var(--accent)"
+                          : "var(--faint-readable)",
+                    }}
+                  >
+                    · {item.dates.closes}
+                  </span>
+                )}
                 {blocked && !closed && (
                   <span className="mono" style={{ color: "var(--accent-lite)" }}>
                     · you are not eligible
                   </span>
                 )}
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn press"
-                  style={{ textDecoration: "none" }}
-                >
-                  apply on {item.kind === "scholarship" ? "the sponsor's site" : "the employer's site"} ↗
-                </a>
-                {wizardBoot && <ApplyWizard boot={wizardBoot} />}
-                {user && (
-                  <Link
-                    href={`/listing/${item.id}/apply`}
-                    className="btn press"
-                    style={{ textDecoration: "none" }}
-                  >
-                    application packet
-                  </Link>
-                )}
-                {user && <TrackButton postingId={item.id} current={null} />}
               </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-2">
-              <ScoreBox
+              <ScoreBadge
                 label="fit"
-                value={item.fit.score}
-                known={item.fit.knownDimensions}
-                total={item.fit.totalDimensions}
+                value={presented.score}
+                known={presented.known}
+                total={presented.total}
+                bucketLabel={presented.bucketLabel}
+                size="header"
               />
-              <ScoreBox label="timing" value={closed ? null : item.timing.score} />
+              <ScoreBadge
+                label="timing"
+                value={closed ? null : item.timing.score}
+                known={closed ? undefined : item.timing.knownSignals}
+                total={closed ? undefined : item.timing.totalSignals}
+                size="header"
+              />
             </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <a
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn press"
+              style={{ textDecoration: "none" }}
+            >
+              apply on {item.kind === "scholarship" ? "the sponsor's site" : "the employer's site"} ↗
+            </a>
+            {/* The wizard's hand-off drives the extension, which is Apply-tier
+                (api/extension/packet enforces it). The application PACKET
+                below stays available on every tier — it is the do-it-yourself
+                version of the same facts, and gating both would be charging
+                twice for one thing. */}
+            {wizardBoot && evaluateFeature(tier, "extension_autofill_internships").usable && (
+              <ApplyWizard boot={wizardBoot} />
+            )}
+            {wizardBoot && !evaluateFeature(tier, "extension_autofill_internships").usable && (
+              <Link
+                href="/pricing?feature=extension_autofill_internships"
+                className="btn press"
+                style={{ textDecoration: "none" }}
+              >
+                🔒 autofill &amp; apply — Apply plan
+              </Link>
+            )}
+            {user && (
+              <Link
+                href={`/listing/${item.id}/apply`}
+                className="btn press"
+                style={{ textDecoration: "none" }}
+              >
+                application packet
+              </Link>
+            )}
+            {user && <TrackButton postingId={item.id} current={null} />}
           </div>
         </header>
 
@@ -295,46 +293,65 @@ export default async function ListingPage({
             label="confirmed"
             value={`${formatDate(item.lastSeenAt)}${item.closedAt ? ` · closed ${formatDate(item.closedAt)}` : ""}`}
           />
+          {/* Attributed, and omitted rather than guessed. An absent posting
+              date is not "posted a long time ago" — see POSTED_PLAUSIBLE_DAYS. */}
+          <MetaRow
+            label="posted"
+            value={
+              item.dates.posted
+                ? item.dates.posted.replace(/^posted /, "")
+                : "not stated by the source"
+            }
+          />
         </section>
 
-        {item.fit.reasons.length > 0 && (
-          <section className="print-hide" style={{ marginBottom: 32 }}>
-            <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
-              why this score
-            </div>
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {item.fit.reasons.map((r, i) => (
-                <span
-                  key={i}
-                  className="mono"
-                  title={r.detail}
-                  style={{
-                    color: r.kind === "good" ? "var(--accent)" : "var(--faint-readable)",
-                    textDecoration: r.kind === "unknown" ? "underline dotted" : "none",
-                    textUnderlineOffset: "3px",
-                  }}
-                >
-                  {r.kind === "good" ? "+" : r.kind === "bad" ? "−" : "?"} {r.label}
-                </span>
-              ))}
-            </div>
+        {/* A score with no reasons is a bug — the rule fit already follows.
+            Timing was the one number here that had never explained itself. */}
+        {!closed && item.timing.reasons.length > 0 && (
+          <section className="print-hide" style={{ marginBottom: 24 }}>
+            <details className="disclosure">
+              <summary>why this timing</summary>
+              <div className="disclosure-body">
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  {item.timing.reasons.map((r, i) => (
+                    <span
+                      key={i}
+                      className="mono"
+                      title={r.detail}
+                      style={{
+                        color: r.signal === "verification" ? "var(--faint-readable)" : "var(--accent)",
+                        textDecoration: r.signal === "first_seen" ? "underline dotted" : "none",
+                        textUnderlineOffset: "3px",
+                      }}
+                    >
+                      {r.label}
+                    </span>
+                  ))}
+                </div>
+                <div className="mono" style={{ marginTop: 8, color: "var(--faint-readable)" }}>
+                  built from {item.timing.knownSignals} of {item.timing.totalSignals} timing
+                  signals — a stated deadline, a stated posting date, and when we last
+                  re-checked the listing
+                </div>
+              </div>
+            </details>
           </section>
         )}
 
-        {item.skills.length > 0 && (
-          <section className="print-hide" style={{ marginBottom: 32 }}>
-            <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
-              skills this role names
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {item.skills.map((s) => (
-                <span key={s} className="mono" style={{ color: "var(--text)" }}>
-                  {s}
-                </span>
-              ))}
-            </div>
-          </section>
-        )}
+        <section className="print-hide" style={{ marginBottom: 32 }}>
+          <ScoreReasons
+            reasons={presented.reasons}
+            skills={presented.skills}
+            hasResume={Boolean(resume)}
+            roleSkills={presented.locked ? [] : item.skills}
+          />
+          {presented.locked && (
+            <p className="mono" style={{ marginTop: 8, color: "var(--faint-readable)" }}>
+              upgrade to Edge to see the full score, the factor breakdown, and what this role
+              names that your resume does not
+            </p>
+          )}
+        </section>
 
         {item.kind === "scholarship" && item.eligibility.length > 0 && (
           <section className="print-hide" style={{ marginBottom: 32 }}>

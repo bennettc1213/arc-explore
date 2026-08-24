@@ -1,12 +1,15 @@
 import Link from "next/link";
 
 import { BackLink } from "@/components/BackLink";
+import { UpgradeWall } from "@/components/pricing/UpgradeGate";
 import { recordEvent } from "@/lib/analytics/record";
 import { getSessionUser } from "@/lib/auth";
 import { auditGitHub, type GitHubAudit } from "@/lib/github/audit";
 import { fetchGitHubSnapshot } from "@/lib/github/client";
 import { generateProfileReadme, type GeneratedReadme } from "@/lib/github/readme";
 import { GitHubFetchError, parseGitHubUsername, type GhFetchFailure } from "@/lib/github/types";
+import { getUserTier } from "@/lib/pricing/entitlements";
+import { consumeUsage, type ConsumeResult } from "@/lib/pricing/usage";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { coerceParsedResume } from "@/lib/resume/types";
 
@@ -83,39 +86,60 @@ export default async function GitHubPage({
   let audit: GitHubAudit | null = null;
   let readme: GeneratedReadme | null = null;
   let failure: GhFetchFailure | null = null;
+  let usage: ConsumeResult | null = null;
 
   if (typed) {
     if (!username) {
       failure = { kind: "invalid_username" };
     } else {
-      try {
-        const snapshot = await fetchGitHubSnapshot(username);
-        audit = auditGitHub(snapshot);
+      // Run-capped for a signed-in free viewer, keyed on the username: two
+      // audits of the SAME account are one use, not two — see
+      // src/lib/pricing/usage.ts. Signed-out visitors are deliberately left
+      // unmetered here, which is a real, documented gap (FIXES.md): there is
+      // no account to attach a quota to, and this page is open signed-out on
+      // purpose (everything it reads is already public — see the module
+      // comment above). Metering by IP or fingerprint was ruled out as its
+      // own privacy problem, not attempted quietly.
+      // Through `getUserTier` on both branches, never a literal "free" — see
+      // the note in `app/page.tsx`: the shortcut reads as equivalent and
+      // silently sheds the DEV_TIER override the function carries.
+      const tier = await getUserTier(user?.id);
+      usage = user ? await consumeUsage(user.id, tier, "github_tools", username) : null;
 
-        // Only a completed fetch counts. A typo costs zero GitHub requests and
-        // should cost zero events too, or the number stops meaning "audits run"
-        // and starts meaning "times the form was submitted". The username is
-        // not recorded — the count is the metric, not who was looked up.
-        await recordEvent("github_audited", { score: audit.score });
+      if (user && usage && !usage.access.usable) {
+        failure = null;
+      } else {
+        try {
+          const snapshot = await fetchGitHubSnapshot(username);
+          audit = auditGitHub(snapshot);
 
-        // Signed in, the README is filled from the profile and resume as well.
-        // Signed out it is thinner, not broken — every gap is a visible slot.
-        const storedResume = user ? await getLatestResume(user.id) : null;
+          // Only a completed fetch counts. A typo costs zero GitHub requests and
+          // should cost zero events too, or the number stops meaning "audits run"
+          // and starts meaning "times the form was submitted". The username is
+          // not recorded — the count is the metric, not who was looked up.
+          await recordEvent("github_audited", { score: audit.score });
 
-        readme = generateProfileReadme({
-          snapshot,
-          profile: storedProfile,
-          resume: storedResume ? coerceParsedResume(storedResume.parsed) : null,
-          accountEmail: user?.email ?? null,
-        });
-      } catch (err) {
-        failure =
-          err instanceof GitHubFetchError
-            ? err.failure
-            : { kind: "network", detail: err instanceof Error ? err.message : "request failed" };
+          // Signed in, the README is filled from the profile and resume as well.
+          // Signed out it is thinner, not broken — every gap is a visible slot.
+          const storedResume = user ? await getLatestResume(user.id) : null;
+
+          readme = generateProfileReadme({
+            snapshot,
+            profile: storedProfile,
+            resume: storedResume ? coerceParsedResume(storedResume.parsed) : null,
+            accountEmail: user?.email ?? null,
+          });
+        } catch (err) {
+          failure =
+            err instanceof GitHubFetchError
+              ? err.failure
+              : { kind: "network", detail: err instanceof Error ? err.message : "request failed" };
+        }
       }
     }
   }
+
+  const locked = Boolean(user && usage && !usage.access.usable);
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
@@ -175,7 +199,15 @@ export default async function GitHubPage({
         </section>
       )}
 
-      {audit && (
+      {locked && usage && (
+        <UpgradeWall
+          feature="github_tools"
+          access={usage.access}
+          reasonNote="you've used your free GitHub audit"
+        />
+      )}
+
+      {audit && !locked && (
         <>
           <div
             className="flex flex-wrap items-center justify-between gap-4 border"
@@ -206,7 +238,7 @@ export default async function GitHubPage({
         </>
       )}
 
-      {!audit && !failure && (
+      {!audit && !failure && !locked && (
         <section className="slot" style={{ padding: "16px 18px", marginBottom: 28 }}>
           <span>
             Nothing is stored and no account is needed — this reads the same public data anyone

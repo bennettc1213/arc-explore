@@ -17,7 +17,7 @@
  * remember, and they are the part we genuinely do not know.
  */
 
-import { slotMarker } from "../cover-letter/types";
+import { markerSlotsFromText, slotMarker } from "../cover-letter/types";
 import { INTEREST_OPTIONS, type UserProfile } from "../profile/types";
 import { isQuantified, weakOpener } from "../resume/critique";
 import type { ParsedResume } from "../resume/types";
@@ -50,10 +50,9 @@ export interface LinkedInDraft {
   sources: Array<{ fact: string; from: "profile" | "resume" | "account" }>;
 }
 
-const SLOT_RE = /\[YOUR SPECIFIC DETAIL: [^\]\n]+\]/g;
-
+/** Placeholders across the generated sections, via the strict shared scanner. */
 function slotsIn(...texts: string[]): string[] {
-  return [...new Set(texts.flatMap((t) => t.match(SLOT_RE) ?? []))];
+  return markerSlotsFromText(...texts);
 }
 
 /** "software engineering" from the "software" key the profile stores. */

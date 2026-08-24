@@ -1,6 +1,7 @@
 import { getFeed } from "../feed";
 import { getLatestResume, getProfile } from "../profile/store";
 import { isProfileUsable, toScoreProfile } from "../profile/types";
+import { TIMING_PRIORITY_POINTS } from "../pricing/tiers";
 import { skillsFromParsedResume } from "../score/skills";
 import { listSearches } from "../searches/store";
 
@@ -102,6 +103,7 @@ async function coveredIds(
       ...search.filters,
       newSince: since,
       limit: COVERED_POOL,
+      timingPoints: TIMING_PRIORITY_POINTS[candidate.plan],
     });
     for (const item of items) covered.add(item.id);
   }
@@ -154,6 +156,10 @@ export async function planDigests(
       // Blocked rows are dropped by the selector rather than here, so the
       // "considered" count reports what actually turned up in the week.
       limit: RANK_POOL,
+      // The subscriber's own timing weight — a digest that recommended on a
+      // different ranking than their feed shows would be two answers to one
+      // question.
+      timingPoints: TIMING_PRIORITY_POINTS[candidate.plan],
     });
 
     if (items.length === 0) {

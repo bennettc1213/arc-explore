@@ -3,6 +3,12 @@ import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { postings } from "@/db/schema";
 
+import {
+  applyFrameObservation,
+  frameVerdictFromResponse,
+  type FrameVerdict,
+} from "../apply/frame-headers";
+
 import { describeError } from "./errors";
 import {
   applyCheck,
@@ -45,6 +51,7 @@ interface Candidate {
   urlStatus: number | null;
   urlDeadStrikes: number;
   urlDeadSince: Date | null;
+  frameAllowStrikes: number;
 }
 
 /**
@@ -62,7 +69,25 @@ const HEADERS: Record<string, string> = {
   Accept: "text/html,application/xhtml+xml",
 };
 
-async function probe(url: string): Promise<number | null> {
+/**
+ * One probe answers two questions, because the response is already in hand.
+ *
+ * The status decides liveness; the framing headers decide whether the page can
+ * be embedded in an Arc page (see `lib/apply/frame-headers.ts`). Reading both
+ * off one response is the whole reason framing became an observation rather
+ * than a hand-maintained four-host allowlist — it costs no extra request and
+ * therefore no extra politeness budget.
+ *
+ * `frame` is `unknown` whenever we never saw headers at all, and — importantly
+ * — also when only the HEAD succeeded, since some hosts answer HEAD from an
+ * edge that does not carry the origin's framing headers.
+ */
+interface Probe {
+  status: number | null;
+  frame: FrameVerdict;
+}
+
+async function probe(url: string): Promise<Probe> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -76,7 +101,9 @@ async function probe(url: string): Promise<number | null> {
       headers: HEADERS,
       signal: controller.signal,
     });
-    if (head.status < 400 || head.status === 410) return head.status;
+    if (head.status < 400 || head.status === 410) {
+      return { status: head.status, frame: frameVerdictFromResponse(head) };
+    }
 
     const get = await fetch(url, {
       method: "GET",
@@ -84,10 +111,10 @@ async function probe(url: string): Promise<number | null> {
       headers: HEADERS,
       signal: controller.signal,
     });
-    return get.status;
+    return { status: get.status, frame: frameVerdictFromResponse(get) };
   } catch {
     // Timeout, DNS failure, TLS error. Inconclusive — see classifyStatus.
-    return null;
+    return { status: null, frame: "unknown" };
   } finally {
     clearTimeout(timer);
   }
@@ -108,6 +135,7 @@ async function candidates(limit: number): Promise<Candidate[]> {
       urlStatus: postings.urlStatus,
       urlDeadStrikes: postings.urlDeadStrikes,
       urlDeadSince: postings.urlDeadSince,
+      frameAllowStrikes: postings.frameAllowStrikes,
     })
     .from(postings)
     .where(isNull(postings.closedAt))
@@ -154,7 +182,7 @@ export async function runLinkCheck(
       if (since < SAME_HOST_DELAY_MS) await sleep(SAME_HOST_DELAY_MS - since);
       lastHitByHost.set(host, Date.now());
 
-      const status = await probe(row.url);
+      const { status, frame } = await probe(row.url);
       const at = new Date();
       const previous: UrlHealth = {
         urlStatus: row.urlStatus,
@@ -162,6 +190,10 @@ export async function runLinkCheck(
         urlDeadSince: row.urlDeadSince,
       };
       const next = applyCheck(previous, { status, at });
+      const nextFrame = applyFrameObservation(
+        { frameAllowStrikes: row.frameAllowStrikes },
+        frame,
+      );
 
       summary.checked++;
       if (next.urlDeadStrikes > previous.urlDeadStrikes) summary.dead++;
@@ -182,6 +214,11 @@ export async function runLinkCheck(
             urlStatus: next.urlStatus,
             urlDeadStrikes: next.urlDeadStrikes,
             urlDeadSince: next.urlDeadSince,
+            frameAllowStrikes: nextFrame.frameAllowStrikes,
+            // Stamped whenever headers were actually read. An `unknown` verdict
+            // means we never saw any, so the previous stamp stands rather than
+            // a failed request looking like a fresh look.
+            ...(frame === "unknown" ? {} : { frameCheckedAt: at }),
           })
           .where(eq(postings.id, row.id));
       } catch (err) {

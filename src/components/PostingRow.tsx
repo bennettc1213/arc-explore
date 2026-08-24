@@ -1,8 +1,12 @@
-import Link from "next/link";
-
 import type { ApplicationStatus } from "@/db/schema";
 import type { FeedItem } from "@/lib/feed";
+// From the pure module, not `entitlements` — a row needs the presentation
+// rule, not a database connection.
+import { presentFit, type TierId } from "@/lib/pricing/tiers";
 
+import { RowLink } from "./RowLink";
+import { ScoreBadge } from "./ScoreBadge";
+import { ScoreReasons } from "./ScoreReasons";
 import { TrackButton } from "./TrackButton";
 
 /** "$1,000", "$1,000–$2,500", or null when the amount is unstated. */
@@ -19,23 +23,15 @@ function formatDate(d: Date): string {
 }
 
 /**
- * Freshness phrasing, honest per tier.
+ * Which timing labels earn the accent.
  *
- * "confirmed live Xh ago" is only true for postings we poll every 20 minutes.
- * Scholarships are checked on a slower loop and must say "checked as of <date>"
- * instead — the same date, a weaker claim (see the `freshness_tier` schema
- * comment). Closed rows always report the close.
+ * A closing date and an employer-stated recent posting are both things the
+ * student can act on. "found today" is not — it says our crawler arrived,
+ * which is a fact about us, and accenting it would dress up ingest activity
+ * as opportunity freshness. That is the same overclaim the label rewrite in
+ * `score/timing.ts` exists to stop.
  */
-function livenessLabel(item: FeedItem): string {
-  if (item.closedAt) return item.timing.liveness;
-  if (item.freshnessTier === "periodic_check") {
-    return `checked as of ${formatDate(item.lastSeenAt)}`;
-  }
-  if (item.freshnessTier === "unverified_static") {
-    return `imported ${formatDate(item.lastSeenAt)}, not re-checked`;
-  }
-  return item.timing.liveness;
-}
+const URGENT_LABEL = /^(closes|posted today|posted yesterday)/;
 
 /**
  * One posting in the feed.
@@ -46,68 +42,34 @@ function livenessLabel(item: FeedItem): string {
  *  - Unknown values render as a dashed honest slot, never as a guess.
  *  - Closed postings recede via surface + opacity rather than a second hue,
  *    honouring the one-accent rule.
+ *
+ * ── THE WHOLE ROW IS THE TARGET ─────────────────────────────────────────────
+ *
+ * It used to be that only the title *text* linked to the detail page, which in
+ * a ~200px-tall row meant a student had to find and hit one short string. That
+ * was reported plainly as having to "click in an exact spot", and it is the
+ * kind of thing that reads as the app being slow when it is really the app
+ * being hard to hit.
+ *
+ * So the title link is stretched over the row with `.row-target::after`, and
+ * the genuinely separate actions inside it — the external "apply ↗", the score
+ * badges, the track button, the "why this score" disclosure — are lifted back
+ * above it with `.row-raise`. A plain `onClick` on the article would have been
+ * fewer lines and strictly worse: it is not focusable, has no href for the
+ * status bar, and breaks middle-click, ⌘-click and "open in new tab", which is
+ * exactly how someone shortlists six internships.
+ *
+ * The known cost is that dragging to select text inside the row now starts the
+ * link's drag instead. That is the accepted trade of this pattern; the row is a
+ * navigation surface, and the detail page is where text is meant to be read.
  */
-
-function ScorePill({
-  label,
-  value,
-  known,
-  total,
-}: {
-  label: string;
-  value: number | null;
-  /** Dimensions that contributed. Omitted for scores with no such notion. */
-  known?: number;
-  total?: number;
-}) {
-  // "not enough info" is a real, honest answer — better than a fake number.
-  if (value === null) {
-    return (
-      <div className="slot" title="Not enough information to score this yet">
-        <span>{label} —</span>
-      </div>
-    );
-  }
-
-  // A score built on fewer known dimensions is a weaker claim, so it is not
-  // allowed to look as loud as a fully-informed one.
-  const partial = known !== undefined && total !== undefined && known < total;
-  const strong = value >= 70 && !partial;
-
-  return (
-    <div
-      className="flex items-baseline gap-2 border px-3 py-2"
-      style={{
-        borderColor: strong ? "var(--accent)" : "var(--line-strong)",
-        background: strong ? "var(--accent-dim)" : "transparent",
-      }}
-      title={
-        partial
-          ? `Based on ${known} of ${total} factors — the rest are not stated in this posting.`
-          : undefined
-      }
-    >
-      <span className="mono">{label}</span>
-      <span
-        className="mono-strong"
-        style={{ color: strong ? "var(--accent)" : "var(--text)", fontSize: "0.9rem" }}
-      >
-        {value}
-      </span>
-      {partial && (
-        <span className="mono" style={{ color: "var(--faint-readable)" }}>
-          {known}/{total}
-        </span>
-      )}
-    </div>
-  );
-}
 
 export function PostingRow({
   item,
   tracked,
   signedIn,
   hasResume,
+  tier = "free",
 }: {
   item: FeedItem;
   /** This user's application status for the posting, if they have one. */
@@ -115,22 +77,50 @@ export function PostingRow({
   signedIn?: boolean;
   /** Changes how the skills gap is worded — see below. */
   hasResume?: boolean;
+  /** Viewer's pricing tier — defaults to the most restrictive, never the
+   *  most permissive, for a caller that forgets to pass it. */
+  tier?: TierId;
 }) {
   const closed = Boolean(item.closedAt);
   const blocked = item.fit.blocked;
-  const hasSkillData =
-    item.fit.skills.matched.length > 0 || item.fit.skills.missing.length > 0;
+  const presented = presentFit(item.fit, tier);
+
+  /*
+   * The three date facts, each attributed to whoever actually stated it.
+   *
+   * `verified` is ours and is the only one phrased as our own claim; `posted`
+   * is the employer's and is omitted entirely rather than guessed when we
+   * have no believable date (see POSTED_PLAUSIBLE_DAYS); `closes` is the
+   * source's stated deadline.
+   *
+   * Computed in `buildFeedItem`, not here: `describeTiming` needs `now`, and
+   * React's purity rule rejects `Date.now()` during render — the same reason
+   * `newSinceFromDays` lives in `lib/feed.ts` rather than in the page. One
+   * `now` per request also means every row on a page dates itself against the
+   * same instant.
+   */
+  const dates = item.dates;
 
   return (
     <article
-      className={`border-b ${closed || blocked ? "is-closed" : ""}`}
+      className={`posting-row border-b ${closed || blocked ? "is-closed" : ""}`}
       style={{ borderColor: "var(--line)", padding: "18px 0" }}
     >
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 flex-1">
           <div className="mb-1 flex items-center gap-2">
             <span className={closed || blocked ? "pip pip-closed" : "pip pip-live"} aria-hidden />
-            <span className="mono">{livenessLabel(item)}</span>
+            {/* Ours. "verified today / yesterday / Aug 14", phrased per
+                freshness tier so only sub-hour ATS polling says "confirmed
+                live". */}
+            <span className="mono">{dates.verified}</span>
+            {/* The employer's. Omitted entirely when we have no believable
+                date rather than falling back to one we would not defend. */}
+            {dates.posted && (
+              <span className="mono" style={{ color: "var(--faint-readable)" }}>
+                · {dates.posted}
+              </span>
+            )}
             {blocked && !closed && (
               <span className="mono" style={{ color: "var(--accent-lite)" }}>
                 · you are not eligible
@@ -147,7 +137,11 @@ export function PostingRow({
                 · link may be dead
               </span>
             )}
-            {item.timing.label === "new today" && !closed && (
+            {/* Accented only when the label is a genuine call to action —
+                an imminent close, or an employer-stated recent posting. The
+                "found today" case is deliberately not accented: that is a
+                fact about our crawler, not about the opportunity. */}
+            {!closed && URGENT_LABEL.test(item.timing.label) && (
               <span className="mono" style={{ color: "var(--accent)" }}>
                 · {item.timing.label}
               </span>
@@ -159,13 +153,16 @@ export function PostingRow({
               carries the external apply link so the feed still reaches the
               source in one hop. */}
           <h3 className="t-base" style={{ fontWeight: 600, letterSpacing: "-0.01em" }}>
-            <Link
+            {/* `.press` is deliberately absent: the whole row now lifts on
+                hover, and a 1px nudge on the title inside a row that is already
+                moving reads as a wobble rather than as a press. */}
+            <RowLink
               href={`/listing/${item.id}`}
-              className="press"
+              className="row-target"
               style={{ color: "var(--text)", textDecoration: "none" }}
             >
               {item.title}
-            </Link>
+            </RowLink>
           </h3>
 
           <div className="t-sm mt-1" style={{ color: "var(--muted)" }}>
@@ -180,11 +177,13 @@ export function PostingRow({
             )}
             {item.isRemote && <> · remote</>}
             {" "}
+            {/* Lifted above the stretched title link — this one leaves the
+                site, so it must never be swallowed by the row's own target. */}
             <a
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mono press"
+              className="mono press row-raise"
               style={{ color: "var(--faint-readable)", fontSize: "0.85em" }}
               title="Open the original posting"
             >
@@ -225,9 +224,24 @@ export function PostingRow({
               </span>
             )}
 
+            {/* The countdown beside the date, because "due 9/7/2026" makes a
+                reader do the arithmetic that decides whether to act tonight.
+                Accented inside a fortnight — that is when it changes what
+                someone does today. */}
             {item.deadlineAt && (
-              <span className="mono" style={{ color: "var(--faint-readable)" }}>
+              <span
+                className="mono"
+                style={{
+                  color:
+                    item.timing.daysUntilDeadline !== null &&
+                    item.timing.daysUntilDeadline >= 0 &&
+                    item.timing.daysUntilDeadline <= 14
+                      ? "var(--accent)"
+                      : "var(--faint-readable)",
+                }}
+              >
                 due {formatDate(item.deadlineAt)}
+                {dates.closes ? ` · ${dates.closes}` : ""}
               </span>
             )}
 
@@ -258,60 +272,36 @@ export function PostingRow({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <ScorePill
+        <div className="row-raise flex shrink-0 items-center gap-2">
+          <ScoreBadge
             label="fit"
-            value={item.fit.score}
-            known={item.fit.knownDimensions}
-            total={item.fit.totalDimensions}
+            value={presented.score}
+            known={presented.known}
+            total={presented.total}
+            bucketLabel={presented.bucketLabel}
           />
-          <ScorePill label="timing" value={closed ? null : item.timing.score} />
+          {/* Timing now carries its own confidence marker, for the reason fit
+              does: a score resting only on when we happened to crawl is a
+              weaker claim than one resting on a stated deadline and a stated
+              posting date, and it may not look equally sure of itself. */}
+          <ScoreBadge
+            label="timing"
+            value={closed ? null : item.timing.score}
+            known={closed ? undefined : item.timing.knownSignals}
+            total={closed ? undefined : item.timing.totalSignals}
+          />
           {signedIn && <TrackButton postingId={item.id} current={tracked ?? null} />}
         </div>
       </div>
 
-      {/*
-        The keyword gap. Everything else on this row explains a number; this is
-        the one part that tells a student what to actually do next.
-      */}
-      {hasSkillData && (
-        <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          {item.fit.skills.matched.length > 0 && (
-            <span className="mono" style={{ color: "var(--accent)" }}>
-              you have: {item.fit.skills.matched.join(" · ")}
-            </span>
-          )}
-          {item.fit.skills.missing.length > 0 && (
-            <span className="mono" style={{ color: "var(--faint-readable)" }}>
-              {/* Without a resume there is nothing to be missing *from* —
-                  saying so would imply a judgement we have not made. */}
-              {hasResume ? "not on your resume: " : "this role names: "}
-              {item.fit.skills.missing.join(" · ")}
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Every score is explained. A number with no reasons would be a bug.
-          The skills reason is omitted when the gap line above already says it
-          in more detail — the same fact twice reads as noise. */}
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1">
-        {item.fit.reasons
-          .filter((r) => !(hasSkillData && r.dimension === "skills"))
-          .map((r, i) => (
-            <span
-              key={i}
-              className="mono"
-              title={r.detail}
-              style={{
-                color: r.kind === "good" ? "var(--accent)" : "var(--faint-readable)",
-                textDecoration: r.kind === "unknown" ? "underline dotted" : "none",
-                textUnderlineOffset: "3px",
-              }}
-            >
-              {r.kind === "good" ? "+" : r.kind === "bad" ? "−" : "?"} {r.label}
-            </span>
-          ))}
+      {/* Every score is explained and the keyword gap is always reachable —
+          just not both dumped below the fold unconditionally. See
+          ScoreReasons for why the skills reason and gap line are merged.
+          `presented` already strips this to nothing on a locked score, so
+          ScoreReasons naturally renders null rather than needing its own
+          tier check — the gate lives once, in presentFit. */}
+      <div className="row-raise mt-3">
+        <ScoreReasons reasons={presented.reasons} skills={presented.skills} hasResume={hasResume} />
       </div>
     </article>
   );

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <span class="mark">arc</span>
+      <span class="wordmark">explorer</span>
+    </header>
+
+    <main id="root">
+      <p class="muted">checking this page…</p>
+    </main>
+
+    <footer>
+      <button id="settings-toggle" class="link">settings</button>
+      <div id="settings" hidden>
+        <label for="origin">Arc Explorer address</label>
+        <input id="origin" type="url" spellcheck="false" />
+        <button id="save-origin" class="secondary">save</button>
+      </div>
+    </footer>
+
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>
