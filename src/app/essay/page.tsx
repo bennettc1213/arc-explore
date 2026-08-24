@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TIER_LABELS } from "@/lib/pricing/tiers";
 
 import { BackLink } from "@/components/BackLink";
 import { UpgradeWall } from "@/components/pricing/UpgradeGate";
@@ -7,6 +8,9 @@ import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature } from "@/lib/pricing/tiers";
 
 import { EssayReviewer } from "./EssayReviewer";
+
+/** The single paid plan's display name — never hardcoded. */
+const PAID = TIER_LABELS.apply;
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +72,7 @@ export default async function EssayPage() {
         <UpgradeWall
           feature="essay_reviewer"
           access={access}
-          reasonNote={user ? "the essay reviewer is an Edge feature" : "sign in and upgrade to Edge to use the essay reviewer"}
+          reasonNote={user ? `the essay reviewer is ${PAID} only` : `sign in and upgrade to ${PAID} to use the essay reviewer`}
         />
       )}
 

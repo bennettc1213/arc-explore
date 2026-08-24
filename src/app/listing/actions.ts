@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { TIER_LABELS } from "@/lib/pricing/tiers";
 
 import { requireUser } from "@/lib/auth";
 import { buildCoverLetterContext } from "@/lib/cover-letter/context";
@@ -24,6 +25,9 @@ import { ensureProfile, getLatestResume, getProfile } from "@/lib/profile/store"
 import { toScoreProfile, type UserProfile } from "@/lib/profile/types";
 import { EMPTY_PARSED_RESUME, coerceParsedResume, type ParsedResume } from "@/lib/resume/types";
 import { skillsFromParsedResume } from "@/lib/score/skills";
+
+/** The single paid plan's display name — never hardcoded. */
+const PAID = TIER_LABELS.apply;
 
 export interface LetterActionState {
   status: "idle" | "saved" | "error";
@@ -102,8 +106,8 @@ export async function generateCoverLetterAction(
         status: "error",
         message:
           access.reason === "limit_reached"
-            ? "you've used your free cover letter draft — upgrade to Edge for unlimited drafts"
-            : "cover letter drafts require the Edge plan",
+            ? `you've used your free cover letter draft — upgrade to ${PAID} for unlimited drafts`
+            : `cover letter drafts require the ${PAID} plan`,
       };
     }
   }

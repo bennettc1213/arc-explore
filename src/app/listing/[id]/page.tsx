@@ -14,7 +14,7 @@ import { getSessionUser } from "@/lib/auth";
 import { getCoverLetter } from "@/lib/cover-letter/store";
 import { getPosting } from "@/lib/feed";
 import { getUserTier, presentFit } from "@/lib/pricing/entitlements";
-import { evaluateFeature } from "@/lib/pricing/tiers";
+import { TIER_LABELS, evaluateFeature } from "@/lib/pricing/tiers";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { hasReported } from "@/lib/reports/store";
 import { toScoreProfile } from "@/lib/profile/types";
@@ -347,7 +347,7 @@ export default async function ListingPage({
           />
           {presented.locked && (
             <p className="mono" style={{ marginTop: 8, color: "var(--faint-readable)" }}>
-              upgrade to Edge to see the full score, the factor breakdown, and what this role
+              upgrade to {TIER_LABELS.apply} to see the full score, the factor breakdown, and what this role
               names that your resume does not
             </p>
           )}

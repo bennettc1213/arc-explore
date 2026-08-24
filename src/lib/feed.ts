@@ -28,6 +28,7 @@ import {
   type ScoreProfile,
   type FitResult,
 } from "./score/fit";
+import { relevanceScore } from "./score/relevance";
 import { dayIndex, rotationRank } from "./score/rotation";
 import { scholarshipFields, scoreScholarshipFit } from "./score/scholarship-fit";
 import {
@@ -250,9 +251,46 @@ function sortKey(item: FeedItem, timingPoints: number): number {
  * what is still worth acting on rises among comparable matches without
  * anything unsuitable being promoted past them.
  */
-function makeRank(timingPoints: number, day: number) {
+function makeRank(timingPoints: number, day: number, terms: string[] = []) {
+  const searching = terms.length > 0;
+  // Computed once per row per sort, not once per comparison — `sort` calls the
+  // comparator O(n log n) times and this walks the title with a regex.
+  const relevance = new Map<string, number>();
+  const relevanceOf = (item: FeedItem): number => {
+    let v = relevance.get(item.id);
+    if (v === undefined) {
+      v = relevanceScore(
+        { title: item.title, company: item.company, eligibility: item.eligibility },
+        terms,
+      );
+      relevance.set(item.id, v);
+    }
+    return v;
+  };
+
   return function rank(a: FeedItem, b: FeedItem): number {
     if (a.fit.blocked !== b.fit.blocked) return a.fit.blocked ? 1 : -1;
+
+    /*
+     * WHEN THE STUDENT TYPED SOMETHING, THAT COMES FIRST.
+     *
+     * Not blended with fit, and the corpus is why. Search used to filter
+     * without ranking, so "engineering" returned 396 rows led by a garden-club
+     * award and "nursing" was led by a rodeo foundation — both genuinely
+     * contained the term, so the filter was right and only the order was
+     * wrong. A blend would still let a high-fit near-miss outrank an exact
+     * title match, which is the same failure wearing a smaller number.
+     *
+     * Fit has not been discarded: it is the tiebreaker immediately below, so
+     * among rows that match the query equally well the student still sees the
+     * ones that suit them first. That is the honest division of labour — the
+     * query decides what this list is about, the profile decides the order
+     * within it.
+     */
+    if (searching) {
+      const byRelevance = relevanceOf(b) - relevanceOf(a);
+      if (byRelevance) return byRelevance;
+    }
 
     const ak = sortKey(a, timingPoints);
     const bk = sortKey(b, timingPoints);
@@ -543,7 +581,7 @@ export async function getFeed(
    * ordering — `sort` may do anything at all with a comparator that
    * contradicts itself.
    */
-  filtered.sort(makeRank(filters.timingPoints ?? 0, dayIndex()));
+  filtered.sort(makeRank(filters.timingPoints ?? 0, dayIndex(), parseSearchQuery(filters.q)));
   // Rank first, then trim — never a SQL LIMIT. See the comment on the query
   // above: trimming before ranking lets whichever kind was ingested last crowd
   // the other out of the top N entirely.

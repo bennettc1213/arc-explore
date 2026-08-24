@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { TIER_LABELS } from "@/lib/pricing/tiers";
 
 import { requireUser } from "@/lib/auth";
 import {
@@ -13,6 +14,9 @@ import {
 import { isApplicationStatus } from "@/lib/applications/types";
 import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature } from "@/lib/pricing/tiers";
+
+/** The single paid plan's display name — never hardcoded. */
+const PAID = TIER_LABELS.apply;
 
 /**
  * Tracker mutations.
@@ -52,7 +56,7 @@ export async function setStatusAction(
     if (!access.usable) {
       return {
         status: "error",
-        message: `you're tracking ${access.limit} postings on the free plan — upgrade to Edge to track more`,
+        message: `you're tracking ${access.limit} postings on the free plan — upgrade to ${PAID} to track more`,
       };
     }
   }

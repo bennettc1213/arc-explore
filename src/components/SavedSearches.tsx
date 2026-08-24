@@ -12,6 +12,7 @@ import {
 import { describeFilters, filtersToQuery, type SavedFilters } from "@/lib/searches/types";
 
 import { PendingButton } from "./PendingButton";
+import { TIER_LABELS } from "@/lib/pricing/tiers";
 
 const INITIAL: SaveSearchState = { status: "idle" };
 
@@ -63,7 +64,7 @@ export function SavedSearches({
           <span className="mono" style={{ color: "var(--faint-readable)" }}>
             🔒{" "}
             <Link href="/pricing" style={{ color: "var(--accent)" }}>
-              Edge
+              {TIER_LABELS.apply}
             </Link>{" "}
             — a saved search exists to alert you, and alerts are a paid feature
           </span>

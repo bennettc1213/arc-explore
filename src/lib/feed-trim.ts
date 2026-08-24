@@ -12,12 +12,19 @@ import { POSTING_KINDS, type PostingKind } from "@/db/schema";
 /**
  * How many ranked matches the free plan shows.
  *
- * Twenty is a set someone actually reads to the bottom, which is the point:
- * the free plan exists to prove the ranking is worth trusting, and a student
- * who scrolls fifty rows without reaching the end learns nothing about
- * whether the top of the list was any good.
+ * Ten is a set someone actually reads to the bottom, which is the point: the
+ * free plan exists to prove the ranking is worth trusting, and a student who
+ * scrolls fifty rows without reaching the end learns nothing about whether the
+ * top of the list was any good.
+ *
+ * CUT FROM TWENTY once search began ranking by relevance. Twenty was chosen
+ * when a query could only *filter*, so depth was the only way a free user
+ * found anything specific; now that a search is ordered by how well it
+ * actually matches, ten well-matched rows beat twenty mediocre ones and the
+ * upgrade is a straightforwardly honest one — more of a list that is already
+ * good, rather than the first list that works.
  */
-export const FREE_DAILY_RESULTS = 20;
+export const FREE_DAILY_RESULTS = 10;
 
 /**
  * Slots held for each kind inside a capped list.
@@ -37,6 +44,31 @@ export const FREE_DAILY_RESULTS = 20;
  * the same way, with reserved slots per kind.
  */
 export const FEED_MIN_PER_KIND = 5;
+
+/**
+ * The share of any capped window each kind is guaranteed, when it has the rows
+ * to fill it.
+ *
+ * A PROPORTION, BECAUSE A FIXED COUNT PUT THE PAID FEED BEHIND THE FREE ONE.
+ * `FEED_MIN_PER_KIND` was applied only to the free window — `page.tsx` passed
+ * `reservePerKind: dailyCapped ? FEED_MIN_PER_KIND : 0` — so a paying
+ * subscriber got the raw ranking and therefore the full force of the
+ * cross-kind bias the reservation exists to answer. Measured on a real
+ * profile: free showed 15 scholarships / 5 internships, **paid showed 46 / 4**.
+ * The tier that pays was strictly worse mixed than the one that does not.
+ *
+ * A fixed five cannot fix that by simply being applied to both, because five
+ * of ten is a floor of 50% while five of fifty is 10% — the same constant
+ * means something different at every window size, which is precisely how the
+ * two tiers drifted apart. A quarter of the window to each kind holds the same
+ * promise at any depth, and still leaves half the list to the global ranking.
+ */
+export const FEED_KIND_FLOOR = 0.25;
+
+/** Slots to reserve per kind for a window of `limit` rows. */
+export function reservationFor(limit: number): number {
+  return Math.max(1, Math.round(limit * FEED_KIND_FLOOR));
+}
 
 /**
  * Trim a ranked list to `limit`, guaranteeing each kind a minimum first.

@@ -47,3 +47,5 @@ next-env.d.ts
 # Generated, never edited by hand — a committed copy is a second definition
 # of the autofill rules waiting to drift from the tested one.
 extension/vendor/
+
+.vercel

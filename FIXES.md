@@ -288,13 +288,17 @@ only you can make, and the feature on the other side of it is already written.
   above, which is fine here because the cost of a false positive is one
   down-ranked row rather than an invented field match._
 
-  _**The paid feed is worse-mixed than the free one.** `page.tsx` passes
+  _**The paid feed is worse-mixed than the free one.** FIXED — `page.tsx` had
   `reservePerKind: dailyCapped ? FEED_MIN_PER_KIND : 0`, so the per-kind
-  reservation applies **only to the free 20**. Measured before the taxonomy
-  fix: free showed 15 scholarships / 5 internships, paid showed **46 / 4**. The
-  tier that pays gets the raw ranking and therefore the full brunt of any
-  cross-kind bias. Worth deciding whether the reservation should scale with the
-  limit rather than switch off above it._
+  reservation applied **only to the free window** and a paying subscriber got
+  the raw ranking plus the full force of the cross-kind bias. Measured before:
+  free 15 scholarships / 5 internships, paid **46 / 4**. Applying the flat five
+  to both would not have fixed it — five of ten is a 50% floor and five of
+  fifty is 10%, so a constant means a different promise at every window size,
+  which is how the tiers drifted apart in the first place. Replaced with
+  `FEED_KIND_FLOOR = 0.25` and `reservationFor(limit)`, a proportion that holds
+  the same promise at any depth and still leaves half the window to the global
+  ranking. A window showing everything still reserves nothing._
 
 - [x] **Unbounded short words in the field taxonomy invented field matches.**
   Fixed in `MAJOR_TO_FIELDS`. Unbounded `law` matched **"Delaware"**,
@@ -1227,6 +1231,68 @@ measured.
   the table is not read as unconditional.
 
 ---
+
+### Session 6 - search that ranks, and two plans instead of three
+
+- [x] **Search filtered but never ranked, so the top hit was routinely
+  irrelevant.** Reported as "the search engine needs to be much better".
+  Measured against the live corpus first: **"engineering" returned 396 rows led
+  by "National Garden Clubs Inc. Scholarship"**, and "nursing" returned 15 led
+  by "Reno Rodeo Foundation Scholarship". Both genuinely contain the term - the
+  garden club's eligibility prose mentions engineering - so **the filter was
+  right and the ordering was the entire bug**: `getFeed` pushed an
+  AND-of-substrings into SQL and then sorted the survivors by *fit score*, so
+  the query decided membership and had no say at all in position.
+
+  _Fixed with `score/relevance.ts` plus a comparator that puts relevance first
+  whenever the student typed something. Since every row reaching the ranker
+  already contains every term, relevance cannot be about *whether* it matched -
+  it scores **where**: title beats sponsor beats eligibility, a whole word
+  beats a substring inside a longer one (the boundary lesson `law`
+  matching "Delaware" already taught this project), leading the title beats
+  appearing later in it, and the query as a contiguous phrase beats its words
+  scattered._
+
+  _**Relevance-first, not blended with fit**, because a blend still lets a
+  high-fit near-miss outrank an exact title match - the same failure wearing a
+  smaller number. Fit is the immediate tiebreaker instead, so among rows that
+  match the query equally well the student still sees the ones that suit them
+  first: the query decides what the list is about, the profile orders within
+  it. Measured after - "engineering" to *Engineering Internship Program 2026*,
+  "nursing" to *Mildred Nutting Nursing Scholarship*, "computer science" to
+  *Computer Science Internship*, "STEM" to *STEM Teachers for America's
+  Future*. Nine tests pin the behaviours including the two live regressions._
+- [x] **Pricing collapsed from three tiers to two.** Free + **Apply at
+  $5.99/mo**, replacing Edge ($6.99) and Apply ($14.99); the single paid plan
+  takes everything both had, browser-extension autofill included. `tiers.ts`
+  was already the one definition, so this was mechanical: the `edge` column
+  came out of all 21 feature limit records and the paid plan kept the `apply`
+  values. **The type system found every call site** - 10 of them - which is the
+  argument for that file existing.
+
+  _Two decisions worth keeping. **A legacy `edge` row in the database maps UP
+  to Apply, not down to free** (`getUserTier`, with the digest and saved-search
+  SQL agreeing): failing closed is right when it stops someone getting access
+  they did not buy, and wrong when it would silently downgrade a subscriber.
+  **`DEV_TIER=edge` does the opposite and is refused**, because that is a
+  hand-edited env var naming a plan that does not exist, not an entitlement
+  someone already held. And seven user-facing strings hardcoded "Edge" - an
+  upgrade prompt naming a plan that no longer exists - now read
+  `TIER_LABELS.apply`, which is what tiers.ts's own rule said all along._
+- [x] **Free depth cut from 20 to 10.** Made honest by the search fix: twenty
+  was chosen when a query could only filter, so depth was the only way a free
+  user found anything specific. With results ordered by relevance, ten
+  well-matched rows beat twenty mediocre ones.
+- [ ] **Search still has no typo tolerance and cannot see structured facts.**
+  Measured: `"software enginer"` returns **0 rows** and `"$5000"` returns 0
+  despite `amount_min`/`amount_max` being columns. Both belong in the SQL
+  filter, not the ranker - a ranker scoring on a different notion of "match"
+  than the filter would order rows by a rule the result set was never selected
+  under. Trigram (`pg_trgm`) is the route for the first; the second is parsing
+  an amount out of the query and applying it as a range. Also worth knowing why
+  search sees so little: **only 59 of 1,879 open scholarships carry any
+  eligibility text and 0 carry a description**, so search is effectively
+  title-and-sponsor only. That is an ingestion gap, not a search one.
 
 ## 6. Deliberately not built — revisit only if asked
 

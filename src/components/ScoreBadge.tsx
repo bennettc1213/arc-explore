@@ -17,6 +17,8 @@
  * show less of it. The two must never look identical, or a free user cannot
  * tell "we don't know" from "you're not seeing the number".
  */
+
+import { TIER_LABELS } from "@/lib/pricing/tiers";
 export function ScoreBadge({
   label,
   value,
@@ -47,7 +49,7 @@ export function ScoreBadge({
         style={{ borderColor: "var(--line-strong)", background: "transparent" }}
         title={
           bucketPartial
-            ? `Based on ${known} of ${total} factors — the rest are not stated in this posting. Upgrade to Edge for the full score and breakdown.`
+            ? `Based on ${known} of ${total} factors — the rest are not stated in this posting. Upgrade to ${TIER_LABELS.apply} for the full score and breakdown.`
             : "Upgrade to Edge to see the full score and factor breakdown"
         }
       >

@@ -9,7 +9,7 @@ import { recordEvent } from "@/lib/analytics/record";
 import { statusesForPostings } from "@/lib/applications/store";
 import { getSessionUser } from "@/lib/auth";
 import { getAvailableTerms, getFeed, getFeedStats, newSinceFromDays } from "@/lib/feed";
-import { FEED_MIN_PER_KIND, FREE_DAILY_RESULTS } from "@/lib/feed-trim";
+import { FREE_DAILY_RESULTS, reservationFor } from "@/lib/feed-trim";
 import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature, TIER_PRICE_USD, TIMING_PRIORITY_POINTS } from "@/lib/pricing/tiers";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
@@ -260,9 +260,22 @@ export default async function FeedPage({
       excludeMarketing,
       newSince: newSinceDays ? newSinceFromDays(newSinceDays) : null,
       limit: show,
-      // Only on the capped list — see FEED_MIN_PER_KIND. The full feed shows
-      // everything, so nothing can be crowded out of it.
-      reservePerKind: dailyCapped ? FEED_MIN_PER_KIND : 0,
+      /*
+       * EVERY capped window, not just the free one. This used to read
+       * `dailyCapped ? FEED_MIN_PER_KIND : 0`, which meant a paying subscriber
+       * got the raw ranking and therefore the full force of the cross-kind
+       * bias the reservation exists to answer — measured at 46 scholarships /
+       * 4 internships on paid against 15 / 5 on free. The tier that pays was
+       * worse mixed than the one that does not.
+       *
+       * Proportional (`reservationFor`) rather than a flat five, because a
+       * constant means a different promise at every window size and that is how
+       * the two tiers drifted apart in the first place. A window showing
+       * everything still reserves nothing: `trimWithReservation` returns a
+       * plain slice once the list is shorter than the limit, so nothing can be
+       * crowded out of a complete feed.
+       */
+      reservePerKind: reservationFor(show),
       // The paid entitlement: how much of the ranking comes from timing rather
       // than fit. 0 on free, which is the ranking that existed before this.
       timingPoints: TIMING_PRIORITY_POINTS[tier],
