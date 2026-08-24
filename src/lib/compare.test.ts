@@ -106,7 +106,7 @@ test("the higher fit score is marked", () => {
   const c = buildComparison(
     [item({ fit: { ...item().fit, score: 80 } }), item({ id: "b", fit: { ...item().fit, score: 40 } })],
     NOW,
-    "edge",
+    "apply",
   );
   const fit = c.rows.find((r) => r.label === "fit");
   assert.equal(fit?.cells[0].best, true);

@@ -70,7 +70,7 @@ test("an unverified feature is usable, and carries its caveat", () => {
   assert.equal(statusNote("unverified"), "built, not yet verified end-to-end");
 
   // And it is still tier-gated: unverified is about doneness, not entitlement.
-  assert.equal(evaluateFeature("edge", "extension_autofill_internships").usable, false);
+  assert.equal(evaluateFeature("free", "extension_autofill_internships").usable, false);
   assert.equal(evaluateFeature("free", "extension_autofill_internships").usable, false);
 });
 
@@ -107,7 +107,7 @@ test("a capped feature runs out, and reports how much is left on the way", () =>
 });
 
 test("paid tiers are unlimited on the capped tools, and a count never changes that", () => {
-  for (const tier of ["edge", "apply"] as const) {
+  for (const tier of ["apply"] as const) {
     const access = evaluateFeature(tier, "resume_critique", 10_000);
     assert.equal(access.usable, true);
     assert.equal(access.unlimited, true);
@@ -124,7 +124,7 @@ test("a feature not included on a tier is refused regardless of usage count", ()
 
 test("every tier includes everything the tier below it includes", () => {
   /*
-   * "Everything in Free, plus…" and "everything in Edge, plus…" are promises
+  * "Everything in Free, plus…" is a promise
    * on the pricing page. A limit that went *down* as the price went up would
    * be invisible in review and infuriating to whoever hit it.
    */
@@ -156,15 +156,13 @@ test("the free tier keeps the things promised as free forever", () => {
 
 test("prices are ordered and the paid ones are the stated figures", () => {
   assert.equal(TIER_PRICE_USD.free, 0);
-  assert.equal(TIER_PRICE_USD.edge, 6.99);
-  assert.equal(TIER_PRICE_USD.apply, 14.99);
-  assert.ok(TIER_PRICE_USD.apply > TIER_PRICE_USD.edge);
+  assert.equal(TIER_PRICE_USD.apply, 5.99);
 });
 
 test("minimumTierFor names the cheapest tier that includes a feature", () => {
   assert.equal(minimumTierFor("feed_browse"), "free");
   assert.equal(minimumTierFor("resume_critique"), "free");
-  assert.equal(minimumTierFor("essay_reviewer"), "edge");
+  assert.equal(minimumTierFor("essay_reviewer"), "apply");
   assert.equal(minimumTierFor("extension_autofill_internships"), "apply");
 });
 
@@ -180,12 +178,11 @@ test("every metered usage key is a real feature key", () => {
   }
 });
 
-test("tierAtLeast orders the three tiers", () => {
+test("tierAtLeast orders the two tiers", () => {
   assert.equal(tierAtLeast("free", "free"), true);
-  assert.equal(tierAtLeast("free", "edge"), false);
-  assert.equal(tierAtLeast("edge", "free"), true);
-  assert.equal(tierAtLeast("apply", "edge"), true);
-  assert.equal(tierAtLeast("edge", "apply"), false);
+  assert.equal(tierAtLeast("free", "apply"), false);
+  assert.equal(tierAtLeast("apply", "free"), true);
+  assert.equal(tierAtLeast("apply", "apply"), true);
 });
 
 test("the fit bucket agrees with ScoreBadge's own strong threshold", () => {
@@ -245,7 +242,7 @@ test("the confidence marker survives the paywall", () => {
 });
 
 test("paid tiers receive the score, the confidence marker and the gap intact", () => {
-  for (const tier of ["edge", "apply"] as const) {
+  for (const tier of ["apply"] as const) {
     const shown = presentFit(FIT, tier);
     assert.equal(shown.score, 87);
     assert.equal(shown.locked, false);

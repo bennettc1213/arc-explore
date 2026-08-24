@@ -38,7 +38,6 @@ export type TierId = PlanId;
 
 export const TIER_LABELS: Record<TierId, string> = {
   free: "See it",
-  edge: "Edge",
   apply: "Apply",
 };
 
@@ -54,13 +53,11 @@ export const TIER_LABELS: Record<TierId, string> = {
  */
 export const TIER_PRICE_USD: Record<TierId, number> = {
   free: 0,
-  edge: 6.99,
-  apply: 14.99,
+  apply: 5.99,
 };
 
 export const TIER_TAGLINES: Record<TierId, string> = {
   free: "see it",
-  edge: "generate with it",
   apply: "apply with it",
 };
 
@@ -111,7 +108,6 @@ export const TIER_TAGLINES: Record<TierId, string> = {
  */
 export const TIMING_PRIORITY_POINTS: Record<TierId, number> = {
   free: 0,
-  edge: 10,
   apply: 20,
 };
 
@@ -205,7 +201,7 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
       "Search and filter the whole corpus — every internship and scholarship, on every tier. " +
       "Filters, search and opening any listing are never limited.",
     status: "live",
-    limits: { free: null, edge: null, apply: null },
+    limits: { free: null, apply: null },
   },
   feed_full_depth: {
     key: "feed_full_depth",
@@ -214,14 +210,14 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
       "Free shows your 20 highest-ranked matches, re-ranked as new postings arrive and " +
       "deadlines approach. Paid shows the full ranked list.",
     status: "live",
-    limits: { free: 0, edge: null, apply: null },
+    limits: { free: 0, apply: null },
   },
   deadline_reminders: {
     key: "deadline_reminders",
     label: "Deadline reminders",
     description: "Email reminders on saved items with a stated deadline.",
     status: "live",
-    limits: { free: null, edge: null, apply: null },
+    limits: { free: null, apply: null },
   },
   fit_score_full: {
     key: "fit_score_full",
@@ -230,21 +226,21 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
       "The 0–100 score and the known/total confidence marker. Free sees a bucketed label — " +
       "Strong / Good / Low Fit — instead of the number.",
     status: "live",
-    limits: { free: 0, edge: null, apply: null },
+    limits: { free: 0, apply: null },
   },
   fit_score_gap_closer: {
     key: "fit_score_gap_closer",
     label: "Fit Score gap-closer",
     description: "The \"why this score\" breakdown and the missing-skills list per listing.",
     status: "live",
-    limits: { free: 0, edge: null, apply: null },
+    limits: { free: 0, apply: null },
   },
   resume_critique: {
     key: "resume_critique",
     label: "Resume critique",
     description: "ATS-compatibility and completeness findings against your parsed resume.",
     status: "live",
-    limits: { free: 1, edge: null, apply: null },
+    limits: { free: 1, apply: null },
   },
   smart_resume: {
     key: "smart_resume",
@@ -253,63 +249,63 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
       "The Smart Resume converter and its PDF export. Blocked on resume-structuring logic " +
       "CLAUDE.md says not to invent — see FIXES.md.",
     status: "coming_soon",
-    limits: { free: 0, edge: null, apply: null },
+    limits: { free: 0, apply: null },
   },
   cover_letter: {
     key: "cover_letter",
     label: "Cover letter drafts",
     description: "A grounded first draft per listing, editable paragraph by paragraph.",
     status: "live",
-    limits: { free: 1, edge: null, apply: null },
+    limits: { free: 1, apply: null },
   },
   github_tools: {
     key: "github_tools",
     label: "GitHub builder + audit",
     description: "The README generator, pin recommendations, and the profile audit.",
     status: "live",
-    limits: { free: 1, edge: null, apply: null },
+    limits: { free: 1, apply: null },
   },
   linkedin_tools: {
     key: "linkedin_tools",
     label: "LinkedIn builder + checker",
     description: "The headline/About draft and the pasted-text profile checker.",
     status: "live",
-    limits: { free: 1, edge: null, apply: null },
+    limits: { free: 1, apply: null },
   },
   tracker: {
     key: "tracker",
     label: "Application tracker",
     description: "Track postings through Saved → Applied → Decision.",
     status: "live",
-    limits: { free: 5, edge: null, apply: null },
+    limits: { free: 5, apply: null },
   },
   essay_reviewer: {
     key: "essay_reviewer",
     label: "Essay / SOP reviewer",
     description: "Prompt coverage, specificity, clarity and structure feedback.",
     status: "live",
-    limits: { free: 0, edge: null, apply: null },
+    limits: { free: 0, apply: null },
   },
   saved_search_alerts: {
     key: "saved_search_alerts",
     label: "Saved-search alerts",
     description: "Email when a saved search finds something new.",
     status: "live",
-    limits: { free: 0, edge: null, apply: null },
+    limits: { free: 0, apply: null },
   },
   weekly_digest: {
     key: "weekly_digest",
     label: "Weekly digest",
     description: "A weekly email of new matches, reserving slots so internships aren't crowded out.",
     status: "live",
-    limits: { free: 0, edge: null, apply: null },
+    limits: { free: 0, apply: null },
   },
   deadline_triage: {
     key: "deadline_triage",
     label: "Deadline triage",
     description: "\"What to do this week\" across everything you're tracking. Not built yet.",
     status: "coming_soon",
-    limits: { free: 0, edge: null, apply: null },
+    limits: { free: 0, apply: null },
   },
   extension_autofill_internships: {
     key: "extension_autofill_internships",
@@ -324,7 +320,7 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
     // produced at least one bug that reading it was the only way to find. So
     // it is sold as unverified rather than as finished.
     status: "unverified",
-    limits: { free: 0, edge: 0, apply: null },
+    limits: { free: 0, apply: null },
   },
   extension_autofill_scholarships: {
     key: "extension_autofill_scholarships",
@@ -333,21 +329,21 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
       "Scholarship application sites are bespoke, not a handful of ATS platforms — this has not " +
       "been built. Not built yet.",
     status: "coming_soon",
-    limits: { free: 0, edge: 0, apply: null },
+    limits: { free: 0, apply: null },
   },
   answer_bank: {
     key: "answer_bank",
     label: "Reusable answer bank",
     description: "Save and reuse answers to recurring application questions. Not built yet.",
     status: "coming_soon",
-    limits: { free: 0, edge: 0, apply: null },
+    limits: { free: 0, apply: null },
   },
   one_click_reapply: {
     key: "one_click_reapply",
     label: "One-click reapply",
     description: "Refile a past application to a similar posting. Not built yet.",
     status: "coming_soon",
-    limits: { free: 0, edge: 0, apply: null },
+    limits: { free: 0, apply: null },
   },
   priority_freshest_listings: {
     key: "priority_freshest_listings",
@@ -358,14 +354,14 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
       "corpus this is a real but modest shift: 13 of a signed-out top 20 carry a stated " +
       "deadline instead of 10. It never promotes a listing that fits you worse.",
     status: "live",
-    limits: { free: 0, edge: null, apply: null },
+    limits: { free: 0, apply: null },
   },
   semester_recap: {
     key: "semester_recap",
     label: "Semester recap",
     description: "A summary of the term's activity across the tracker. Not built yet.",
     status: "coming_soon",
-    limits: { free: 0, edge: 0, apply: null },
+    limits: { free: 0, apply: null },
   },
 };
 

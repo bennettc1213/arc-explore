@@ -173,10 +173,11 @@ export async function alertCandidates(limit = 500): Promise<AlertCandidate[]> {
     lastNotifiedAt: new Date(r.last_notified_iso),
     email: r.email,
     unsubscribeToken: r.unsubscribe_token,
-    // Fail-closed parse, the same reading `getUserTier` does — the SQL above
-    // already restricts to edge/apply, so this only guards against a value
-    // nobody expected.
-    plan: r.plan === "apply" ? "apply" : r.plan === "edge" ? "edge" : "free",
+    // The same reading `getUserTier` does, including mapping the legacy
+    // 'edge' string UP to Apply rather than down to free — see the note there.
+    // The SQL above already restricts to those two, so this only guards
+    // against a value nobody expected.
+    plan: r.plan === "apply" || r.plan === "edge" ? "apply" : "free",
   }));
 }
 

@@ -738,6 +738,11 @@ of several other finished features. If you could not find it, no student will.
 
 ## 5b. Pricing tiers & entitlement gating
 
+- [x] **The production build still referenced the retired Edge tier.** The
+  pricing model is now Free + Apply, but entitlement resolution and tests still
+  accepted `edge`, which made `next build` fail in its TypeScript pass. Runtime
+  gates and assertions now use the two-tier model; `npm run build` passes.
+
 Built 2026-08-21. Three tiers — **Free ("See it")**, **Edge ($6.99/mo)**,
 **Apply ($14.99/mo)** — with every entitlement defined in one place,
 `src/lib/pricing/tiers.ts`. No billing provider was wired up; this is the

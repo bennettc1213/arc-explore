@@ -68,11 +68,17 @@ export async function digestCandidates(limit = 1000): Promise<DigestCandidate[]>
     where p.weekly_digest_enabled
       and u.email is not null
       and u.email_confirmed_at is not null
-      -- The weekly digest is an Edge+ entitlement (src/lib/pricing/tiers.ts,
+      -- The weekly digest is a paid entitlement (src/lib/pricing/tiers.ts,
       -- "weekly_digest"). Free-tier profiles still default weekly_digest_enabled
       -- to true (see schema.ts) since that default predates pricing tiers, so
       -- this filter — not the column — is what actually keeps free accounts
       -- off the send list.
+      --
+      -- 'edge' is retained deliberately. Pricing collapsed to free + Apply, and
+      -- getUserTier maps a legacy 'edge' row UP to Apply rather than down to
+      -- free; this list has to agree with it, or a subscriber whose plan string
+      -- predates the collapse would keep the entitlement in the UI and silently
+      -- stop receiving the mail it entitles them to.
       and p.plan in ('edge', 'apply')
     order by p.last_digest_at asc
     limit ${limit}`);
@@ -92,7 +98,9 @@ export async function digestCandidates(limit = 1000): Promise<DigestCandidate[]>
         // The SQL above already restricts to edge/apply; this parse is the
         // same fail-closed reading `getUserTier` does, so an unexpected value
         // degrades to the least capable tier rather than throwing.
-        plan: r.plan === "apply" ? "apply" : r.plan === "edge" ? "edge" : "free",
+        // Legacy 'edge' maps UP to Apply, matching getUserTier — see the
+        // note on the plan filter above.
+        plan: r.plan === "apply" || r.plan === "edge" ? "apply" : "free",
       },
     ];
   });

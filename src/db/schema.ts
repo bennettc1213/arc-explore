@@ -317,7 +317,7 @@ export const postingSources = pgTable(
  * Subscription tier. See `src/lib/pricing/tiers.ts` for what each one
  * unlocks — this file only needs to know the three names exist.
  */
-export const PLAN_IDS = ["free", "edge", "apply"] as const;
+export const PLAN_IDS = ["free", "apply"] as const;
 export type PlanId = (typeof PLAN_IDS)[number];
 
 /** Mirrors auth.users.id from Supabase. RLS scopes every row below to it. */

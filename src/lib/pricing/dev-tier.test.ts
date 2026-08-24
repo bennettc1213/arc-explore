@@ -31,7 +31,14 @@ test("a production build ignores DEV_TIER entirely, whatever it says", () => {
 
 test("a named tier applies outside production", () => {
   assert.equal(devTierOverride("apply", "development"), "apply");
-  assert.equal(devTierOverride("edge", "development"), "edge");
+  // "edge" was the middle of three tiers before pricing collapsed to
+  // free + Apply. It is no longer a tier, so DEV_TIER=edge is now a typo like
+  // any other and must be refused rather than guessed at — the same direction
+  // every unrecognised value fails in. (Note this is the opposite of
+  // getUserTier, which maps a legacy 'edge' row in the DATABASE up to Apply:
+  // there we are honouring something a subscriber already had, here we are
+  // reading a hand-edited env var that names a plan which does not exist.)
+  assert.equal(devTierOverride("edge", "development"), null);
   assert.equal(devTierOverride("free", "test"), "free");
   // Whitespace and case are the two ways a hand-edited env file differs from
   // what was meant; neither is a typo worth refusing.

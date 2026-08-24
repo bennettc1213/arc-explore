@@ -63,12 +63,21 @@ export async function getUserTier(userId: string | null | undefined): Promise<Ti
     .where(eq(profiles.id, userId))
     .limit(1);
 
-  if (row?.plan === "edge" || row?.plan === "apply") return row.plan;
+  if (row?.plan === "apply") return "apply";
+  /*
+   * `edge` was the middle of three tiers before pricing collapsed to
+   * free + Apply ($5.99). It is gone from `PLAN_IDS`, but a row could still
+   * hold the string, and an unrecognised plan falling through to `free` would
+   * silently *downgrade a paying subscriber* rather than fail closed. Failing
+   * closed protects us from someone getting access they did not buy; this is
+   * the opposite case, so the legacy value maps up to the plan that replaced
+   * it. Everything else — null, empty, a typo — still resolves to free.
+   */
   return "free";
 }
 
 /** True when this tier is above free — a single boolean where a full
  *  `evaluateFeature` call would be overkill. */
 export function isPaidTier(tier: TierId): boolean {
-  return tierAtLeast(tier, "edge");
+  return tierAtLeast(tier, "apply");
 }

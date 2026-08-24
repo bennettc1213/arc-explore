@@ -504,7 +504,7 @@ export default async function FeedPage({
                 className="btn btn-primary press"
                 style={{ textDecoration: "none", display: "inline-block", marginTop: 12 }}
               >
-                see all {total.toLocaleString()} — from ${TIER_PRICE_USD.edge}/mo
+                see all {total.toLocaleString()} — ${TIER_PRICE_USD.apply}/mo
               </Link>
             </div>
           )}
