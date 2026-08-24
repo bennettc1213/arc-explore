@@ -156,7 +156,31 @@ const MAJOR_TO_FIELDS: Array<{ re: RegExp; fields: FieldKey[] }> = [
   { re: /finance|accounting|economics/i, fields: ["quant_finance", "business"] },
   { re: /business|marketing|management|supply chain/i, fields: ["business", "product"] },
   { re: /\bdesign\b|human[- ]computer/i, fields: ["product"] },
-  { re: /political science|public policy|\blaw\b|sociology|psychology/i, fields: ["business"] },
+  /*
+   * DELIBERATELY MAPPED TO NOTHING, not to `business`.
+   *
+   * This line used to read `fields: ["business"]` for law, sociology,
+   * psychology, political science and public policy — not because any of them
+   * IS business, but because the six-key taxonomy has nowhere else to put
+   * them. That is an invented match, and it was measured doing real harm: a
+   * student whose stated interests were software / data-ai / product /
+   * **business** had their whole feed taken over by law-school awards — "RMD
+   * Law Scholarship", "HMW Law Against All Odds", "Burress Injury Law
+   * Underdog" — each scoring fit 90-95 at a confident 3-of-3, burying 902
+   * newly-ingested internships beneath them. The best internship in a corpus
+   * of 4,690 sat at rank 38.
+   *
+   * Dropping the mapping is the doctrine, not a regression: an unknown field
+   * is dropped from the average and labelled, so these rows now score on award
+   * and competition alone at 2-of-3 and shrink toward the prior — whereas a
+   * wrong match is indistinguishable from a right one and silently promotes.
+   *
+   * The real fix is a taxonomy with keys for law, health, education, the
+   * sciences, arts and trades — 182 unclassifiable scholarships name exactly
+   * those subjects. That is the open product decision in FIXES.md §1: a
+   * question about who this serves, not a parser change. Until it is answered,
+   * saying nothing beats saying something wrong.
+   */
 ];
 
 /**

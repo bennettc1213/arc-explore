@@ -70,8 +70,43 @@ function awardValue(amount: number): number {
  * scholarships are unclassifiable, so any caller filtering on the result has
  * to account for them explicitly instead of quietly dropping them.
  */
+/**
+ * Sponsors whose *name* is legitimate evidence about what you must study.
+ *
+ * WHO PAYS FOR AN AWARD IS NOT WHAT YOU MUST STUDY — usually. "American Society
+ * of Mechanical Engineers" genuinely does mean hardware; "The Law Offices of
+ * David A. Kadzai, LLC" means somebody bought a backlink. Both used to be fed
+ * to `fieldsFromDegreeLanguage` identically, and the second kind was measured
+ * doing real damage on the live corpus: **"First Generation College Student
+ * Scholarship" — an award with no field requirement whatsoever — classified as
+ * `business` purely on the word "Law" inside its sponsor's company name**, and
+ * so matched an information-systems student at fit 90 with full 3-of-3
+ * confidence. "Gravitate Scholarship" did the same via "Siniard Law Injury
+ * Attorneys". It lands hardest on exactly the rows the scoring is meant to
+ * push down, because law firms and marketing agencies are what sponsor
+ * content-marketing awards in the first place.
+ *
+ * AN ALLOWLIST, NOT A DENYLIST OF `LLC`/`Law Firm`/`Agency`. A denylist has to
+ * anticipate every way a company can be named and fails open — anything it did
+ * not think of keeps inventing a field. This fails *closed*: a sponsor we
+ * cannot recognise as a scholarly or professional body is simply not read, the
+ * row scores on its title and eligibility alone, and if those state nothing
+ * the field dimension goes **unknown and is dropped** rather than counted as a
+ * miss. That is the whole doctrine applied here — an invented match is
+ * indistinguishable from a real one and silently moves a row up the ranking,
+ * while an unknown is labelled and costs the row nothing it deserved.
+ */
+const SCHOLARLY_SPONSOR_RE =
+  /(societ(y|ies)|association|foundation|institute|academy|council|federation|guild|endowment|alumni|universit(y|ies)|college|club|chapter|order of|department of|ministry of)/i;
+
 export function scholarshipFields(posting: ScholarshipScorePosting): FieldKey[] {
-  const text = [posting.title, posting.sponsorName ?? "", ...(posting.eligibility ?? [])]
+  // The sponsor is included only when its name is the kind that carries a
+  // field. See SCHOLARLY_SPONSOR_RE — this is the difference between reading
+  // an engineering society and reading a personal-injury firm.
+  const sponsor = posting.sponsorName ?? "";
+  const readableSponsor = SCHOLARLY_SPONSOR_RE.test(sponsor) ? sponsor : "";
+
+  const text = [posting.title, readableSponsor, ...(posting.eligibility ?? [])]
     .filter(Boolean)
     .join(" ");
   // Degree-language only. The role-title regexes ("security", "systems") are

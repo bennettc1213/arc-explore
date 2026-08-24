@@ -242,23 +242,60 @@ only you can make, and the feature on the other side of it is already written.
   the two scorers should be normalised to a common number of dimensions, or
   whether cross-kind ranking should be abandoned in favour of ranking within
   each kind.
-- [ ] **Sponsor company names are read as degree language.**
-  `scholarshipFields` feeds title + **sponsor name** + eligibility through
-  `fieldsFromDegreeLanguage`, so *who pays for* an award is treated as evidence
-  about *what you must study*. Live examples from the digest's own top picks:
-  "Mendoza Law Firm" and "Red Egg Marketing" both classified **business** — the
-  first two recommendations in the email — on the strength of the sponsor's
-  line of work alone. Neither scholarship states a field. It needs a judgement
-  rather than a patch, because the same field sometimes carries real signal:
-  "American Society of Mechanical Engineers" as sponsor genuinely does mean
-  hardware. Options are to drop sponsor from field derivation, or to exclude
-  commercial-entity names (`LLC`, `PLLC`, `Law Firm`, `Agency`, `Marketing`)
-  while keeping societies and foundations. It also lands hardest on exactly the
-  rows the scoring is meant to down-rank, since law firms and marketing
-  agencies are what sponsor content-marketing awards.
-  _Partly addressed:_ the unbounded-substring half of this **is fixed** — see
-  the boundary fix below. The remaining issue is that `\blaw\b` legitimately
-  matches "Law Firm", and the sponsor should probably not have been read at all.
+- [x] **Sponsor company names were read as degree language, and law/psychology
+  were crammed into `business`.** Reported as "I logged back in and it's the
+  same scholarships though", after the ingest cron was fixed and 902 fresh
+  internships had landed. Two distinct faults, both measured on the live corpus
+  against the reporter's own profile (information systems, 21 skills, interests
+  software / data-ai / product / **business**):
+
+  _**(1) The sponsor's line of work was treated as evidence about what you must
+  study.** `scholarshipFields` fed title + **sponsor name** + eligibility
+  through `fieldsFromDegreeLanguage`, so "First Generation College Student
+  Scholarship" — an award with no field requirement at all — classified as
+  `business` on the word "Law" inside *"The Law Offices of David A. Kadzai,
+  LLC"*. Same for "Gravitate Scholarship" via "Siniard Law Injury Attorneys".
+  Fixed with `SCHOLARLY_SPONSOR_RE`, an **allowlist** rather than a denylist of
+  `LLC`/`Law Firm`/`Agency`: a denylist must anticipate every way a company can
+  be named and fails open, while an allowlist fails closed — an unrecognised
+  sponsor is simply not read, and the row scores on title and eligibility
+  alone. "American Society of Mechanical Engineers" still reads as hardware,
+  which is the case that made this a judgement rather than a deletion._
+
+  _**(2) `law|sociology|psychology|political science|public policy → business`
+  was an invented match.** None of those is business; the mapping existed only
+  because the taxonomy has no key for them. For a student who ticked "business"
+  it handed the entire feed to law-firm content-marketing awards — "RMD Law
+  Scholarship", "HMW Law Against All Odds", "Burress Injury Law Underdog" —
+  each at fit 90-95 on a confident **3-of-3**. Now mapped to nothing, so the
+  field dimension goes unknown, is dropped rather than counted as a miss, and
+  the row shrinks toward the prior at 2-of-3._
+
+  _**Measured, same profile, before → after: the best internship in a corpus of
+  4,690 moved from rank 38 to rank 6** on the paid feed (15 → 4 on free), and
+  the law awards left the top entirely. One test changed — it had pinned
+  `"open to law students" → ["business"]` — and now asserts the absence, with
+  the reasoning written beside it._
+- [ ] **Two follow-ons this exposed, both still open.**
+  _**Content marketing is badly under-tagged.** "RMD Law Scholarship" ($2,500,
+  sponsored by RMD Law), "Burress Injury Law Underdog" ($5,000) and "Red Egg
+  Marketing Scholarship" ($2,500) are textbook link-building awards and all
+  three carry `is_content_marketing = false`; only **123 of 1,879** open
+  scholarships are tagged at all. The competition dimension therefore cannot
+  down-rank the rows it was built for. A sponsor-name signal (law firm,
+  marketing agency, `LLC`) plus a small-award threshold would catch most of
+  them — note this is the denylist deliberately rejected for field derivation
+  above, which is fine here because the cost of a false positive is one
+  down-ranked row rather than an invented field match._
+
+  _**The paid feed is worse-mixed than the free one.** `page.tsx` passes
+  `reservePerKind: dailyCapped ? FEED_MIN_PER_KIND : 0`, so the per-kind
+  reservation applies **only to the free 20**. Measured before the taxonomy
+  fix: free showed 15 scholarships / 5 internships, paid showed **46 / 4**. The
+  tier that pays gets the raw ranking and therefore the full brunt of any
+  cross-kind bias. Worth deciding whether the reservation should scale with the
+  limit rather than switch off above it._
+
 - [x] **Unbounded short words in the field taxonomy invented field matches.**
   Fixed in `MAJOR_TO_FIELDS`. Unbounded `law` matched **"Delaware"**,
   "Lawrence", "outlaw", "flawless" and "lawn", so every scholarship whose

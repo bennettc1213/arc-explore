@@ -170,7 +170,20 @@ describe("fieldsFromDegreeLanguage word boundaries", () => {
   });
 
   it("still reads the degrees these patterns exist for", () => {
-    assert.deepEqual(fieldsFromDegreeLanguage("open to law students"), ["business"]);
+    /*
+     * Law now yields NOTHING, and that is the assertion, not an omission.
+     * It used to return ["business"] — not because law is business, but
+     * because the six-key taxonomy had nowhere else to put it. That invented
+     * match was measured taking over a real student's feed with law-school
+     * awards at a confident 3-of-3 while 902 fresh internships sat beneath
+     * them. An unknown field is dropped and labelled; a wrong one silently
+     * promotes. See the note on MAJOR_TO_FIELDS in score/fit.ts, and the
+     * taxonomy decision in FIXES.md §1 that would give law its own key.
+     */
+    assert.deepEqual(fieldsFromDegreeLanguage("open to law students"), []);
+    // The word-boundary fix this test exists for is unaffected either way:
+    // "Delaware" must not read as law under any mapping.
+    assert.deepEqual(fieldsFromDegreeLanguage("must be a Delaware resident"), []);
     assert.deepEqual(fieldsFromDegreeLanguage("for mathematics majors"), [
       "quant_finance",
       "data_ai",
