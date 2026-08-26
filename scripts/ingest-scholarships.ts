@@ -13,6 +13,7 @@ import "dotenv/config";
 
 import { closeDb } from "../src/db/client";
 import * as cftexas from "../src/lib/scholarships/cftexas";
+import * as iup from "../src/lib/scholarships/iup";
 import * as parse from "../src/lib/scholarships/parse";
 import * as unl from "../src/lib/scholarships/unl";
 import * as unr from "../src/lib/scholarships/unr";
@@ -30,6 +31,7 @@ const SOURCES: Source[] = [
   { name: "cftexas", fetchScholarships: cftexas.fetchScholarships },
   { name: "unl", fetchScholarships: unl.fetchScholarships },
   { name: "unr", fetchScholarships: unr.fetchScholarships },
+  { name: "iup", fetchScholarships: iup.fetchScholarships },
   { name: "scholarshipscom", fetchScholarships: parse.fetchScholarshipsCom },
   { name: "scholarshipportal", fetchScholarships: parse.fetchScholarshipPortal },
 ];

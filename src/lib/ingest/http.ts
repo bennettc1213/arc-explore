@@ -7,10 +7,26 @@
  * failure, and never retry a 4xx that will not change.
  */
 
-/** Identifies the crawler so an operator can contact us or block us cleanly. */
+/**
+ * Identifies the crawler so an operator can contact us or block us cleanly.
+ *
+ * This string is sent to ~1,100 employer ATS boards and every scholarship host
+ * we scrape, so it is the one place this product introduces itself to people
+ * who never asked to hear from it. Two things it used to get wrong:
+ *
+ *  - It named the product `internship-tracker` and pointed at a bare
+ *    `https://github.com/` — a courtesy URL with no repository on the end of
+ *    it, which is no courtesy at all. It now matches the link checker's
+ *    string, so a host operator who looks us up from either request lands in
+ *    the same place. **Both 404 until the GitHub repo is renamed to
+ *    `instela`** — see FIXES.md §7.
+ *  - It carried the owner's personal email address. The repository is a better
+ *    contact route and is not a personal identifier; the link checker already
+ *    made that call and this now agrees with it.
+ */
 export const USER_AGENT =
   process.env.INGEST_USER_AGENT ??
-  "internship-tracker/0.1 (+https://github.com/; contact: bennettch1213@gmail.com)";
+  "Mozilla/5.0 (compatible; instela ingest; +https://github.com/bennettc1213/instela)";
 
 export class HttpError extends Error {
   constructor(

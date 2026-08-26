@@ -87,8 +87,25 @@ only you can make, and the feature on the other side of it is already written.
   re-running `npm run ingest:scholarships -- --source scholarshipportal`.
 - [ ] **Smart Resume structuring logic (Phase 03).** The roadmap line says "the
   logic you provide" and it has not landed. Do not invent a structure for it.
-- [~] **`DATABASE_URL` repo secret — the push half is done, the secret half is
-  yours.** `master` was pushed 2026-08-23 (`65b9d72..13049f3`), so all seven
+- [x] **`DATABASE_URL` repo secret — DONE, and the cron is live.**
+  _Verified 2026-08-26 against the Actions API: **460 workflow runs**,
+  `ingest-fast` succeeding on schedule with the last run 26 minutes before
+  checking, `check-links` green too. `ingest:status` agrees from the other
+  side — 950 boards polled, **577 rows able to say "confirmed live" within the
+  hour**, 35 new internships in 24h. The corpus is now self-maintaining and the
+  "every time I log on it's the same listings" report is structurally closed:
+  it no longer depends on someone typing the command._
+
+  _**The `npm install` workaround is holding.** All 28 `ingest-fast` failures
+  were on 2026-08-23 (21) and 2026-08-24 (7) — the two days the lockfile fix
+  was landing. Since then: 25 green on 8/24, 32 on 8/25, 5 on 8/26, **zero
+  failures**. Restoring `npm ci` (§7) is still worth doing but is no longer
+  urgent._
+
+  _Original entry, kept for the reasoning:_
+
+- [x] **`DATABASE_URL` repo secret — the push half was done, the secret half
+  was yours.** `master` was pushed 2026-08-23 (`65b9d72..13049f3`), so all seven
   workflows are now on the default branch, which is where GitHub requires them
   to be for a `schedule` trigger to fire at all. **What remains is one repo
   secret**: `DATABASE_URL`, at
@@ -132,6 +149,40 @@ only you can make, and the feature on the other side of it is already written.
   set and the repo is pushed, the only thing keeping the corpus fresh is
   someone typing the command. The two Parse-metered sources were deliberately
   left alone — the balance has to be checked first, per the entry above._
+- [ ] **`ingest-daily` fails every single run, on one step: `ingest usajobs`.**
+  Found 2026-08-26 by reading the Actions API rather than `ingest:status` —
+  **`ingest:status` cannot show this, because it only records runs that
+  succeeded.** Both scheduled runs (8/24, 8/25) are red and the step breakdown
+  is unambiguous: `discover companies` **succeeds**, `ingest usajobs`
+  **fails**, everything after is skipped.
+
+  _Cause is almost certainly two missing repo secrets rather than a code bug.
+  `ingest-daily.yml:85-86` passes `USAJOBS_API_KEY` and `USAJOBS_USER_AGENT`
+  from `secrets.*`; `DATABASE_URL` is set (which is why the discovery step
+  beside it works and why `ingest-fast` is green), but these two are not. Both
+  **exist in local `.env`** — 44 chars and 23 chars — so this is a copy, not a
+  registration. Add them at
+  `github.com/<repo>/settings/secrets/actions`._
+
+  _**What it costs while broken:** USAJobs is 21 federal student postings and
+  the only source in the corpus where **100% carry a real employer-stated
+  deadline**, which is exactly the data the Phase 05 deadline reminders need
+  and which ATS internships almost never publish. Company discovery is
+  unaffected — that step passes._
+
+- [ ] **108 of 1,104 employer boards have failed 5+ consecutive polls**
+  (measured 2026-08-26; `ingest:status` reports 155 failing / 151 backed off at
+  the ≥1 threshold). Spread across all four ATS families rather than
+  concentrated — greenhouse 49, smartrecruiters 23, ashby 22, lever 14 — so it
+  is **not one adapter breaking**; the likelier cause is employers deleting or
+  renaming boards, which is a normal thing for a board to do. Needs a decision
+  rather than a fix: a board that has failed five times running is probably
+  gone, and the question is whether its still-open postings should keep
+  claiming freshness. Note this interacts with the two-observation doctrine —
+  a failing *poll* is `no information`, exactly like a 403 in `linkcheck.ts`,
+  so it must not close anything on its own. Retiring the board and marking its
+  rows `periodic_check` would be the honest move; closing them would not.
+
 - [ ] **Field taxonomy decision — does this serve non-tech students?** `FIELDS`
   has six keys, all tech/business. Of 1,632 unclassifiable scholarship rows,
   **182 name a subject the taxonomy has no key for** — education (42),
@@ -552,6 +603,128 @@ only you can make, and the feature on the other side of it is already written.
   for every visitor and changes at most every 20 minutes on the `ingest-fast`
   cadence — but caching a *filtered* row set is more complex than that one and
   should not be done speculatively. Measure on production first.
+
+- [x] **The site served `create-next-app`'s Vercel triangle as its favicon,
+  ahead of the Instela mark.** `src/app/favicon.ico` has never been
+  touched since the initial commit `bba15c3` — it is the default black circle
+  with a white triangle — and Next's `app/favicon.ico` file convention emits a
+  `<link rel="icon">` for it automatically, *in addition to* the
+  `metadata.icons.icon = "/instela-mark.svg"` declared in `layout.tsx`.
+  Verified against the served HTML rather than assumed, and both are present:
+
+  ```
+  <link rel="icon" href="/favicon.ico?..." sizes="256x256" type="image/x-icon"/>
+  <link rel="icon" href="/instela-mark.svg"/>
+  ```
+
+  The `.ico` is emitted **first and carries an explicit `sizes`**, so which one
+  a given browser paints is its own choice rather than ours — which means the
+  rebrand can look complete on one machine and show another company's logo on
+  the next. **The fix is to delete `src/app/favicon.ico`**, not to add
+  precedence: the file convention has no "off" switch, so as long as the file
+  exists the tag exists.
+
+  _Fixed by **regenerating** the file rather than deleting it. Deleting would
+  have left `/favicon.ico` answering 404, and that path is still requested
+  directly — by link unfurlers, feed readers and browsers that never parse the
+  HTML — so the icon would simply have gone missing in every one of those
+  places instead of being wrong in one. `npm run build:mark` now writes both
+  `src/app/favicon.ico` (16/32/48, PNG payloads) and `public/instela-mark.svg`
+  from the same grid. Verified against the served page: both `<link rel="icon">`
+  tags now resolve to the same mark, and `/favicon.ico` answers 200 at 721
+  bytes rather than the 25,931-byte default._
+
+- [x] **The tab mark and the header mark were two different characters.**
+  `public/instela-mark.svg` (16x16, arms out, a mouth bar, knocked-out eyes)
+  and `src/components/chrome/Mascot.tsx` (10x10, rounder, one eye, no mouth,
+  and animated — it blinks, tracks the cursor and hops on click) were drawn
+  separately and do not resemble each other. Neither is wrong; there are just
+  two of them, and the one a student meets in the browser tab is not the one
+  they meet in the nav. Worth picking one silhouette and deriving the other
+  from it — the Mascot's grid is the harder constraint, since it has to stay
+  legible at 26px and readable in three facings.
+
+  _Fixed by making the Mascot's grid the definition and generating the other
+  from it, rather than by redrawing one to match. The grid moved to
+  `src/components/chrome/mascot-grid.ts` (a plain `.ts` module, so a test and a
+  script can read the same data the component renders — the split
+  `admin/allowlist.ts` and `pricing/tiers.ts` already make), and
+  `npm run build:mark` emits the SVG and the ICO from it. **The drift guard is
+  the point, and it was checked by breaking it**: `mascot-grid.test.ts` reads
+  the published SVG back, reconstructs its cells and compares them to
+  `mascotCells(RESTING_POSE)`; editing one row of the grid without regenerating
+  fails with the message `run npm run build:mark`. It also asserts the literal
+  hex still equals `--accent` / `--accent-lite` in globals.css, which is the
+  one duplication that cannot be removed — an SVG loaded as a favicon has no
+  page to inherit a custom property from. 7 tests, 714 total._
+
+  _**The 480px supersample in the generator is not "big enough", it is exact.**
+  480 is a whole multiple of the 10-cell grid and of 16, 32 and 48, so every
+  cell is an integer block of source pixels and every icon pixel averages an
+  integer block. Scaling 10 cells straight to 16 gives some cells 2px and
+  others 1px, and the mark is bilaterally symmetric — that lands as one arm
+  visibly fatter than the other, which is the first thing anyone would notice._
+
+
+- [ ] **The site is not usable on a phone, and it is the nav — not the pages.**
+  Measured 2026-08-24 in Chrome at an emulated 390x844 iPhone viewport
+  (`mobile,touch`, DPR 3), not by reading the CSS. **Every page's content is
+  already responsive**: `main` has *zero* elements overflowing the viewport on
+  the feed, `/pricing` and a listing page, feed rows reflow to a single column
+  at 350px wide, and the enlarged back link survives at 152x42. The failure is
+  entirely in the shared header, so it is on every page at once.
+
+  _**The page overflows horizontally by 198px, and `sign in` is off-screen.**
+  Document `scrollWidth` is 588 against a 390 viewport. The nav's right-hand
+  group runs from x=151 to x=588: `dev` is half off the edge, `pricing` starts
+  at 440, and `sign in` sits at 537–588 — **entirely past the right edge, on
+  the one page a new visitor lands on.** Confirmed as the sole cause by hiding
+  that one group, which takes `scrollWidth` from 588 straight back to 390._
+
+  _**Root cause 1 — `.eyebrow` silently defeats Tailwind's `hidden`.** The
+  tagline is marked `hidden lg:flex` and is nonetheless `display: flex` at
+  390px, measured. `.eyebrow` and `.hidden` are both single-class selectors, so
+  specificity ties and **source order decides** — `globals.css` defines
+  `.eyebrow { display: flex }` after `@import "tailwindcss"`, so it wins. The
+  result is a five-line tagline stacked inside a 72px header. Worth knowing as
+  a general trap: **every hand-authored class in globals.css that sets
+  `display` outranks Tailwind's display utilities on the same element**, so
+  `hidden`/`block`/`flex` cannot be trusted on `.eyebrow`, `.brand`, `.btn`,
+  `.backlink` or `.navlink` without checking._
+
+  _**Root cause 2 — fixing that is not enough, which is what decides the shape
+  of the fix.** With the tagline hidden the header still overflows by **68px**:
+  brand 115 + items 236 + gaps > the 350px of inner width a 390 viewport leaves
+  after the 20px gutter. And that is the **signed-out** nav carrying four items
+  (tools, dev, pricing, sign in) — a signed-in admin carries seven. So this
+  needs a real mobile nav (a disclosure, or the same collapse `ToolsMenu`
+  already does for the three tools), not a CSS one-liner. Note the FIXES.md §5
+  warning that the nav was already over-full **at desktop width** predicted
+  exactly this._
+
+  _**Root cause 3 — the cursor-trail canvas is sized in device pixels with no
+  CSS size, so it is DPR-times too big.** At DPR 3 its `width` attribute is
+  1176 and, with no CSS width set, that attribute becomes its CSS width: a
+  1176px element on a 390px screen. It is `position: fixed` so it adds nothing
+  to `scrollWidth` and is not part of the overflow above — but the trail is
+  being drawn at the wrong scale on **every** high-DPI display, which is every
+  phone and every retina laptop, not just mobile. Separately it is a cursor
+  effect on a device with no cursor and should not run under
+  `(pointer: coarse)` at all._
+
+  _**Not measured, and not to be assumed fine:** every signed-in page
+  (`/profile`, `/resume`, `/tracker`, `/admin`) — auth is magic-link only, the
+  same gap as §3 — and the apply wizard's modal, which is the classic mobile
+  failure and is portaled to `document.body` with `position: fixed`._
+
+- [ ] **38 of 61 interactive elements are under the 44px tap-target floor**, on
+  the feed at 390px. Apple's guideline is 44x44 and WCAG 2.2 AA is 24x24; the
+  nav links measure 23–31px tall and **the filter checkboxes are 13x13**, which
+  fails both. Recorded rather than fixed because raising a control's hit area
+  is a visual change to a design system with deliberate density, not a
+  mechanical edit — the `.backlink` enlargement was the precedent and it was a
+  judgement each time. The checkboxes are the ones actually worth doing: a
+  13px target is a miss-and-retry on a real thumb.
 
 ---
 
@@ -1052,6 +1225,30 @@ measured.
   boilerplate under every Greenhouse form, and "Submit application" on the
   unsubmitted page. The observer starts only after a fill, so it never runs on
   a page someone is merely browsing._
+- [~] **Framing observations are ~10% populated, and the shape of the answer is
+  already decided.** Measured against the live corpus 2026-08-26 — 4,368 of
+  4,765 open rows have never been observed, so these are a sample, but two of
+  them are unanimous and therefore settled:
+
+  | source | open | embeddable | refused | unobserved |
+  |---|---|---|---|---|
+  | scholarships/other | 1,879 | 65 | 22 | 1,790 |
+  | smartrecruiters | 1,382 | **0** | **186** | 1,196 |
+  | greenhouse | 889 | 118 | 6 | 763 |
+  | ashby | 364 | **0** | **13** | 351 |
+  | lever | 261 | 14 | 0 | 247 |
+
+  _**SmartRecruiters refused 186 of 186 and Ashby 13 of 13.** That is not a
+  sampling artifact, it is `X-Frame-Options: SAMEORIGIN` and `DENY` — a policy
+  set per-host, so n=186 unanimous settles all 1,382. Together those two are
+  **1,746 open rows, 37% of the corpus, structurally un-embeddable**, and
+  SmartRecruiters is the single largest internship source we have. Greenhouse
+  is the mirror image at 118 of 124 allowed. **The realistic ceiling for
+  "never leave the site" is therefore ~28% of open rows today** — Greenhouse
+  plus the ~75% of genuinely-formed scholarships that permit framing — rising
+  to ~40% only if Lever's captcha is proven AND scholarship apply URLs are
+  re-ingested to point at sponsors instead of aggregators._
+
 - [ ] **Framing observations will take ~13 days to populate on the current
   schedule.** `check-links` runs twice daily at 300 rows, framing rides along
   with it, and two consecutive observations are needed — so 3,788 rows is about
@@ -1059,13 +1256,75 @@ measured.
   four-host answer, which is its own tab: no regression, just not yet the
   improvement. Accelerate with `npm run check:links -- --limit 2000` twice if
   it matters sooner.
-- [ ] **1,559 scholarships can never be autofilled, and it is not a code
-  problem.** They point at scholarships.com *listing* pages, which carry no
+- [x] **1,559 scholarships can never be autofilled — and the fix this entry
+  recommended turns out to be impossible.** They point at scholarships.com *listing* pages, which carry no
   application form at all — they link out to the sponsor. The addressable
   scholarship set is ~320 rows across ~302 hosts. "Works for every scholarship"
   therefore caps at ~320 no matter what is built, and the honest fix is
   ingesting the sponsor's own apply URL rather than the aggregator's listing
   URL. Worth doing; not attempted here.
+
+  _**Attempted 2026-08-26, and there is no route.** Checked all three before
+  writing any code. (1) Parse's **listing** endpoint returns name/slug/url
+  only. (2) Parse's **detail** endpoint does not carry it either —
+  `parse.ts:183` records that "the directory never exposes a sponsor on the
+  listing or detail endpoints", so the 1,559 credits this would cost against a
+  200/month budget would buy nothing. (3) Scraping scholarships.com directly is
+  WAF-blocked (the two 403s in the first link-check run) and was ruled out on
+  terms before the source was ever added. And nothing is cached to mine:
+  **all 1,559 rows store `raw = null`**, only the listing URL. These rows are
+  permanently a title and a dead-end link._
+
+  _**So the fillable set grows from the other end — new direct sources — not
+  by repairing these.** First one landed the same day: see the IUP entry
+  below. The 1,559 stay for discovery value (a student may still find a real
+  award through them) but they should never be counted as addressable, and
+  the apply wizard should not offer autofill on them._
+
+- [x] **A direct scholarship source that is autofillable by construction —
+  IUP.** `lib/scholarships/iup.ts`, 30 open rows, **30 distinct sponsor hosts,
+  every one linking to the awarding organisation's own application** rather
+  than to an aggregator's index page. Density landed at 67% amount / 70%
+  deadline, against scholarships.com's 0% / 0%.
+
+  _`robots.txt` was read before any code, per the standing rule: IUP blocks
+  only CMS/admin/login/search paths and ends `Allow: /`; nothing under
+  `/financialaid/` is restricted. Four bugs came out of reading the live page
+  rather than trusting the markup, each now pinned by a test: **the final
+  `<h2>` runs to end-of-document**, so the last scholarship's description
+  absorbed IUP's street address and switchboard number and `parseAmount` was
+  reading a postal code; **"Applications open in May 2026" is not a deadline**
+  and would have published a date wrong in the most misleading direction;
+  **not every `<h2>` is a scholarship** (the page opens with "First, File Your
+  FAFSA" and carries a 23-link directory of community foundations); and **a
+  heading repeats**, which would have produced two rows that close each other
+  on alternating runs. 15 tests, 729 total._
+
+  _**Also fixed one of my own:** the measurement harness reported "0 rows carry
+  an amount" because an unquoted bash heredoc ate the `$` in the regex. The
+  real figure was 67%. Worth recording because it nearly caused the source to
+  be rejected as too thin._
+
+- [ ] **More direct scholarship sources — the search is the expensive part.**
+  IUP took one afternoon to build and ten minutes to parse; **finding it took
+  longer than both**. Most university "outside scholarships" pages are lists of
+  *search engines* (Fastweb, finaid.org) rather than lists of awards — UGA,
+  Columbia, McDaniel, Wheaton and St. Edward's were all checked and all are
+  that shape. Iowa State has a genuine 5-column database (`Name, NumAward,
+  AmtAward, Deadline, Description`) behind an explicitly robots-allowed
+  `admin-ajax.php` endpoint, but **it has no URL column**, so its rows would
+  carry facts and no destination — good for the corpus, useless for autofill.
+  The qualifying shape is: server-rendered, one heading per award, and an
+  outbound link to the sponsor. Roadmap Phase 01 wants 10–15 sources; 5 are
+  wired.
+
+- [ ] **The 1,559 aggregator rows are still presented as if they were
+  applications.** They render an "apply ↗" link that opens an index page, and
+  the apply wizard will offer to autofill a page with no form on it. A product
+  whose stated doctrine is naming things after what was observed should mark
+  these "listing only — opens Scholarships.com". Not done: it is a UI change
+  across the feed row, the listing page and the wizard, and it was not what
+  this session was asked for.
 - [ ] **Still zero observations in real Chrome.** 692 tests now, and the
   extension has never been loaded. Everything above is reasoned and
   server-verified; `setNativeValue` satisfying React's change tracking on a
@@ -1533,9 +1792,35 @@ reason, not an omission.
   WSL distro, or a container) and commit it, then put `npm ci` back in the
   seven workflows. Neither WSL (present, no distro) nor Docker is installed on
   the dev machine, which is why this was not simply fixed at the source._
-- [ ] **Nothing has been pushed.** `master` is well ahead of `origin/master` —
-  everything since `49f1981` is committed but has never left this machine.
-  Check with `git status -sb` before assuming a number.
+- [x] **Nothing has been pushed.** _Stale as of 2026-08-26: `master` is level
+  with `origin/master`, 0 commits ahead. This is what made the scheduled
+  workflows able to fire at all — GitHub only runs a `schedule` trigger from
+  the default branch._
+
+- [x] **The ingest crawler introduced itself with the old product name, a URL
+  that went nowhere, and the owner's email address.** `USER_AGENT` in
+  `lib/ingest/http.ts` was still `internship-tracker/0.1 (+https://github.com/;
+  contact: bennettch1213@gmail.com)` — sent to ~1,100 employer ATS boards and
+  every scholarship host we scrape. Three faults: it named a product that no
+  longer exists, its "contact us" URL was a **bare github.com with no
+  repository on the end**, and it published a personal email to every host.
+  Found while adding the IUP scraper, which would have inherited it. Now
+  matches the link checker's string exactly, so an operator who looks us up
+  from either request lands in the same place, and the email is gone — the
+  repository is the better contact route and is not a personal identifier.
+  **Note this raises the stakes on the rename below: two crawler strings now
+  advertise `/instela`, and both 404 until it happens.**
+
+- [ ] **The GitHub repository is still named `arc-explore`.** The rebrand to
+  Instela is complete in the code (0 stale references) but the remote is still
+  `github.com/bennettc1213/arc-explore.git`. Two concrete costs, not cosmetics:
+  the link checker's User-Agent now advertises
+  `github.com/bennettc1213/instela` as the courtesy contact for the ~1,100
+  employer boards it polls, and **that URL 404s** — so a board admin who looks
+  us up finds nothing; and `extension/README.md` and the docs point at the new
+  name too. Renaming in Settings → Repository name is enough; GitHub redirects
+  the old URL, so the local remote keeps working and can be updated with
+  `git remote set-url` afterwards.
 - [ ] **No real students have used any of this.** Phase 02's end-to-end line is
   `[~]` for that reason: automated browser walkthroughs pass, no human has run
   the loop. Phase 07 is where that changes.
@@ -1552,13 +1837,58 @@ reason, not an omission.
   version of it. _Replaced with maintained equivalents that verify against real
   npm metadata: `mcp-fetch` (matiasngf, repo + homepage) and
   `@cyanheads/git-mcp-server` (cyanheads, repo + homepage)._
-- [ ] **Two `.mcp.json` entries are low-confidence and were left alone.**
+- [~] **`.mcp.json` re-vetted 2026-08-24 via `/mcp-magnet`; one entry removed,
+  two knowingly kept, one added.** Every npm-backed entry was re-checked
+  against full metadata (name, version, description, repository, maintainers),
+  not just `npm view version` — the check that let the canary packages through
+  last time. **Nothing is a canary now.** `mcp-server-sqlite` was checked
+  specifically because its name matches the shape of the two honeypots
+  (`mcp-server-fetch`, `mcp-server-git`) and it is genuine: real repo, real
+  maintainer. `chrome-devtools-mcp` is first-party Google (three maintainers
+  including `google-wombot`).
+
+  _**`sqlite` was removed, and not for safety — for relevance.** This project
+  has no SQLite database: zero `.sqlite`/`.db` files and no `better-sqlite3`,
+  the stack is `postgres` + `drizzle-orm`. A database tool wired to a database
+  that does not exist can only ever fail or operate on a file nobody intended.
+  It was also v0.0.2, single maintainer._
+
+  _**`postgres` was added, pinned, and takes its credential by env expansion.**
+  `@henkey/postgres-mcp-server@1.0.7` — **not** the registry's suggested
+  `@modelcontextprotocol/server-postgres`, which npm marks
+  `deprecated: "Package no longer supported"`. Worth knowing as a gap in the
+  tooling: `/mcp-magnet`'s discovery script verified that package's version and
+  publisher and reported it "official", but **it does not read npm's
+  deprecation flag** — so a verified-and-official result is not the same as a
+  maintained one. Three deliberate hardenings, each against a specific failure:
+  the connection string is `${DATABASE_URL}` rather than a literal, because
+  `.mcp.json` is tracked by git and a Supabase password in repo history is
+  undone only by rotating the password; it is passed via `env` rather than
+  `--connection-string`, because an argument is readable in the process list;
+  and the version is **pinned**, because `npx -y` executes whatever the name
+  resolves to at run time and this one is pointed at the live database._
+
+  _**It has full read/write against a database that bypasses RLS**, which is
+  the owner's explicit decision, taken over the recommendation of a read-only
+  Postgres role. HANDOFF.md §6 is the context: the app connects as table owner,
+  so nothing in the database layer will stop a mistaken `UPDATE`. Worth
+  revisiting the read-only role once there are real students' rows in there._
+
+- [ ] **`postgres` will not connect until `DATABASE_URL` is a real environment
+  variable.** It lives in `.env`, which Claude Code does not read — `${...}` in
+  `.mcp.json` expands from the process environment only. On Windows:
+  `[System.Environment]::SetEnvironmentVariable("DATABASE_URL", "<the value
+  from .env>", "User")`, then restart the editor. Until then the server starts
+  and fails to connect; nothing else is affected.
+
+- [~] **Two `.mcp.json` entries are low-confidence and were knowingly kept.**
   `time-mcp-server` publishes **no repository and no homepage** and has one
   maintainer — it resolves and it is probably fine, but nothing about it is
   checkable, which is exactly the profile the entry above turned out to have.
   And `parse` (`https://api.parse.bot/mcp`) is **not keyless** — it is the
   metered Parse scraping API this project already tracks a credit balance for
   (section 1), so it does not belong in a "free tools" set and should not be
-  assumed usable without checking that balance. Neither was removed, because
-  removing a working tool on suspicion is its own cost; recorded so the next
-  person does not read the file as uniformly verified.
+  assumed usable without checking that balance. **Both were re-confirmed
+  2026-08-24 and deliberately kept** — the owner's call, on the reasoning that
+  removing a working tool on suspicion is its own cost. Recorded so the file is
+  not read as uniformly verified.

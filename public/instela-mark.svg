@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <title>Instela pixel person mark</title>
-  <path fill="#ff4d00" d="M6 1h4v1h1v4h1v1h1v1h1v2h-3v3h1v2H9v-2H7v2H4v-2h1v-3H2V8h1V7h1V6h1V2h1z"/>
-  <path fill="#0a0a0b" d="M5 3h1v1H5zM9 3h1v1H9zM6 6h4v1H6zM5 9h1v1H5zM10 9h1v1h-1z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" shape-rendering="crispEdges">
+  <title>Instela</title>
+  <path fill="#ff4d00" d="M3 0h4v1H3zM2 1h6v1H2zM2 2h6v1H2zM2 3h2v1H2zM5 3h3v1H5zM2 4h6v1H2zM3 5h4v1H3zM2 6h6v1H2zM1 7h8v1H1zM1 8h8v1H1zM2 9h2v1H2zM6 9h2v1H6z"/>
+  <path fill="#ffa366" d="M4 3h1v1H4z"/>
 </svg>

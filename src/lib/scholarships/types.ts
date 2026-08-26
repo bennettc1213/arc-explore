@@ -18,6 +18,7 @@ export type ScholarshipSource =
   | "cftexas"
   | "unl"
   | "unr"
+  | "iup"
   | "scholarshipscom"
   | "scholarshipportal";
 
