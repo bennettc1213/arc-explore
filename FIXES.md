@@ -789,7 +789,7 @@ only you can make, and the feature on the other side of it is already written.
   with a real session (§3), and the tap-target item directly below this one is
   only partly closed by this fix — see its note._
 
-- [~] **38 of 61 interactive elements are under the 44px tap-target floor**, on
+- [x] **38 of 61 interactive elements are under the 44px tap-target floor**, on
   the feed at 390px. Apple's guideline is 44x44 and WCAG 2.2 AA is 24x24; the
   nav links measure 23–31px tall and **the filter checkboxes are 13x13**, which
   fails both. Recorded rather than fixed because raising a control's hit area
@@ -798,14 +798,31 @@ only you can make, and the feature on the other side of it is already written.
   judgement each time. The checkboxes are the ones actually worth doing: a
   13px target is a miss-and-retry on a real thumb.
 
-  _**The nav's share of the 38 is now closed as a side effect of the mobile
-  nav fix above, not attempted directly.** The 23–31px links this entry
-  measured were the old cramped bar's items; at 390px those no longer exist —
-  replaced by a 44×44 toggle and a panel whose rows measure 44–66px each
-  (verified live). **Still open and untouched: the feed's own controls**,
-  the 13×13 filter checkboxes chief among them. Left `[~]` rather than `[x]`
-  for that reason — this closed the nav's contribution to the count, not the
-  count itself._
+  _**The nav's share of the 38 closed as a side effect of the mobile nav
+  fix above, not attempted directly.** The 23–31px links this entry measured
+  were the old cramped bar's items; at 390px those no longer exist — replaced
+  by a 44×44 toggle and a panel whose rows measure 44–66px each (verified
+  live)._
+
+  _**The filter checkboxes — the ones this entry actually called worth
+  doing — are now fixed directly.** New `.check-row` class in globals.css:
+  the checkbox itself grows modestly (13px → 18px, still visually compact),
+  and the label wrapping it gets `min-height: 44px` so the whole row, not just
+  the glyph, is what a thumb lands on. No negative-margin trick to hide the
+  growth — these wrap (`gap-x-5 gap-y-2`), and a margin large enough to reach
+  44px invisibly would have overlapped an adjacent wrapped row's own hit area
+  by more than the 8px gap covers. The honest tradeoff is a visibly taller
+  row, the same call `.backlink` made growing out of 11px of bare text.
+  Applied to all ten checkboxes in `FilterPanel.tsx` — the six interest
+  checkboxes in the signed-out profile block and the four inside the filters
+  disclosure (remote / hide ineligible / exclude marketing / show closed).
+
+  Verified live at 390×844: all ten measure exactly 44px tall with an 18×18
+  visible box, and a pairwise overlap check across all ten wrapped rows found
+  zero — the taller rows simply wrap onto their own line rather than
+  colliding with a neighbor. Re-verified at 1440×900 that desktop is
+  unaffected: one row, evenly spaced, no visual regression. `npm run check`
+  — typecheck, lint, 730 tests — passes unchanged._
 
 ---
 

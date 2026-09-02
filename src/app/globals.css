@@ -505,6 +505,34 @@ input[type="file"] {
 }
 
 /* ==========================================================================
+   check-row — a checkbox and its label, as an actual 44px tap target
+
+   FIXES.md measured these at 13x13 on the feed's filter panel — the browser
+   default checkbox box with no padding around it, well under both Apple's
+   44x44 guideline and WCAG 2.2 AA's 24x24 floor. The checkbox itself only
+   grows modestly (13px -> 18px, still visually compact); the real fix is
+   `min-height` on the label, so the whole row — not just the glyph — is what
+   a thumb can land on. No negative margins to hide the growth: these wrap
+   (`gap-x-5 gap-y-2`), and a negative margin large enough to reach 44px would
+   overlap an adjacent wrapped row's own hit area by more than the gap covers.
+   The honest tradeoff is a slightly taller row, which is the same call
+   `.backlink` made when it grew from 11px of bare text into a bordered
+   control.
+   ========================================================================== */
+.check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 4px;
+}
+.check-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+/* ==========================================================================
    honest slots — the doc's §7 pattern, and the visual expression of this
    product's core rule: if we don't have the real value, we do not render a
    value. Never a fabricated score, never a guessed deadline.

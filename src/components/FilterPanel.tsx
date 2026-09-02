@@ -158,7 +158,7 @@ export function FilterPanel(props: FilterPanelProps) {
 
             <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
               {INTEREST_OPTIONS.map((o) => (
-                <label key={o.value} className="mono chrome flex items-center gap-2">
+                <label key={o.value} className="check-row mono chrome">
                   <input
                     type="checkbox"
                     name="targetVerticals"
@@ -367,18 +367,18 @@ export function FilterPanel(props: FilterPanelProps) {
           </label>
 
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-            <label className="mono chrome flex items-center gap-2">
+            <label className="check-row mono chrome">
               {/* `remote`, matching `filtersToQuery` — one name for one filter. */}
               <input type="checkbox" name="remote" value="1" defaultChecked={remoteOnly} />
               remote only
             </label>
 
-            <label className="mono chrome flex items-center gap-2">
+            <label className="check-row mono chrome">
               <input type="checkbox" name="hideBlocked" value="1" defaultChecked={hideBlocked} />
               hide ineligible
             </label>
 
-            <label className="mono chrome flex items-center gap-2">
+            <label className="check-row mono chrome">
               <input
                 type="checkbox"
                 name="excludeMarketing"
@@ -388,7 +388,7 @@ export function FilterPanel(props: FilterPanelProps) {
               exclude sponsor / marketing awards
             </label>
 
-            <label className="mono chrome flex items-center gap-2">
+            <label className="check-row mono chrome">
               <input type="checkbox" name="includeClosed" value="1" defaultChecked={includeClosed} />
               show closed
             </label>
