@@ -219,6 +219,75 @@ only you can make, and the feature on the other side of it is already written.
 
 ## 2. Known bugs
 
+- [x] **Sign-in was completely broken in production — "fetch failed" on every
+  attempt.** Reported directly ("we can't sign into accounts anymore").
+  Reproduced live at `instela.org/login`: every submission returned the raw
+  string `fetch failed`, which is `sendMagicLink`'s verbatim passthrough of
+  whatever `supabase.auth.signInWithOtp` throws.
+
+  _**Root cause: Vercel's production `NEXT_PUBLIC_SUPABASE_URL` pointed at a
+  different, non-existent Supabase project.** Diagnosed by isolating each
+  layer before touching anything: (1) called Supabase's `/auth/v1/otp`
+  endpoint directly from outside Vercel with the local `.env` anon key — 200
+  OK, so the Supabase project, its email-OTP feature, and the redirect-URL
+  allowlist were all fine; (2) ran the identical code path against
+  `localhost:3100` with local `.env` values — worked immediately ("check your
+  email"), which cleared the code itself of any regression; (3) with Supabase
+  and the code both cleared, the only remaining variable was Vercel's actual
+  production environment, which `vercel env pull` cannot fully reveal for
+  secret-typed vars — so a **temporary diagnostic route** was deployed
+  (`/api/debug-supabase-env`, never committed — the CLI deploys the working
+  tree, not a commit, so it never needed to be) to echo back the two Supabase
+  values, which the code's own comment already establishes are public by
+  design ("the anon key ships to the browser... RLS is what protects data").
+  It showed `NEXT_PUBLIC_SUPABASE_URL=https://pbhcuhifdvrtzkhaairn.supabase.co`
+  — a hostname that returns **NXDOMAIN**, not the project in local `.env`
+  (`tumajkbrzxdikgdvdgaz`). `DATABASE_URL` was fine and pointed at the correct
+  project the whole time (confirmed via its pooler username,
+  `postgres.tumajkbrzxdikgdvdgaz`, without ever printing the password) — that
+  is why the feed and every DB-backed page kept working normally while sign-in
+  alone was dead. All ten Vercel env vars were set exactly once, 110 days ago,
+  and never touched since; the working theory is that the Supabase project was
+  recreated at some point and whatever synced `DATABASE_URL` picked up the
+  change while the three manually-set `NEXT_PUBLIC_SUPABASE_URL` /
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` values did not._
+
+  _**Fixed by overwriting all three with the values already verified working
+  in local `.env`, for both Production and Preview.** One real mistake made
+  and caught while doing this: batching the `vercel env add` calls in a shell
+  loop piped through stdin corrupted the values — `NEXT_PUBLIC_SUPABASE_URL`
+  ended up holding the anon key's JWT instead of a URL, and
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` silently failed to save at all, because
+  Vercel's CLI refuses a bare `NEXT_PUBLIC_`-prefixed value that "looks like a
+  credential" until you pass `--type` explicitly, and the loop's piped stdin
+  swallowed that prompt instead of surfacing it. Caught immediately by
+  re-listing the vars rather than assuming the loop succeeded, then redone one
+  variable at a time with `--value` and an explicit `--type config` (both
+  values are meant to be public, per the same design comment above) —
+  `--type secret` for `SUPABASE_SERVICE_ROLE_KEY`, which is not. Verified with
+  a second `vercel env pull`, which decodes the anon key's JWT payload and
+  confirms `"ref":"tumajkbrzxdikgdvdgaz"` — the correct project._
+
+  _**Verified end-to-end after redeploying**, not just by re-reading the env
+  vars: `instela.org/login` now returns **"email rate limit exceeded"**
+  instead of `fetch failed` — Supabase's genuine rate-limit response, hit
+  because the diagnosis itself sent several real OTP requests to the same
+  address in a few minutes. A rate limit is a real, correct response from a
+  reachable project; `fetch failed` was a DNS lookup failing before any
+  request left the building. The temporary debug route was removed and
+  confirmed 404 before the final redeploy — nothing from this session's
+  diagnosis is left on production._
+
+  _**Left alone, and worth knowing about:** `NEXT_PUBLIC_APP_URL` is a fourth
+  stray env var from the same 110-days-ago batch, referenced nowhere in the
+  codebase (`grep` confirms zero hits) — the code reads `NEXT_PUBLIC_SITE_URL`,
+  which was never set at all. That did not contribute to this bug: unset,
+  `getSiteOrigin()` falls back to `VERCEL_PROJECT_PRODUCTION_URL`, which
+  already resolves to `instela.org` correctly. Not deleted here since it may
+  be leftover Stripe-integration scaffolding and removing env vars was outside
+  what this fix needed — worth a cleanup pass if the Stripe vars ever get
+  wired up for real._
+
 - [x] **The UNL crawl intermittently drops a row.** Fixed by porting the two-observation
   rule from `lib/ingest/linkcheck.ts` onto the ATS-feed freshness path. Added
   `postings.missing_strikes` (integer, default 0) and `postings.missing_since`
