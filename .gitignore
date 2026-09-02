@@ -49,3 +49,12 @@ next-env.d.ts
 extension/vendor/
 
 .vercel
+
+# A separate, self-contained Next.js project (own package.json, node_modules,
+# tsconfig) that happens to sit inside this repo's directory. Already excluded
+# from tsconfig, eslint and Vercel uploads (see FIXES.md §7) because its
+# `.next/` build output alone is 168MB and its code doesn't belong in this
+# app's pipeline. Ignored here too, deliberately: an unqualified `git add -A`
+# — which any future automation script is one line away from running — would
+# otherwise sweep the whole thing into this repo's history.
+party game/
