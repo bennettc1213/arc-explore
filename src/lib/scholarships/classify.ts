@@ -7,15 +7,16 @@
  * corpus — but they are not the same kind of opportunity as an institutional
  * award, and a student deserves to be able to tell which is which.
  *
- * WHAT THIS IS NOT. It is a tag, not a filter. Nothing hides a row, nothing
- * reads this flag to change a ranking yet. The scholarship Fit Score (Phase
- * 02) is where a down-rank weight belongs, and it does not exist. Tagging at
- * ingest means that when it is built, the signal is already on every row
- * rather than needing a full re-scrape.
+ * WHAT THIS IS NOT. It is a tag, not a filter. Nothing hides a row. It now
+ * feeds the scholarship Fit Score's competition dimension (`scholarship-
+ * fit.ts`) — this comment used to say that dimension didn't exist yet; it
+ * shipped and reads this flag directly. Tagging at ingest means the signal
+ * was already on every row when that dimension landed, rather than needing a
+ * full re-scrape.
  *
  * It is a heuristic over a sponsor's *name*, which is all the source gives
  * us. It will be wrong at the edges — a legitimate bar-association memorial
- * fund under $1,500 could be caught. That is why it is a tag and not a
+ * fund under the ceiling could be caught. That is why it is a tag and not a
  * filter: being wrong costs a mislabel, not a hidden opportunity.
  */
 
@@ -35,16 +36,41 @@ const LEGAL_RE =
   /\b(?:law|laws|lawyer|lawyers|attorney|attorneys|legal|esq|esquire|llp|lpa|pllc)\b|\bp\.c\./i;
 
 /**
- * Institutional markers that override the legal one.
+ * Marketing/advertising-agency markers in a sponsor name.
+ *
+ * Found missing by reading a real row: "Red Egg Marketing Scholarship"
+ * carries no legal language at all, so `LEGAL_RE` alone was blind to it —
+ * same shape of award (small-dollar, sponsor's own brand as the prize name),
+ * a different industry running the identical backlink play. Word-bounded for
+ * the same reason `LEGAL_RE` is: an unbounded `/market/i` would catch
+ * "Farmers Market Alliance" and any number of legitimate community funds.
+ */
+const MARKETING_RE = /\b(?:marketing|advertising|agency|agencies)\b/i;
+
+/**
+ * Institutional markers that override either signal.
  *
  * A law *school*, a university legal clinic, a bar association memorial fund
  * or a legal-aid foundation is an institution that happens to be legal, not a
- * firm buying links.
+ * firm buying links — and the same holds for a marketing *program* or
+ * *department* housed at a university or foundation.
  */
 const INSTITUTIONAL_RE = /school|universit|college|foundation|bar association|legal aid/i;
 
-/** Content-marketing awards cluster hard at $500–$1,500. */
-export const CONTENT_MARKETING_MAX_AMOUNT = 1500;
+/**
+ * Content-marketing awards cluster at $500–$5,000.
+ *
+ * Raised from $1,500 after two real rows were measured as misses:
+ * "RMD Law Scholarship" ($2,500) and "Burress Injury Law Underdog" ($5,000)
+ * are both textbook link-building awards — a firm's own name as the prize,
+ * a one-off essay contest — and both sat above the old ceiling untagged.
+ * $1,500 was assuming a firm committing real money couldn't be running a
+ * marketing play; the corpus says firms committing up to $5,000 still are.
+ * The cost of raising it is bounded by the same reasoning the original
+ * ceiling used: this is a down-rank tag, not a filter, so a false positive
+ * here costs one mislabeled row, not a hidden opportunity.
+ */
+export const CONTENT_MARKETING_MAX_AMOUNT = 5000;
 
 export interface ContentMarketingInput {
   sponsorName: string;
@@ -63,7 +89,7 @@ export function isContentMarketing({
   amountMin,
   amountMax,
 }: ContentMarketingInput): boolean {
-  if (!LEGAL_RE.test(sponsorName)) return false;
+  if (!LEGAL_RE.test(sponsorName) && !MARKETING_RE.test(sponsorName)) return false;
   if (INSTITUTIONAL_RE.test(sponsorName)) return false;
 
   // The ceiling is what makes an award small. A firm offering $250–$5,000 is

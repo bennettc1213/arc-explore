@@ -327,7 +327,7 @@ only you can make, and the feature on the other side of it is already written.
   the law awards left the top entirely. One test changed — it had pinned
   `"open to law students" → ["business"]` — and now asserts the absence, with
   the reasoning written beside it._
-- [ ] **Two follow-ons this exposed, both still open.**
+- [x] **Two follow-ons this exposed, both still open.**
   _**Content marketing is badly under-tagged.** "RMD Law Scholarship" ($2,500,
   sponsored by RMD Law), "Burress Injury Law Underdog" ($5,000) and "Red Egg
   Marketing Scholarship" ($2,500) are textbook link-building awards and all
@@ -338,6 +338,30 @@ only you can make, and the feature on the other side of it is already written.
   them — note this is the denylist deliberately rejected for field derivation
   above, which is fine here because the cost of a false positive is one
   down-ranked row rather than an invented field match._
+
+  _**FIXED 2026-09-02.** `classify.ts` had two gaps, both confirmed against the
+  live corpus before touching anything: the $1,500 ceiling exempted "Burress
+  Injury Law Underdog" ($5,000) and "RMD Law Scholarship" ($2,500) as if a firm
+  committing that much couldn't be running a marketing play — a **pinned test**
+  had defended that exact call — and there was no marketing-agency signal at
+  all, so "Red Egg Marketing" tripped nothing. Raised the ceiling to $5,000
+  (still a down-rank tag, not a filter, so a false positive costs one
+  mislabeled row) and added a word-bounded `MARKETING_RE` alongside the
+  existing legal one, guarded by the same institutional override. The old
+  pinned test was updated to match, with the reasoning that changed it written
+  beside it rather than silently flipped.
+
+  Measured against the live corpus, not just the fixture: **127 → 157 of 1,912
+  open scholarships tagged (+30), zero regressions** — every previously-tagged
+  row stayed tagged, confirming the ceiling raise is purely additive. The 30
+  include exactly the shape predicted (`Sutton Digital Marketing`, `Industrial
+  Marketing Agency Scholarship by RH Blake`, a dozen more $2,000–$2,500 firms).
+  Backfilled the live database directly rather than leaving the fix to wait on
+  each source's next scrape — some of these sources (CFT, IUP) run
+  infrequently enough that "wait for the next crawl" could mean months. A
+  second read-only pass after the backfill confirmed the stored column and the
+  function agree exactly (157/157, 0 drift either direction) before the
+  one-off script was deleted._
 
   _**The paid feed is worse-mixed than the free one.** FIXED — `page.tsx` had
   `reservePerKind: dailyCapped ? FEED_MIN_PER_KIND : 0`, so the per-kind

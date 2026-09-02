@@ -19,11 +19,34 @@ describe("isContentMarketing", () => {
     assert.equal(at("Kingbird Legal", 1000), true);
   });
 
-  it("does not tag a firm whose award is above the threshold", () => {
-    // Real row: "Burress Law PLLC" awards up to $5,000. A firm committing
-    // that much is not running a link-building contest.
-    assert.equal(isContentMarketing({ sponsorName: "Burress Law PLLC", amountMin: 2500, amountMax: 5000 }), false);
-    assert.equal(at("Aero Law Center", 2500), false);
+  it("tags a firm at the higher, corpus-measured ceiling", () => {
+    // Real rows measured as misses under the old $1,500 ceiling: "RMD Law
+    // Scholarship" ($2,500) and "Burress Injury Law Underdog" ($5,000) are
+    // both a firm's own name as the prize, a one-off essay contest — the
+    // same shape as the $1,000 cases above, just committing more money.
+    assert.equal(isContentMarketing({ sponsorName: "Burress Injury Law Underdog", amountMin: 2500, amountMax: 5000 }), true);
+    assert.equal(at("RMD Law Scholarship", 2500), true);
+    assert.equal(at("Aero Law Center", 2500), true);
+  });
+
+  it("does not tag a firm whose award is above the raised threshold", () => {
+    // A firm committing five figures is not running a link-building contest
+    // — the ceiling still has to be somewhere.
+    assert.equal(isContentMarketing({ sponsorName: "Aero Law Center", amountMin: 5000, amountMax: 10000 }), false);
+  });
+
+  it("tags a marketing or advertising agency, not only a law firm", () => {
+    // Real row: "Red Egg Marketing Scholarship" carries no legal language at
+    // all — LEGAL_RE alone was blind to it. Same shape of award, a different
+    // industry running the identical backlink play.
+    assert.equal(at("Red Egg Marketing", 2500), true);
+    assert.equal(at("Sable Advertising Group", 1000), true);
+    assert.equal(at("Northstar Creative Agency", 1000), true);
+  });
+
+  it("does not fire on words that merely resemble the marketing marker", () => {
+    // The reason MARKETING_RE is word-bounded on "marketing", not "market".
+    assert.equal(at("Farmers Market Alliance", 1000), false);
   });
 
   it("judges a range by its ceiling, not its floor", () => {
@@ -34,7 +57,6 @@ describe("isContentMarketing", () => {
   });
 
   it("treats the threshold as inclusive", () => {
-    // Real row: "Kisner Law" awards exactly $1,500.
     assert.equal(at("Kisner Law", CONTENT_MARKETING_MAX_AMOUNT), true);
     assert.equal(at("Kisner Law", CONTENT_MARKETING_MAX_AMOUNT + 1), false);
   });
