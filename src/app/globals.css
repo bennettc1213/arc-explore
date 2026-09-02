@@ -379,6 +379,85 @@ body {
    people never see — but highlights identically. */
 .navlink-quiet { color: var(--accent-lite); }
 
+/* ==========================================================================
+   mobile nav — the hamburger toggle and the panel it opens
+
+   FIXES.md §2 measured the header overflowing a 390px phone width by 198px,
+   with "sign in" entirely off-screen. `.nav-toggle` is a real 44x44 tap
+   target (Apple's own floor), not a shrunk copy of `.navlink` — the same
+   13x13 checkbox problem this project already knows to avoid.
+
+   `.mobile-navlink` rows are `min-height: 44px` for the same reason, and
+   unlike `.navlink`'s 0.6875rem this uses 0.8125rem — the desktop bar can
+   afford small text because a mouse pointer is precise; a thumb is not.
+   ========================================================================== */
+
+.nav-toggle {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.nav-toggle:hover,
+.nav-toggle:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent-hot);
+}
+.nav-toggle-bar {
+  position: absolute;
+  left: 13px;
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  transition:
+    top 150ms var(--ease-out),
+    transform 150ms var(--ease-out),
+    opacity 150ms var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-toggle-bar { transition: none; }
+}
+
+.mobile-nav-panel {
+  position: fixed;
+  top: var(--nav-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  overflow-y: auto;
+  background: var(--surface);
+  border-top: 1px solid var(--line-strong);
+  padding: 8px var(--gutter) 24px;
+}
+
+.mobile-navlink {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 8px 4px;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  text-decoration: none;
+  color: var(--accent);
+  border-bottom: 1px solid var(--line);
+}
+.mobile-navlink:hover,
+.mobile-navlink:focus-visible {
+  background: var(--accent-dim);
+  color: var(--accent-hot);
+}
+.mobile-navlink-quiet { color: var(--accent-lite); }
+
 @media (prefers-reduced-motion: reduce) {
   /* The fill still arrives; only the arrow's travel is dropped. The fill is
      the affordance, the slide is the flourish. */

@@ -698,7 +698,7 @@ only you can make, and the feature on the other side of it is already written.
   at the rendered page with the content stripped away, which is the "run it and
   read the output" doctrine applied to something with no output to read._
 
-- [ ] **The site is not usable on a phone, and it is the nav — not the pages.**
+- [x] **The site is not usable on a phone, and it is the nav — not the pages.**
   Measured 2026-08-24 in Chrome at an emulated 390x844 iPhone viewport
   (`mobile,touch`, DPR 3), not by reading the CSS. **Every page's content is
   already responsive**: `main` has *zero* elements overflowing the viewport on
@@ -755,7 +755,41 @@ only you can make, and the feature on the other side of it is already written.
   same gap as §3 — and the apply wizard's modal, which is the classic mobile
   failure and is portaled to `document.body` with `position: fixed`._
 
-- [ ] **38 of 61 interactive elements are under the 44px tap-target floor**, on
+  _**FIXED 2026-09-02 — root causes 1 and 2, together.** Built a real collapse
+  rather than patching the bar in place: `src/components/chrome/MobileNav.tsx`,
+  a hamburger toggle shown only below `lg` (`Nav.tsx`'s desktop group is now
+  `hidden lg:flex` as a whole), opening a full-height panel that carries every
+  item the desktop bar does — tools, dev (when configured), pricing, and
+  tracker/resume/profile/admin or sign-in depending on session. `lg` was
+  chosen deliberately over a narrower cutoff: the eyebrow already toggled
+  there, and picking anything tighter would have meant computing exactly how
+  many nav items a signed-in admin needs room for. Root cause 1 needed no
+  change to `.eyebrow` itself — the fix is structural, not a specificity fight:
+  wrapping the whole group in a `hidden lg:flex` **ancestor** means a
+  `display: none` parent never renders its children regardless of what display
+  they individually request, so `.eyebrow`'s own `display: flex` never gets a
+  chance to matter. The general trap (a hand-authored `display` rule in
+  globals.css outranks a Tailwind utility on that *same* element) still stands
+  for any future one-off use of `hidden`/`flex` directly on `.eyebrow`,
+  `.brand`, `.btn`, `.backlink` or `.navlink` — nothing here removes it, this
+  just avoided tripping it again.
+
+  Verified live at 390×844 (DPR 3): `document.documentElement.scrollWidth`
+  equals `window.innerWidth` exactly (390, was 588 — **0px of overflow**, was
+  198px), the toggle measures a real 44×44, and opening the panel puts every
+  item on screen at 350px wide with zero console errors. Re-verified at
+  1440×900 that the desktop bar is byte-for-byte unchanged: eyebrow visible,
+  tools menu, dev chip, pricing and sign-in all present, toggle absent.
+  `document.elementFromPoint` at three points inside the open panel's visible
+  area all resolved to the panel or a link inside it, confirming the fixed
+  overlay actually paints solid rather than just measuring correct in the box
+  model. `npm run check` — typecheck, lint, 730 tests — passes unchanged.
+
+  Still true and still open: every signed-in page above remains unverified
+  with a real session (§3), and the tap-target item directly below this one is
+  only partly closed by this fix — see its note._
+
+- [~] **38 of 61 interactive elements are under the 44px tap-target floor**, on
   the feed at 390px. Apple's guideline is 44x44 and WCAG 2.2 AA is 24x24; the
   nav links measure 23–31px tall and **the filter checkboxes are 13x13**, which
   fails both. Recorded rather than fixed because raising a control's hit area
@@ -763,6 +797,15 @@ only you can make, and the feature on the other side of it is already written.
   mechanical edit — the `.backlink` enlargement was the precedent and it was a
   judgement each time. The checkboxes are the ones actually worth doing: a
   13px target is a miss-and-retry on a real thumb.
+
+  _**The nav's share of the 38 is now closed as a side effect of the mobile
+  nav fix above, not attempted directly.** The 23–31px links this entry
+  measured were the old cramped bar's items; at 390px those no longer exist —
+  replaced by a 44×44 toggle and a panel whose rows measure 44–66px each
+  (verified live). **Still open and untouched: the feed's own controls**,
+  the 13×13 filter checkboxes chief among them. Left `[~]` rather than `[x]`
+  for that reason — this closed the nav's contribution to the count, not the
+  count itself._
 
 ---
 

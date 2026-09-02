@@ -6,6 +6,7 @@ import { devModeConfigured, devTier, getUserTier } from "@/lib/pricing/entitleme
 import { TIER_LABELS } from "@/lib/pricing/tiers";
 
 import { Mascot } from "./Mascot";
+import { MobileNav } from "./MobileNav";
 import { ToolsMenu } from "./ToolsMenu";
 
 export async function Nav() {
@@ -40,8 +41,15 @@ export async function Nav() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-6">
-          <span className="eyebrow chrome hidden lg:flex">
+        {/* Hidden as a WHOLE below `lg`, not item by item — see MobileNav's
+            header comment for why a wrapper is the fix rather than patching
+            each item's own responsive classes. `.eyebrow` sets `display: flex`
+            in globals.css, which used to out-rank Tailwind's `hidden` on that
+            exact element (equal specificity, later source order wins); a
+            `display: none` ancestor sidesteps that, since it never renders its
+            children regardless of what display they individually request. */}
+        <div className="hidden lg:flex items-center gap-6">
+          <span className="eyebrow chrome">
             verified live, not scraped from memory
           </span>
 
@@ -138,6 +146,14 @@ export async function Nav() {
             </Link>
           )}
         </div>
+
+        <MobileNav
+          signedIn={Boolean(user)}
+          isAdmin={isAdmin}
+          pricingLabel={user ? TIER_LABELS[tier].toLowerCase() : "pricing"}
+          pricingTitle={user ? `You are on ${TIER_LABELS[tier]} — see all plans` : "Plans and pricing"}
+          dev={devAvailable ? { forced, label: forced ? TIER_LABELS[forced] : null } : null}
+        />
       </div>
     </header>
   );
