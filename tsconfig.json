@@ -30,5 +30,6 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "_comment_exclude": "'party game' is a self-contained Next project with its own tsconfig, package.json and node_modules. Left in, its '@/*' imports resolve against THIS project's ./src and fail, which broke 'next build' and 'npm run check' for reasons no change to src/ could fix.",
+  "exclude": ["node_modules", "party game"]
 }

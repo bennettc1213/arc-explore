@@ -9,8 +9,15 @@
 
 const root = document.getElementById("root");
 
-const { describeFill } = await import(chrome.runtime.getURL("vendor/autofill.js"));
-const { originPatternForUrl } = await import(chrome.runtime.getURL("vendor/apply-url.js"));
+let describeFill;
+let originPatternForUrl;
+let bootError = null;
+try {
+  ({ describeFill } = await import(chrome.runtime.getURL("vendor/autofill.js")));
+  ({ originPatternForUrl } = await import(chrome.runtime.getURL("vendor/apply-url.js")));
+} catch {
+  bootError = "the extension failed to load — open chrome://extensions and click reload";
+}
 
 /* ------------------------------------------------------------------ *
  * Helpers
@@ -77,6 +84,20 @@ function noMatch() {
 
 function errorState(reason) {
   render(el("p", { className: "muted" }, reason));
+}
+
+function upgrade(origin) {
+  render(
+    el("p", { className: "muted" }, "Autofill needs the Apply plan on this account."),
+    el("hr"),
+    el(
+      "button",
+      {
+        onclick: () => chrome.tabs.create({ url: `${origin}/pricing?feature=extension_autofill_internships` }),
+      },
+      "see pricing",
+    ),
+  );
 }
 
 /**
@@ -260,32 +281,42 @@ function needsSiteAccess(tab, packet) {
  * ------------------------------------------------------------------ */
 
 async function main() {
-  const tab = await activeTab();
-  if (!tab?.url) return errorState("no active tab");
+  if (bootError) return errorState(bootError);
 
-  const res = await chrome.runtime.sendMessage({ type: "INSTELA_GET_PACKET", pageUrl: tab.url });
+  try {
+    const tab = await activeTab();
+    if (!tab?.url) return errorState("no active tab");
 
-  document.getElementById("origin").value = res.origin ?? "";
+    const res = await chrome.runtime.sendMessage({ type: "INSTELA_GET_PACKET", pageUrl: tab.url });
+    if (!res) return errorState("could not reach the extension — reload it on chrome://extensions");
 
-  switch (res.state) {
-    case "ready": {
-      // Declared hosts answer true without prompting; everything else needs
-      // the one-time per-site grant below.
-      const { granted } = await chrome.runtime.sendMessage({
-        type: "INSTELA_HAS_SITE_ACCESS",
-        pageUrl: tab.url,
-      });
-      if (!granted && originPatternForUrl(tab.url)) return needsSiteAccess(tab, res.packet);
-      return ready(res.packet, tab.id);
+    const originField = document.getElementById("origin");
+    if (originField) originField.value = res.origin ?? "";
+
+    switch (res.state) {
+      case "ready": {
+        // Declared hosts answer true without prompting; everything else needs
+        // the one-time per-site grant below.
+        const { granted } = await chrome.runtime.sendMessage({
+          type: "INSTELA_HAS_SITE_ACCESS",
+          pageUrl: tab.url,
+        });
+        if (!granted && originPatternForUrl(tab.url)) return needsSiteAccess(tab, res.packet);
+        return ready(res.packet, tab.id);
+      }
+      case "signed-out":
+        return signedOut(res.origin);
+      case "unreachable":
+        return unreachable(res.origin);
+      case "upgrade":
+        return upgrade(res.origin);
+      case "no-match":
+        return noMatch();
+      default:
+        return errorState(res.reason ?? "something went wrong");
     }
-    case "signed-out":
-      return signedOut(res.origin);
-    case "unreachable":
-      return unreachable(res.origin);
-    case "no-match":
-      return noMatch();
-    default:
-      return errorState(res.reason ?? "something went wrong");
+  } catch (err) {
+    return errorState(err?.message ?? "could not check this page");
   }
 }
 

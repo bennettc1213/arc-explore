@@ -666,6 +666,38 @@ only you can make, and the feature on the other side of it is already written.
   visibly fatter than the other, which is the first thing anyone would notice._
 
 
+- [x] **The background grid has been invisible on every page since it
+  shipped.** `WarmGrid` draws a full-viewport canvas at `z-index: -1`; measured
+  live it was painting **1,136,592 of 1,296,000 pixels** every frame, and none
+  of it ever reached the screen. The cause is CSS paint order, not the canvas:
+  `globals.css` set `background: var(--bg)` on **both `html` and `body`**, and
+  a `z-index: -1` child of `body` paints in the root stacking context's
+  negative layer (paint step 2) while `body`'s own background box is an in-flow
+  descendant background (paint step 3). Step 3 wins, so `body`'s opaque
+  background covered the grid completely.
+
+  _Found by screenshotting the background with the page content hidden and
+  getting a flat black frame back, then confirming the mechanism directly:
+  setting `document.body.style.background = 'transparent'` in the live page
+  made the entire lattice appear with nothing else changed. Not a regression
+  from the constellation rewrite — the previous dot grid used the identical
+  `zIndex: -1`, `globals.css` was untouched by that work, and both backgrounds
+  predate it._
+
+  _Fixed by dropping the background-color from `body` and leaving it on `html`,
+  which is the one that propagates to the viewport anyway; the duplicate was
+  doing nothing except hiding the canvas. A comment on the `body` rule says so,
+  because re-adding a background there would silently hide the grid again and
+  nothing would fail. The reduced-motion static tile is unaffected — it sets
+  `background-image` on `body`, and there is no canvas to cover in that
+  branch._
+
+  _**The general lesson is worth more than the fix:** a background effect that
+  renders correctly and is never seen fails silently in both directions — no
+  error, no visual, and unit tests cannot see it. It was caught only by looking
+  at the rendered page with the content stripped away, which is the "run it and
+  read the output" doctrine applied to something with no output to read._
+
 - [ ] **The site is not usable on a phone, and it is the nav — not the pages.**
   Measured 2026-08-24 in Chrome at an emulated 390x844 iPhone viewport
   (`mobile,touch`, DPR 3), not by reading the CSS. **Every page's content is
@@ -702,15 +734,21 @@ only you can make, and the feature on the other side of it is already written.
   warning that the nav was already over-full **at desktop width** predicted
   exactly this._
 
-  _**Root cause 3 — the cursor-trail canvas is sized in device pixels with no
-  CSS size, so it is DPR-times too big.** At DPR 3 its `width` attribute is
-  1176 and, with no CSS width set, that attribute becomes its CSS width: a
-  1176px element on a 390px screen. It is `position: fixed` so it adds nothing
-  to `scrollWidth` and is not part of the overflow above — but the trail is
-  being drawn at the wrong scale on **every** high-DPI display, which is every
-  phone and every retina laptop, not just mobile. Separately it is a cursor
-  effect on a device with no cursor and should not run under
-  `(pointer: coarse)` at all._
+  _**Root cause 3 — FIXED, and it was `WarmGrid`'s canvas rather than the
+  cursor trail** (the trail is built from divs and has no canvas at all; the
+  original entry named the wrong component). The finding itself was right and
+  re-measured at DPR 3: a **588px viewport got a 1176px canvas**, exactly 2x.
+  `position: fixed; inset: 0` does not stretch it, because a canvas is a
+  **replaced element** — `width: auto` resolves to its intrinsic size, which is
+  the `width` attribute we set to `viewport x dpr`, and `right: 0` is then
+  dropped as over-constrained. At DPR 1 the two values coincide, which is
+  exactly why this never showed on a desktop. Fixed by setting `width: 100%`
+  and `height: 100%` explicitly; re-measured after, CSS size 588x1273 against a
+  588x1273 viewport with a 2x backing store. **The `(pointer: coarse)` half is
+  handled too** — the grid keeps its texture on touch (it is the page's
+  background, not only a cursor effect) but skips the physics and the
+  `mousemove` listener entirely, so it renders once and stops: measured 0 draws
+  over 1.5s idle on an emulated iPhone._
 
   _**Not measured, and not to be assumed fine:** every signed-in page
   (`/profile`, `/resume`, `/tracker`, `/admin`) — auth is magic-link only, the
@@ -1758,6 +1796,34 @@ reason, not an omission.
 ---
 
 ## 7. Housekeeping
+
+- [x] **`npm run check` could not pass, and nothing in `src/` was the reason.**
+  The untracked scratch directory `party game/` sits inside the repo with its
+  own committed-to-disk `.next/` build output, and both halves of the check
+  walk it. Measured 2026-09-02: `tsc --noEmit` reports 3 errors, all of them
+  unresolved `@/` imports in `party game/src/`; `next lint` reports **9,139
+  problems (654 errors)** and **every single file carrying one is under
+  `party game/.next/`** — generated chunks, not source. Excluding that one
+  path takes the app's own typecheck to clean and `eslint` on the changed
+  component to exit 0, and the suite is green at **730 tests**.
+
+  _Fixed the same day, because it turned out to block **`next build`** and not
+  just the quality gate — so it stood directly between the repo and a
+  deployment. `party game/` is a **fully self-contained Next project**: its own
+  `tsconfig.json`, `package.json`, `node_modules` and `eslint.config.mjs`. That
+  is also why its errors are what they are — its `@/*` imports were resolving
+  against **this** project's `./src`, so they could never have succeeded here.
+  This repo's config had no business reading it. Excluded in three places, one
+  line each: `tsconfig.json` `exclude`, `eslint.config.mjs` `globalIgnores`,
+  and a new `.vercelignore` — the last because its `.next/` alone is **168MB**
+  and was being uploaded on every deploy. Nothing inside that folder was
+  touched. After: typecheck clean, lint clean, 730 tests, `next build`
+  succeeds._
+
+  _**Worth keeping:** a second project nested inside this one is invisible to
+  every tool until it is not, and then it fails in a place that looks like your
+  own code — `next build` reported a type error and named a file, and the file
+  belonged to a different application._
 
 - [ ] **`GITHUB_TOKEN` would also help the link checker's neighbours.** Not
   required — the link checker does not call GitHub — but noted so the two

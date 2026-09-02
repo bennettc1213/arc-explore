@@ -33,6 +33,11 @@ async function fetchPacket(pageUrl) {
       { credentials: "include" },
     );
     if (res.status === 401) return { state: "signed-out", origin };
+    if (res.status === 403) {
+      const body = await res.json().catch(() => ({}));
+      if (body?.error === "upgrade_required") return { state: "upgrade", origin };
+      return { state: "error", reason: `Instela replied ${res.status}`, origin };
+    }
     if (!res.ok) return { state: "error", reason: `Instela replied ${res.status}`, origin };
 
     const body = await res.json();
@@ -81,6 +86,10 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
   if (msg?.type === "INSTELA_ENSURE_SCRIPT") {
     ensureContentScript(msg.tabId).then((ok) => sendResponse({ ok }));
+    return true;
+  }
+  if (msg?.type === "INSTELA_PAGE_READY") {
+    handlePageReady(msg.pageUrl, _sender.tab?.id).then(() => sendResponse({ ok: true }));
     return true;
   }
   return false;
@@ -132,5 +141,45 @@ async function ensureContentScript(tabId) {
     return true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * A supported ATS page just loaded. If Instela has this posting, open the
+ * toolbar panel and put a companion on the page so the student does not have
+ * to hunt for the icon.
+ *
+ * `action.openPopup` is best-effort: Chrome still refuses it without a user
+ * gesture on some versions. The in-page companion is the path that actually
+ * appears on its own.
+ */
+async function handlePageReady(pageUrl, tabId) {
+  const res = await fetchPacket(pageUrl);
+  if (tabId != null) {
+    if (res.state === "ready") {
+      await chrome.action.setBadgeText({ tabId, text: "in" });
+      await chrome.action.setBadgeBackgroundColor({ tabId, color: "#2f81f7" });
+    } else {
+      await chrome.action.setBadgeText({ tabId, text: "" });
+    }
+  }
+  if (res.state !== "ready") return;
+
+  try {
+    await chrome.action.openPopup();
+  } catch {
+    // No user gesture, or this Chrome build does not allow it.
+  }
+
+  if (tabId == null) return;
+  try {
+    await chrome.tabs.sendMessage(tabId, {
+      type: "INSTELA_SHOW_COMPANION",
+      title: res.packet.posting?.title ?? "this application",
+      company: res.packet.posting?.company ?? res.packet.posting?.kind ?? "",
+      origin: res.origin,
+    });
+  } catch {
+    // Content script not listening yet — the next idle pass will retry.
   }
 }

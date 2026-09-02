@@ -107,7 +107,16 @@ html {
 }
 
 body {
-  background: var(--bg);
+  /* NO background-color here, deliberately. `html` already carries it, and a
+     second opaque background on `body` paints OVER `WarmGrid`'s canvas: a
+     `z-index: -1` child of `body` paints in the root stacking context's
+     negative layer (step 2 of the paint order), while `body`'s own background
+     box is an in-flow descendant background (step 3). Step 3 wins.
+
+     This is not theoretical — the grid was drawing every frame and had been
+     completely invisible on every page since it shipped, which is what
+     screenshotting the background on its own found. Re-adding a background
+     here would silently hide it again. */
   color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

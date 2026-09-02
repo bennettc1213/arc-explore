@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // A self-contained sibling project with its own eslint config. Its
+    // generated .next/ chunks accounted for all 9,139 problems this reported.
+    "party game/**",
   ]),
 ]);
 

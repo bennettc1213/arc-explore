@@ -155,6 +155,19 @@ test("the embed bridge refuses any parent that is not Arc", () => {
   assert.doesNotMatch(js, /postMessage\([^)]*,\s*["']\*["']\s*\)/, "must never postMessage to '*'");
 });
 
+test("compiled vendor modules use file extensions Chrome can load", () => {
+  // A missing ".js" on `from "./frame-headers"` is why the popup sat on
+  // "checking this page…" forever: the module graph failed and main() never ran.
+  const vendor = join(EXT, "vendor");
+  const files = ["apply-url.js", "autofill.js", "frame-headers.js", "submitted.js"];
+  for (const file of files) {
+    const src = readFileSync(join(vendor, file), "utf8");
+    for (const spec of src.matchAll(/from\s+["'](\.[^"']+)["']/g)) {
+      assert.match(spec[1], /\.js$/, `${file} imports ${spec[1]} without .js`);
+    }
+  }
+});
+
 test("the embedded path still never submits, and still fills through the tested matcher", () => {
   const js = code("content.js");
   // Re-asserted specifically for the new path: an embedded form is still the

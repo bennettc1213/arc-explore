@@ -222,6 +222,11 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     );
     return true; // async
   }
+  if (msg?.type === "INSTELA_SHOW_COMPANION") {
+    showCompanion(msg);
+    sendResponse({ ok: true });
+    return false;
+  }
   return false;
 });
 
@@ -381,3 +386,139 @@ async function watchForSubmission(notify) {
   submissionWatcher.observe(document.body, { childList: true, subtree: true, characterData: true });
   return true;
 }
+
+/* ------------------------------------------------------------------ *
+ * In-page companion — appears on its own when this tab is a listing
+ * Instela already has. The toolbar popup cannot open without a click
+ * on every Chrome build, so this is the thing that actually "pulls up".
+ *
+ * Values still do not live here until the student presses fill.
+ * ------------------------------------------------------------------ */
+
+const COMPANION_ID = "instela-companion";
+
+function showCompanion(info) {
+  if (window !== window.top) return;
+  if (document.getElementById(COMPANION_ID)) return;
+
+  const host = document.createElement("div");
+  host.id = COMPANION_ID;
+  host.setAttribute("data-instela", "companion");
+  Object.assign(host.style, {
+    position: "fixed",
+    top: "16px",
+    right: "16px",
+    zIndex: "2147483646",
+    width: "320px",
+    maxWidth: "calc(100vw - 32px)",
+    background: "#0d0d0f",
+    color: "#e8e8ea",
+    border: "1px solid #3a3a42",
+    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+    fontSize: "12px",
+    lineHeight: "1.5",
+    boxShadow: "0 12px 40px rgba(0,0,0,0.45)",
+  });
+
+  const header = document.createElement("div");
+  Object.assign(header.style, {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: "8px",
+    padding: "10px 12px",
+    borderBottom: "1px solid #26262b",
+  });
+  const brand = document.createElement("div");
+  brand.innerHTML = '<span style="color:#2f81f7;font-weight:700;letter-spacing:0.04em">in</span><span style="color:#8b8b95;letter-spacing:0.08em;text-transform:uppercase;font-size:10px">stela</span>';
+  const close = document.createElement("button");
+  close.type = "button";
+  close.textContent = "close";
+  Object.assign(close.style, {
+    font: "inherit",
+    fontSize: "11px",
+    color: "#8b8b95",
+    background: "none",
+    border: "0",
+    padding: "0",
+    cursor: "pointer",
+    textDecoration: "underline",
+  });
+  close.addEventListener("click", () => host.remove());
+  header.append(brand, close);
+
+  const body = document.createElement("div");
+  Object.assign(body.style, { padding: "12px" });
+
+  const title = document.createElement("div");
+  title.textContent = info.title ?? "this application";
+  Object.assign(title.style, { fontWeight: "600", marginBottom: "2px" });
+
+  const company = document.createElement("div");
+  company.textContent = info.company ?? "";
+  Object.assign(company.style, { color: "#8b8b95", marginBottom: "12px" });
+
+  const status = document.createElement("div");
+  Object.assign(status.style, { color: "#8b8b95", marginTop: "10px" });
+
+  const fillButton = document.createElement("button");
+  fillButton.type = "button";
+  fillButton.textContent = "fill this form";
+  Object.assign(fillButton.style, {
+    font: "inherit",
+    width: "100%",
+    padding: "9px 12px",
+    border: "1px solid #2f81f7",
+    background: "#2f81f7",
+    color: "#fff",
+    cursor: "pointer",
+  });
+  fillButton.addEventListener("click", async () => {
+    fillButton.disabled = true;
+    fillButton.textContent = "filling…";
+    status.textContent = "";
+    try {
+      const packet = await chrome.runtime.sendMessage({
+        type: "INSTELA_GET_PACKET",
+        pageUrl: location.href,
+      });
+      if (packet?.state !== "ready") {
+        status.textContent =
+          packet?.state === "signed-out"
+            ? "sign in to Instela in this browser, then try again"
+            : packet?.state === "upgrade"
+              ? "autofill needs the Apply plan"
+              : packet?.state === "unreachable"
+                ? "could not reach Instela"
+                : "Instela does not have this posting";
+        return;
+      }
+      const res = await fill(packet.packet.values);
+      const r = res.report ?? { filled: 0, blocked: 0, skippedNonEmpty: 0 };
+      status.textContent =
+        `filled ${r.filled} field${r.filled === 1 ? "" : "s"}` +
+        (r.skippedNonEmpty ? ` · left ${r.skippedNonEmpty} you had already typed` : "") +
+        (r.blocked ? ` · ${r.blocked} are yours to answer` : "");
+    } catch (err) {
+      status.textContent = err?.message ?? "fill failed";
+    } finally {
+      fillButton.disabled = false;
+      fillButton.textContent = "fill this form again";
+    }
+  });
+
+  const note = document.createElement("div");
+  note.textContent = "Read the form, attach your resume, then submit it yourself.";
+  Object.assign(note.style, { color: "#8b8b95", marginTop: "10px" });
+
+  body.append(title, company, fillButton, status, note);
+  host.append(header, body);
+  (document.body ?? document.documentElement).append(host);
+}
+
+function announcePage() {
+  if (window !== window.top) return;
+  chrome.runtime.sendMessage({ type: "INSTELA_PAGE_READY", pageUrl: location.href }).catch(() => {});
+}
+
+announcePage();
