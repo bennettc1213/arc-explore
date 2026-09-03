@@ -28,6 +28,7 @@ import {
   type ScoreProfile,
   type FitResult,
 } from "./score/fit";
+import { jitter, resolution } from "./score/evidence";
 import { relevanceScore } from "./score/relevance";
 import { dayIndex, rotationRank } from "./score/rotation";
 import { scholarshipFields, scoreScholarshipFit } from "./score/scholarship-fit";
@@ -198,8 +199,33 @@ export interface FeedStats {
   withUnknownTerm: number;
 }
 
+/**
+ * How many points of each scale this particular ranking has earned.
+ *
+ * Measured on the rows about to be ordered rather than assumed, and measured
+ * per request rather than per row — a per-row width is not order-preserving and
+ * was caught inverting real rankings on the live corpus. Fit and timing are
+ * measured separately because they are separate bodies of evidence: a corpus
+ * can be well observed on when a posting closes while knowing nothing about
+ * whether it suits this student, and that is exactly the signed-out case.
+ * See score/evidence.ts.
+ */
+interface Resolutions {
+  fit: number;
+  timing: number;
+}
+
+function resolutionsFor(items: FeedItem[]): Resolutions {
+  return {
+    fit: resolution(items.map((i) => ({ raw: i.fit.score, shrunk: rankingScore(i.fit) }))),
+    timing: resolution(
+      items.map((i) => ({ raw: i.timing.score, shrunk: rankingTiming(i.timing) })),
+    ),
+  };
+}
+
 /** One posting's position on the ranking scale — see `makeRank` below. */
-function sortKey(item: FeedItem, timingPoints: number): number {
+function sortKey(item: FeedItem, timingPoints: number, res: Resolutions, day: number): number {
   // Confidence-weighted, not the raw score — see rankingScore. Sorting on the
   // displayed number puts the postings we understand *least* at the top.
   const fit = rankingScore(item.fit);
@@ -212,19 +238,45 @@ function sortKey(item: FeedItem, timingPoints: number): number {
    * at all. Unknown stays unknown; it does not borrow confidence from a
    * different dimension.
    */
-  if (fit < 0 || timingPoints === 0) return fit;
+  if (fit < 0) return fit;
 
   /*
+   * HOW FAR TIMING MAY MOVE A ROW, AND WHY THAT IS NOT A CONSTANT ANY MORE.
+   *
    * Centred on the neutral prior, so average timing is worth nothing and the
    * bonus is genuinely a bonus rather than a rescaling. `rankingTiming` has
-   * already shrunk toward that same prior by its own confidence, so a row
-   * whose timing rests on 1 of 3 signals cannot claim the full swing.
+   * already shrunk toward that same prior by its own confidence, so a row whose
+   * timing rests on 1 of 3 signals cannot claim the full swing.
    *
-   * Bounded at ±`timingPoints` by construction: `rankingTiming` is 0–100 and
-   * the prior is its midpoint.
+   * What is new is the free tier's share. Timing is **evidence**, and it is the
+   * only evidence in the whole ranking that moves from one day to the next, so
+   * it is allowed to reorder rows inside the region fit has admitted it cannot
+   * resolve — and no further, which is what keeps it from becoming the blend
+   * this project measured and rejected. Signed out that region is wide, because
+   * all five of `scoreFit`'s dimensions need a profile to compare against and
+   * 3,026 of 5,164 rows therefore score nothing at all; with a filled profile
+   * it narrows, and at full confidence it vanishes and this term switches
+   * itself off. The plan's entitlement stacks on top rather than replacing it,
+   * so paid still buys strictly more timing authority than free.
+   *
+   * The quarter-resolution split is so that this and the daily shuffle below
+   * can each move a row by at most a quarter of the resolution, and therefore
+   * together by at most half of it in either direction: two rows swap only if
+   * they were within one resolution of each other to begin with.
    */
-  const bonus = (timingPoints * (rankingTiming(item.timing) - NEUTRAL_PRIOR)) / NEUTRAL_PRIOR;
-  return fit + bonus;
+  const authority = res.fit / 4 + timingPoints;
+  const bonus =
+    authority === 0
+      ? 0
+      : (authority * (rankingTiming(item.timing) - NEUTRAL_PRIOR)) / NEUTRAL_PRIOR;
+
+  /*
+   * And the part no evidence covers. Everything above is a claim; this is the
+   * admission that below `res.fit` points the claim is not one. Deterministic
+   * per row per UTC day, drawn from the same seed the exact-tie rotation uses,
+   * so the order is stable for a whole day and changes at midnight.
+   */
+  return fit + bonus + jitter(rotationRank(item.id, day), res.fit / 2);
 }
 
 /**
@@ -251,7 +303,12 @@ function sortKey(item: FeedItem, timingPoints: number): number {
  * what is still worth acting on rises among comparable matches without
  * anything unsuitable being promoted past them.
  */
-function makeRank(timingPoints: number, day: number, terms: string[] = []) {
+function makeRank(
+  timingPoints: number,
+  day: number,
+  terms: string[] = [],
+  res: Resolutions = { fit: 0, timing: 0 },
+) {
   const searching = terms.length > 0;
   // Computed once per row per sort, not once per comparison — `sort` calls the
   // comparator O(n log n) times and this walks the title with a regex.
@@ -264,6 +321,18 @@ function makeRank(timingPoints: number, day: number, terms: string[] = []) {
         terms,
       );
       relevance.set(item.id, v);
+    }
+    return v;
+  };
+
+  // Same reason as the relevance memo above: derived once per row, not once
+  // per comparison, and `sort` asks O(n log n) times.
+  const keys = new Map<string, number>();
+  const keyOf = (item: FeedItem): number => {
+    let v = keys.get(item.id);
+    if (v === undefined) {
+      v = sortKey(item, timingPoints, res, day);
+      keys.set(item.id, v);
     }
     return v;
   };
@@ -292,8 +361,8 @@ function makeRank(timingPoints: number, day: number, terms: string[] = []) {
       if (byRelevance) return byRelevance;
     }
 
-    const ak = sortKey(a, timingPoints);
-    const bk = sortKey(b, timingPoints);
+    const ak = keyOf(a);
+    const bk = keyOf(b);
     if (bk !== ak) return bk - ak;
 
     // Still the tiebreaker at every weight, including 0 — two postings whose
@@ -581,7 +650,15 @@ export async function getFeed(
    * ordering — `sort` may do anything at all with a comparator that
    * contradicts itself.
    */
-  filtered.sort(makeRank(filters.timingPoints ?? 0, dayIndex(), parseSearchQuery(filters.q)));
+  /*
+   * The resolution this particular ranking has earned, measured on the rows it
+   * is about to order rather than assumed. Signed out it comes back wide and
+   * the head genuinely turns over; with a filled profile it narrows and the
+   * ranking stays sharp enough to come back to. See score/evidence.ts.
+   */
+  const res = resolutionsFor(filtered);
+  const day = dayIndex();
+  filtered.sort(makeRank(filters.timingPoints ?? 0, day, parseSearchQuery(filters.q), res));
   // Rank first, then trim — never a SQL LIMIT. See the comment on the query
   // above: trimming before ranking lets whichever kind was ingested last crowd
   // the other out of the top N entirely.

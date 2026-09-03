@@ -645,8 +645,11 @@ only you can make, and the feature on the other side of it is already written.
   `tracker`/`resume`/`profile` beside it rendered at 11px. Visible in any
   screenshot of the nav once you know to look. Dropping the inline `font` fixed
   it; all six nav items now measure 11px._
-- [~] **The feed ordering was frozen, because ties resolved to raw database
-  order.** Second half of the "same scholarships every time" report — the first
+- [x] **The feed ordering was frozen, because ties resolved to raw database
+  order.** _Closed 2026-09-03 — see the new entry immediately below, which
+  measured what the rotation actually bought and replaced the mechanism. The
+  original text is kept because its measurement is still the reason any of
+  this exists._ Second half of the "same scholarships every time" report — the first
   half was the week-old corpus (§1, `DATABASE_URL`). Measured against the live
   corpus for the most-filled profile on the account, before writing anything:
 
@@ -685,6 +688,78 @@ only you can make, and the feature on the other side of it is already written.
   which is §1. Left open: if real day-over-day turnover in the top 20 is
   wanted, that is a product decision about deliberately loosening the head's
   ordering, not a tuning change._
+
+- [x] **A signed-out visitor saw 14 distinct rows in 30 days, out of 5,164.**
+  Reported a third time — "every single time that we hop onto the site, it's
+  the same scholarships and internships list … that needs to be consistently
+  refreshing even for the people that aren't specifically signed in". The two
+  previous attempts (the daily rotation above; the ingest cron in §1) had both
+  landed and neither moved this, so it was measured end to end before anything
+  was written.
+
+  _**What the corpus said.** For a signed-out visitor the free window of 10
+  turned over about **one row a day** and the top 20 was **identical a week
+  later**; across 30 days a visitor could reach **14 distinct rows of 5,164**,
+  0.27% of the corpus. Meanwhile **45 of the first 50 ranks already sat in a
+  tie group larger than one** — which is the paradox that explains why the
+  rotation could not help. It is correctly bounded to **exact** ties, and the
+  head was not separated by evidence, it was separated by arithmetic noise:
+  rows 0 and 3 were ordered by **one point of a timing score resting on 2 of 3
+  signals**, rows 2 and 5 by a 5.3-point fit gap that existed only because a
+  different one of three dimensions happened to be the computable one._
+
+  _**Ingestion cannot fix this and it is worth recording why.** `ingest-fast`
+  is scheduled every 20 minutes and actually runs every 3–5 hours (observed
+  16:40, 12:35, 07:47, 02:55, 23:51 UTC — GitHub's scheduler, not our code),
+  and a run adds 0–73 rows. Even running perfectly it is ~100 new rows a day
+  against 5,164. **The ranking has to do this work; the crawler cannot.**_
+
+  _**The rule that fixed it:** ranking precision may not exceed the evidence
+  the ranking rests on. `score/evidence.ts` measures how many points of the
+  scale are meaningful for **this** request — the mean distance the confidence
+  shrink actually moved these rows — and displaces each row by a deterministic
+  amount inside half of it, seeded from the same daily seed `rotationRank`
+  already uses. Two rows swap only if they were within one resolution of each
+  other; at full confidence the resolution is 0 and the ranking is
+  bit-for-bit what it was before. Live: **30.1 points signed out, 18.5 for a
+  filled CS profile**, so the feed sharpens itself as it learns about someone
+  without anyone choosing the two behaviours separately._
+
+  _**Measured after, signed out:** free window of 10 goes 14 → **26 distinct
+  rows over 30 days** and 8-of-10 unchanged daily → 4-of-10; a window of 50
+  goes 52 → **255**. Top-20 mean fit 97.2 → **94.0, minimum 84**, so the
+  freshness costs almost nothing in match quality. A filled CS profile keeps
+  **mean fit 97.7** and gets a narrower resolution, as intended._
+
+  _**Two designs were built and rejected by the corpus first, and both are
+  recorded in the module because a test written from the same assumption would
+  have passed either.** (1) **A per-row band width** is not order-preserving:
+  a row at 1 of 5 dimensions (key 60.0) banded **above** a row at 2 of 3 (key
+  66.7), promoting the row we knew less about. (2) **A grid** has boundary
+  cliffs: with a 30.1-point spacing the top band came out holding **exactly 12
+  rows** while the next held 1,989, because the grid line fell at 75.15 and a
+  2.5-point difference decided membership of a band that was supposed to mean
+  "we cannot resolve 30 points". A jitter has no boundaries and no inversions —
+  both are asserted by test, and all three sabotage runs (amplitude too large,
+  unscoreable rows counted, displacement not centred) were confirmed to fail
+  the suite before it was believed._
+
+- [x] **Timing had no weight at all on the free tier, which is the tier that
+  complained.** Fallout from the entry above rather than a separate bug.
+  `TIMING_PRIORITY_POINTS` is 0 on free, so timing entered a free ranking only
+  as an exact-tie breaker — and timing is **the only evidence in the whole
+  ranking that changes from one day to the next**, because a signed-out fit
+  rests on award size and a spam flag, both of which are fixed facts about the
+  posting.
+  _Timing now gets an authority of `resolution / 4 + timingPoints`: it is
+  evidence, so it may reorder rows inside the region fit has admitted it cannot
+  resolve, and no further — which is what keeps it from becoming the fit/timing
+  blend this project measured and rejected in Session 4. The plan's entitlement
+  **stacks on top rather than replacing it**, so paid still buys strictly more
+  timing authority: measured live, paid and free top-20s now share 16 of 20 in
+  a different order, where an intermediate version of this work had them
+  **byte-identical** and the paid feature genuinely inert._
+
 - [ ] **The remaining ~0.9s of feed time is the rank-everything design, and it
   is not obviously wrong.** `getFeed` fetches all 3,788 matched rows on every
   request because ranking is in memory and a pre-rank SQL `LIMIT` would let one
