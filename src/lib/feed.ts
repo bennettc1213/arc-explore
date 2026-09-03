@@ -164,6 +164,16 @@ export interface FeedFilters {
    * was added.
    */
   timingPoints?: number;
+  /**
+   * Overrides the rotation's day seed.
+   *
+   * Exists so the feed's day-over-day turnover can be measured by asking the
+   * real `getFeed` for tomorrow, rather than by a second copy of the
+   * comparator in a script — which is the duplicate-definition trap that cost
+   * this project the remote-only filter bug. `npm run feed:turnover` is the
+   * only caller; the feed itself never sets it.
+   */
+  day?: number;
 }
 
 
@@ -657,7 +667,7 @@ export async function getFeed(
    * ranking stays sharp enough to come back to. See score/evidence.ts.
    */
   const res = resolutionsFor(filtered);
-  const day = dayIndex();
+  const day = filters.day ?? dayIndex();
   filtered.sort(makeRank(filters.timingPoints ?? 0, day, parseSearchQuery(filters.q), res));
   // Rank first, then trim — never a SQL LIMIT. See the comment on the query
   // above: trimming before ranking lets whichever kind was ingested last crowd
