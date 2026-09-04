@@ -1808,7 +1808,7 @@ measured.
   was chosen when a query could only filter, so depth was the only way a free
   user found anything specific. With results ordered by relevance, ten
   well-matched rows beat twenty mediocre ones.
-- [ ] **Search still has no typo tolerance and cannot see structured facts.**
+- [x] **Search still has no typo tolerance and cannot see structured facts.**
   Measured: `"software enginer"` returns **0 rows** and `"$5000"` returns 0
   despite `amount_min`/`amount_max` being columns. Both belong in the SQL
   filter, not the ranker - a ranker scoring on a different notion of "match"
@@ -1818,6 +1818,85 @@ measured.
   search sees so little: **only 59 of 1,879 open scholarships carry any
   eligibility text and 0 carry a description**, so search is effectively
   title-and-sponsor only. That is an ingestion gap, not a search one.
+
+  _**FIXED 2026-09-03**, and the honest scope is: structured facts yes, typo
+  tolerance only partly and by a side effect rather than by design. Measured
+  first on **25 queries written before the implementation** — misspellings,
+  abbreviations, plurals, amounts, hyphens — kept as `npm run search:quality`
+  so the list cannot be quietly reselected to the ones that pass. **Six of the
+  25 returned nothing at all; now none do.**_
+
+  _**What was actually wrong was the filter, not the ranker.** The ranker added
+  last session can only reorder what the filter admitted, so no amount of
+  scoring rescues a query that returned zero rows. `lib/search/query.ts` is
+  the layer that turns typed text into something the filter and the ranker can
+  both read, and it does three separable jobs: lift out facts we hold in
+  columns (amount, kind, remote), normalise what is left (so
+  "first-generation" and "first generation" stop being two queries), and expand
+  each remaining word into what would also count — an abbreviation's expansion,
+  a stem covering the inflections. The literal stays first and
+  `relevanceScore` privileges it, so widening the net does not scramble the
+  order._
+
+  | query | before | after | top hit now |
+  |---|---|---|---|
+  | `software enginer` | **0** | 1,056 | Software Engineering Intern |
+  | `compsci` | **0** | 704 | Computer Science Internship Summer 2027 |
+  | `$5000` | **0** | 12 | Daughters of Cincinnati Scholarship |
+  | `scholarships over $10000` | **0** | 5 | Daughters of Cincinnati Scholarship |
+  | `business administration` | **0** | 201 | Business Support and Finance Internships |
+  | `psychology` | 3 | 62 | Future Counselors of America Scholarship |
+  | `teaching` | 1 | 63 | STEM Teachers for America's Future |
+  | `nurse` | 2 | 14 | NURSE Corps Scholarship Program |
+  | `first-generation` | 2 | 240 | First Generation College Student Scholarship |
+  | `art` | 212 (polluted) | 469 | Art Product Development Intern |
+
+  _**`descriptionText` is now searched, reversing an earlier decision, and the
+  measurement is the reason.** It was excluded because "python appears in the
+  boilerplate of half our internship descriptions" — measured, that is **780 of
+  3,252, so 24% rather than half**, and decisively the call **predates the
+  relevance ranker**. The cost it was avoiding was a ranking cost, and the
+  ranker now absorbs it: a row matched only in a description scores 0 on that
+  term and sorts below every row matched somewhere visible, at no extra column,
+  because relevance already treats "not found here" as 0. What the exclusion
+  was costing is not marginal — **"business administration" returned 0 rows
+  while 134 descriptions carried the phrase.** It stays out of `FEED_SELECT`,
+  so none of that text is carried into memory or serialised._
+
+  _**Matching moved from a bare substring to a word-start anchor**, which is
+  the same class of bug as the taxonomy's unbounded `law` matching "Delaware",
+  one layer down in the filter. Searching descriptions made it acute: "art"
+  reached **2,961 rows, 57% of the corpus**, on Start, Smart, Heartland and
+  Part-time. Anchoring at the *start of a word* rather than requiring a whole
+  word is deliberate, because `feed-search.ts` promises "eng" finds
+  "Engineering". Live: "art" 149 title matches → 36, while "eng" only falls
+  1,053 → 1,043 and "nurs" holds at 13._
+
+  _**`[[:<:]]`, not `m` or `y`, and this is worth knowing before anyone
+  "tidies" it.** Both were tested against the live database through this driver
+  and **both are silently wrong**: `m` behaves as a literal "m" (so
+  `mart` matched "Smart Start" and `meng` matched nothing at all) and
+  `y` matches nothing in any position. A pattern that quietly means
+  something else is worse than one that errors._
+
+  _**Typo tolerance is only partly closed and the mechanism is an accident, so
+  do not read the table above as more than it says.** "software enginer" works
+  because the stemmer cuts a trailing "er" and the resulting "engin" is a
+  prefix of "engineering" — that catches trailing-letter errors and nothing
+  else. **"engneering" or "nrsing" still return nothing.** `pg_trgm` is
+  available on the instance but not installed, and remains the real route;
+  whatever does it must present relaxed matches as relaxed, which is what the
+  unused `ParsedQuery.relaxations` field is reserved for._
+
+  _**A bug the new tests caught in my own code, which is the reason they exist
+  in that shape.** `escapeRegex` shipped into the first live measurement
+  returning the literal string `${c}` for every metacharacter — a heredoc had
+  eaten the backslashes — so it escaped nothing at all. The test asserts each
+  escaped term still matches itself rather than asserting a remembered output
+  string, which is why it failed instead of enshrining the breakage. Verified
+  after: `c++` returns 319 rows led by "Intern Software Engineers - C/C++",
+  and a bare asterisk, a lone backslash, "a|b" and "100%" all return sensible
+  results without throwing._
 
 ## 6. Deliberately not built — revisit only if asked
 

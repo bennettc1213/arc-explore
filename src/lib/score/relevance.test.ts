@@ -9,15 +9,24 @@ const row = (title: string, company?: string, eligibility: string[] = []) => ({
   eligibility,
 });
 
+/**
+ * The literal-only form of a term.
+ *
+ * These tests predate query expansion and assert what relevance does with the
+ * word a student actually typed, which is unchanged. Wrapping keeps them
+ * asserting exactly that rather than being rewritten around the new shape.
+ */
+const terms = (...literals: string[]) => literals.map((literal) => ({ literal, alternates: [literal] }));
+
 describe("relevanceScore", () => {
   test("a title match beats a sponsor match beats an eligibility mention", () => {
     // The whole point: every row reaching this function already contains the
     // term, so relevance is about WHERE it appears, not whether.
-    const inTitle = relevanceScore(row("Nursing Scholarship"), ["nursing"]);
-    const inSponsor = relevanceScore(row("Memorial Scholarship", "Nursing Trust"), ["nursing"]);
+    const inTitle = relevanceScore(row("Nursing Scholarship"), terms("nursing"));
+    const inSponsor = relevanceScore(row("Memorial Scholarship", "Nursing Trust"), terms("nursing"));
     const inEligibility = relevanceScore(
       row("Memorial Scholarship", "Rodeo Foundation", ["open to nursing students"]),
-      ["nursing"],
+      terms("nursing"),
     );
     assert.ok(inTitle > inSponsor, `title ${inTitle} should beat sponsor ${inSponsor}`);
     assert.ok(inSponsor > inEligibility, `sponsor ${inSponsor} should beat eligibility ${inEligibility}`);
@@ -27,12 +36,12 @@ describe("relevanceScore", () => {
     // Measured before this existed — "nursing" returned 15 rows led by "Reno
     // Rodeo Foundation Scholarship", which mentions nursing in its eligibility
     // prose, above actual nursing scholarships.
-    const real = relevanceScore(row("Mildred Nutting Nursing Scholarship"), ["nursing"]);
+    const real = relevanceScore(row("Mildred Nutting Nursing Scholarship"), terms("nursing"));
     const incidental = relevanceScore(
       row("Reno Rodeo Foundation Scholarship", "Reno Rodeo Foundation", [
         "applicants pursuing nursing, education or agriculture",
       ]),
-      ["nursing"],
+      terms("nursing"),
     );
     assert.ok(real > incidental, `${real} should beat ${incidental}`);
   });
@@ -40,29 +49,26 @@ describe("relevanceScore", () => {
   test("a whole word beats a substring inside a longer word", () => {
     // "art" inside "particle" is not an arts scholarship. Same class of error
     // as the taxonomy's \blaw\b boundary bug matching "Delaware".
-    const word = relevanceScore(row("Art Scholarship"), ["art"]);
-    const inside = relevanceScore(row("Particle Physics Scholarship"), ["art"]);
+    const word = relevanceScore(row("Art Scholarship"), terms("art"));
+    const inside = relevanceScore(row("Particle Physics Scholarship"), terms("art"));
     assert.ok(word > inside, `whole word ${word} should beat substring ${inside}`);
   });
 
   test("leading the title beats appearing later in it", () => {
-    const leading = relevanceScore(row("Nursing Excellence Scholarship"), ["nursing"]);
-    const later = relevanceScore(row("Foundation Scholarship for Nursing"), ["nursing"]);
+    const leading = relevanceScore(row("Nursing Excellence Scholarship"), terms("nursing"));
+    const later = relevanceScore(row("Foundation Scholarship for Nursing"), terms("nursing"));
     assert.ok(leading > later, `${leading} should beat ${later}`);
   });
 
   test("the query as a contiguous phrase beats its words scattered", () => {
-    const phrase = relevanceScore(row("Computer Science Scholarship"), ["computer", "science"]);
-    const scattered = relevanceScore(row("Computer Lab Fund of the Science Foundation"), [
-      "computer",
-      "science",
-    ]);
+    const phrase = relevanceScore(row("Computer Science Scholarship"), terms("computer", "science"));
+    const scattered = relevanceScore(row("Computer Lab Fund of the Science Foundation"), terms("computer", "science"));
     assert.ok(phrase > scattered, `phrase ${phrase} should beat scattered ${scattered}`);
   });
 
   test("matching every term beats matching only some", () => {
-    const both = relevanceScore(row("Women in STEM Scholarship"), ["women", "stem"]);
-    const one = relevanceScore(row("Women's Memorial Scholarship", "STEM Trust"), ["women", "stem"]);
+    const both = relevanceScore(row("Women in STEM Scholarship"), terms("women", "stem"));
+    const one = relevanceScore(row("Women's Memorial Scholarship", "STEM Trust"), terms("women", "stem"));
     assert.ok(both > one, `${both} should beat ${one}`);
   });
 
@@ -73,16 +79,16 @@ describe("relevanceScore", () => {
   });
 
   test("scores stay inside 0-100", () => {
-    const max = relevanceScore(row("nursing"), ["nursing"]);
+    const max = relevanceScore(row("nursing"), terms("nursing"));
     assert.ok(max <= 100 && max >= 0, `out of range: ${max}`);
-    assert.equal(relevanceScore(row("Nursing Scholarship"), ["unrelated"]), 0);
+    assert.equal(relevanceScore(row("Nursing Scholarship"), terms("unrelated")), 0);
   });
 
   test("a regex metacharacter in the query cannot throw", () => {
     // The query is user input and reaches `new RegExp` — "C++" and "$5,000"
     // are things students genuinely type.
     for (const q of ["c++", "$5,000", "(", "[", "a|b", "*", "\\"]) {
-      assert.doesNotThrow(() => relevanceScore(row("C++ Scholarship"), [q]), `threw on ${q}`);
+      assert.doesNotThrow(() => relevanceScore(row("C++ Scholarship"), terms(q)), `threw on ${q}`);
     }
   });
 });

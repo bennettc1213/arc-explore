@@ -30,7 +30,8 @@
     "build:mark": "tsx scripts/build-mark.ts",
     "build:extension": "tsc src/lib/apply/autofill.ts src/lib/apply/apply-url.ts src/lib/apply/submitted.ts src/lib/apply/frame-headers.ts --outDir extension/vendor --module es2020 --target es2020 --moduleResolution bundler && node scripts/fix-extension-imports.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
-    "feed:turnover": "tsx scripts/feed-turnover.ts"
+    "feed:turnover": "tsx scripts/feed-turnover.ts",
+    "search:quality": "tsx scripts/search-quality.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

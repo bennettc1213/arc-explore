@@ -12,11 +12,12 @@
  * read the other's columns.
  */
 
-import { desc, eq, isNull, and, isNotNull, sql } from "drizzle-orm";
+import { desc, eq, isNull, and, isNotNull, or, sql, type SQL } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { organizations, postings, type FreshnessTier, type PostingKind } from "@/db/schema";
-import { escapeLike, parseSearchQuery, type DeadlineFilter } from "./feed-search";
+import { escapeLike, type DeadlineFilter } from "./feed-search";
+import { escapeRegex, parseQuery } from "./search/query";
 import { trimWithReservation } from "./feed-trim";
 import { isFlaggedDead } from "./ingest/linkcheck";
 import {
@@ -29,7 +30,7 @@ import {
   type FitResult,
 } from "./score/fit";
 import { jitter, resolution } from "./score/evidence";
-import { relevanceScore } from "./score/relevance";
+import { relevanceScore, type RelevanceTerm } from "./score/relevance";
 import { dayIndex, rotationRank } from "./score/rotation";
 import { scholarshipFields, scoreScholarshipFit } from "./score/scholarship-fit";
 import {
@@ -316,7 +317,7 @@ function sortKey(item: FeedItem, timingPoints: number, res: Resolutions, day: nu
 function makeRank(
   timingPoints: number,
   day: number,
-  terms: string[] = [],
+  terms: RelevanceTerm[] = [],
   res: Resolutions = { fit: 0, timing: 0 },
 ) {
   const searching = terms.length > 0;
@@ -327,7 +328,12 @@ function makeRank(
     let v = relevance.get(item.id);
     if (v === undefined) {
       v = relevanceScore(
-        { title: item.title, company: item.company, eligibility: item.eligibility },
+        {
+          title: item.title,
+          company: item.company,
+          eligibility: item.eligibility,
+          skills: item.skills,
+        },
         terms,
       );
       relevance.set(item.id, v);
@@ -548,6 +554,31 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
   };
 }
 
+/**
+ * Postgres's start-of-word anchor, and the reason it is spelled this way.
+ *
+ * A bare substring match is what let "art" return 212 rows led by Start, Smart,
+ * Heartland and Part-time — the same class of error as the taxonomy's unbounded
+ * `law` matching "Delaware", now in the filter rather than the classifier. It
+ * got worse, not better, once descriptions were searched: "art" reached **2,961
+ * rows, 57% of the whole corpus.**
+ *
+ * Anchoring at the *start of a word* rather than requiring a whole word is the
+ * deliberate half-measure, and it preserves an existing promise: feed-search.ts
+ * states that "eng" must find "Engineering", which whole-word matching would
+ * break. Measured on live titles: "art" 149 substring matches -> 36 word-start
+ * (Heartland and Part-time correctly gone, "Makeup Artist" and "Digital Artist"
+ * correctly kept), while "eng" only falls 1,053 -> 1,043 and "nurs" holds at 13.
+ *
+ * `[[:<:]]` and not `m` or `y`, which is not a style choice. Both were
+ * tested against the live database through this driver and **both are silently
+ * wrong**: `m` behaves as a literal "m" (so `mart` matched "Smart Start"
+ * and `meng` matched nothing at all) and `y` matches nothing in any
+ * position. A pattern that quietly means something else is worse than one that
+ * errors, so this form is pinned here with the measurement that chose it.
+ */
+const WORD_START = "[[:<:]]";
+
 export async function getFeed(
   profile: ScoreProfile,
   filters: FeedFilters = {},
@@ -565,9 +596,20 @@ export async function getFeed(
   if (filters.newSince) {
     conditions.push(sql`${postings.firstSeenAt} > ${filters.newSince.toISOString()}::timestamptz`);
   }
+  /*
+   * The typed query is read once, here, and everything downstream reads the
+   * result — the SQL filter, the amount and kind filters, and the ranker. One
+   * definition of what a query means, for the same reason `filtersFromParams`
+   * became the single reader of the URL after the remote-only bug.
+   */
+  const query = parseQuery(filters.q);
+
   if (filters.term) conditions.push(eq(postings.term, filters.term));
-  if (filters.remoteOnly) conditions.push(eq(postings.isRemote, true));
-  if (filters.kind) conditions.push(eq(postings.kind, filters.kind));
+  // A control the student set explicitly wins over one we inferred from their
+  // words; where both point the same way the merge is a no-op.
+  if (filters.remoteOnly || query.remoteOnly) conditions.push(eq(postings.isRemote, true));
+  const kind = filters.kind ?? query.kind;
+  if (kind) conditions.push(eq(postings.kind, kind));
   if (filters.excludeMarketing) conditions.push(eq(postings.isContentMarketing, false));
 
   if (filters.deadline) {
@@ -581,10 +623,12 @@ export async function getFeed(
     }
   }
 
-  if (filters.minAmount) {
-    conditions.push(
-      sql`coalesce(${postings.amountMin}, ${postings.amountMax}) >= ${filters.minAmount}`,
-    );
+  // The stricter of the two, so typing "$5000" into a feed already filtered to
+  // $1,000 narrows rather than widens — a search must never quietly undo a
+  // filter the student can see is switched on.
+  const minAmount = Math.max(filters.minAmount ?? 0, query.minAmount ?? 0);
+  if (minAmount > 0) {
+    conditions.push(sql`coalesce(${postings.amountMin}, ${postings.amountMax}) >= ${minAmount}`);
   }
 
   if (filters.location) {
@@ -594,26 +638,46 @@ export async function getFeed(
     );
   }
 
-  // Search runs in SQL rather than in memory, unlike the category filter
-  // below: it is the one filter that can cut the row count by orders of
-  // magnitude, and everything after this point pays per row — scoring, the
-  // sort, and the JSON handed to the client.
-  //
-  // Fields searched are the ones a student is actually naming: the title, the
-  // org or sponsor, and the eligibility text (where "must be a nursing
-  // student" lives). `descriptionText` is deliberately excluded, for the same
-  // reason it is absent from FEED_SELECT plus one more — a term like "python"
-  // appears in the boilerplate of half our internship descriptions, so
-  // including it would make search look broken by matching nearly everything.
-  for (const term of parseSearchQuery(filters.q)) {
-    const pattern = `%${escapeLike(term)}%`;
-    conditions.push(
-      sql`(
-        ${postings.title} ilike ${pattern}
-        or coalesce(${organizations.name}, ${postings.sponsorName}, '') ilike ${pattern}
-        or coalesce(${postings.eligibility}::text, '') ilike ${pattern}
-      )`,
-    );
+  /*
+   * Search runs in SQL rather than in memory, unlike the category filter below:
+   * it is the one filter that can cut the row count by orders of magnitude, and
+   * everything after this point pays per row — scoring, the sort, and the JSON
+   * handed to the client.
+   *
+   * **AND across terms, OR within a term's alternates.** Every word still has
+   * to be satisfied — each extra word narrows, which is what a search box is
+   * expected to do — but a word is satisfied by anything `search/query.ts` says
+   * counts as it. That is what makes "compsci" find computer science and
+   * "nurse" find nursing, both of which returned nothing or nearly nothing.
+   *
+   * **`descriptionText` is now searched, reversing an earlier decision, and the
+   * measurement is why.** It was excluded on the grounds that "python appears
+   * in the boilerplate of half our internship descriptions". Measured: 780 of
+   * 3,252, so 24% rather than half — and, decisively, that call predates the
+   * relevance ranker. The cost it was avoiding was a *ranking* cost, and the
+   * ranker now handles it: a row matched only in a description scores 0 on that
+   * term and sorts below every row matched somewhere visible. What exclusion
+   * was costing instead is not marginal — "business administration" returned
+   * **0 rows while 134 descriptions contained the phrase**, and psychology,
+   * teaching and accounting were all in the same shape. It stays out of
+   * FEED_SELECT, so none of that text is carried into memory or serialised.
+   */
+  for (const term of query.terms) {
+    const branches: SQL[] = [];
+    for (const alternate of term.alternates) {
+      const pattern = `${WORD_START}${escapeRegex(alternate)}`;
+      branches.push(
+        sql`(
+          ${postings.title} ~* ${pattern}
+          or coalesce(${organizations.name}, ${postings.sponsorName}, '') ~* ${pattern}
+          or coalesce(${postings.eligibility}::text, '') ~* ${pattern}
+          or coalesce(${postings.descriptionText}, '') ~* ${pattern}
+          or exists (select 1 from unnest(${postings.skills}) as s where s ~* ${pattern})
+        )`,
+      );
+    }
+    const anyAlternate = branches.length === 1 ? branches[0] : or(...branches);
+    if (anyAlternate) conditions.push(anyAlternate);
   }
 
   // No SQL limit: ranking is in-memory (see the module comment), and a
@@ -668,7 +732,7 @@ export async function getFeed(
    */
   const res = resolutionsFor(filtered);
   const day = filters.day ?? dayIndex();
-  filtered.sort(makeRank(filters.timingPoints ?? 0, day, parseSearchQuery(filters.q), res));
+  filtered.sort(makeRank(filters.timingPoints ?? 0, day, query.terms, res));
   // Rank first, then trim — never a SQL LIMIT. See the comment on the query
   // above: trimming before ranking lets whichever kind was ingested last crowd
   // the other out of the top N entirely.
