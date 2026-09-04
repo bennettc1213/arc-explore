@@ -170,6 +170,45 @@ only you can make, and the feature on the other side of it is already written.
   and which ATS internships almost never publish. Company discovery is
   unaffected — that step passes._
 
+- [ ] **`ingest-fast` is scheduled every 20 minutes and actually runs every
+  3-5 hours.** Measured 2026-09-03 off `ingest_runs`, which is the only place
+  this is visible — `ingest:status` reports the last run's age but not the
+  gaps between runs, so a cron that fires a sixth as often as it claims looks
+  identical to a healthy one until you list the timestamps:
+
+  ```
+  16:40   12:35   07:47   02:55   23:51   21:53   19:17   (UTC)
+  ```
+
+  _Not our code — `ingest-fast.yml` carries `cron: "*/20 * * * *"` and its
+  own comment already notes GitHub queues scheduled runs on a best-effort
+  basis. High-frequency crons are the first thing GitHub's scheduler drops
+  under load, and there is no setting that changes it. **The real options are
+  to accept it, or to move the trigger off Actions** — Vercel cron was already
+  ruled out in that file's header (functions cap at 60s/300s and a poll of
+  1,200 boards does not fit), so moving it means an external scheduler hitting
+  a webhook, which is a new moving part to justify._
+
+  _**What it costs is smaller than it looks, and worth stating precisely so
+  nobody over-invests here.** A run adds 0-73 new rows (observed: 0, 0, 2, 7,
+  8, 12, 73), so even a perfectly-punctual 20-minute cadence is roughly 100 new
+  rows a day against a corpus of 5,164. **Ingestion was never going to make the
+  feed feel fresh** — that is why the frozen-feed report was answered in the
+  ranking (§2) rather than here. What the drift genuinely costs is the
+  "confirmed live" claim: `confirmed_1h` was **0** at the time of measurement,
+  so no row could honestly say it had been re-verified within the hour. The UI
+  is not lying — `describeTiming` reports the real observed age — but the
+  strongest freshness claim the product is built to make is unavailable most of
+  the day._
+
+  _**Related and more urgent: `ingest-daily`'s `usajobs` step fails every
+  run** (see the entry above it), and that now costs more than it did.
+  USAJobs is the only source where **100% of rows carry an employer-stated
+  deadline**, and deadlines feed the timing score — which, since the ranking
+  change, carries real weight on the free tier rather than acting only as an
+  exact-tie breaker. Two missing repo secrets are holding up the best timing
+  data in the corpus._
+
 - [ ] **108 of 1,104 employer boards have failed 5+ consecutive polls**
   (measured 2026-08-26; `ingest:status` reports 155 failing / 151 backed off at
   the ≥1 threshold). Spread across all four ATS families rather than
