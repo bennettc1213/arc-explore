@@ -258,6 +258,79 @@ only you can make, and the feature on the other side of it is already written.
 
 ## 2. Known bugs
 
+- [ ] **Every `notFound()` in a page answers HTTP 200, and that quietly
+  defeats `/admin`'s whole access design.** Found 2026-09-03 while verifying
+  the tools on production. Measured directly against instela.org:
+
+  | url | HTTP | what it renders |
+  |---|---|---|
+  | `/nope-not-real` (no such route) | **404** | the not-found page |
+  | `/admin` (not an admin) | **200** | the not-found page |
+  | `/listing/<valid-uuid-we-do-not-hold>` | **200** | the not-found page |
+  | `/listing/not-a-uuid` | **200** | the not-found page |
+  | `/compare?ids=<unknown>` | **200** | the not-found page |
+
+  _**No content leaks and that was checked first**, on `/admin`, `/profile`,
+  `/resume`, `/tracker` and the apply packet: zero admin markers (reports,
+  triage, hidden_reason, resolve, metrics), no email, no GPA. The guard runs
+  and the body is right. **Only the status code is wrong.**_
+
+  _**Why it still matters for `/admin` specifically.** `admin/auth.ts` states
+  the rationale in its own comment: "`notFound()` rather than a redirect to
+  sign-in, deliberately. A login prompt confirms the route exists and is worth
+  attacking; a 404 tells someone who is not an admin exactly what a wrong URL
+  tells them." That last clause is now false. A wrong URL returns 404 and
+  `/admin` returns 200, so **the status code alone distinguishes them** — the
+  exact signal the design was built to withhold. It is a weaker leak than a
+  login prompt, but it is the same category, and the code that claims otherwise
+  is still sitting there._
+
+  _**Cause is almost certainly streaming, not the guard.** `requireAdmin()` is
+  the first statement in the page component and `notFound()` throws before
+  anything else runs — but the root layout renders `Nav`, which is async
+  (session + tier), so the shell has already begun streaming with a 200
+  committed by the time the page segment throws. Next can then only swap the
+  rendered content, not the status line. That also explains why an unmatched
+  route still gets a real 404: it never reaches a layout._
+
+  _**Second cost, unrelated to admin: soft-404s.** A dead `/listing/<id>`
+  answering 200 is what search engines penalise, and every listing URL in this
+  corpus eventually dies. Not urgent, but it is the same one fix._
+
+  _**Not a regression from this session** — nothing in the ranking or search
+  work touches routing, layouts or `notFound`. To close it, the admin check
+  wants to move somewhere that can answer before the shell flushes;
+  `src/proxy.ts` already runs per-request and already refreshes the Supabase
+  session, so it holds the email `isAdminEmail` needs. Deliberately **not**
+  attempted here: it is auth-adjacent, it was not what this session was asked
+  for, and a wrong edit there fails open._
+
+- [ ] **`/api/extension/packet` validates the URL before checking the
+  session**, so an unauthenticated request gets `400 {"error":"missing url"}`
+  where §5b's enforcement table says 401. Measured on production; the sibling
+  `/api/extension/applied` correctly answers `401 {"error":"not signed in"}`.
+  Nothing leaks — the 400 is a fixed string that says nothing about any
+  posting — but the two endpoints disagree about which check comes first, and
+  the audit table records a behaviour the endpoint does not have. Order the
+  auth check first, and the table becomes true again.
+
+- [ ] **`lib/tools.ts` tells the nav that all four tools are "open
+  signed-out", and two of them are not.** Its header comment reads "Open
+  signed-out on purpose, like each tool it names: the github audit runs only on
+  public data, and the others run entirely in your browser." Verified on
+  production in a clean browser context with no session and no dev cookie:
+  `/github` genuinely is open and returned a real audit (53/100 on 5 of 5
+  checks, fetched live); **`/linkedin` renders zero textareas and says "sign
+  in to use the builder and checker"**, and **`/essay` renders zero textareas
+  behind the Apply gate**. The gating is correct and deliberate — the RSC never
+  mounts the component, which is exactly what §5b claims — but the tools menu
+  promises access it does not grant, which is the discoverability complaint in
+  §5 inverted: a student clicks a blurb saying it runs in their browser and
+  meets a wall. Either the comment and the two blurbs say what a click actually
+  costs, or the tools are opened up. **A one-line-each documentation fix, not a
+  code change.**
+
+
 - [x] **Sign-in was completely broken in production — "fetch failed" on every
   attempt.** Reported directly ("we can't sign into accounts anymore").
   Reproduced live at `instela.org/login`: every submission returned the raw
