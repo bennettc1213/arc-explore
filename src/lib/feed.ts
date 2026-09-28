@@ -16,6 +16,8 @@ import { desc, eq, isNull, and, isNotNull, or, sql, type SQL } from "drizzle-orm
 
 import { db } from "@/db/client";
 import { organizations, postings, type FreshnessTier, type PostingKind } from "@/db/schema";
+import { isTermEnded } from "./terms/bounds";
+import { resolveTermView, parseTermLabel } from "./terms/display";
 import { escapeLike, type DeadlineFilter } from "./feed-search";
 import { escapeRegex, parseQuery } from "./search/query";
 import { trimWithReservation } from "./feed-trim";
@@ -50,6 +52,9 @@ export interface FeedItem {
   locations: string[];
   isRemote: boolean;
   term: string | null;
+  termSource: "explicit" | "inferred" | "unknown";
+  termSeason: "summer" | "fall" | "spring" | "winter" | "co-op" | null;
+  termYear: number | null;
   workAuth: string | null;
   /** Canonical skill names named by the posting, derived at ingest. */
   skills: string[];
@@ -67,6 +72,10 @@ export interface FeedItem {
   amountMin: number | null;
   amountMax: number | null;
   amountNeedsReview: boolean;
+  amountStatus: "exact" | "range" | "varies" | "unparseable";
+  programTotal: number | null;
+  awardsCount: number | null;
+  amountIsEstimated: boolean;
   /**
    * The apply URL answered 404/410 on two consecutive checks.
    *
@@ -85,6 +94,13 @@ export interface FeedItem {
   /** Raw eligibility bullets, as the source stated them. */
   eligibility: string[];
   isContentMarketing: boolean;
+  /** V1 trust score (0–100), with reasons stored next to it. */
+  trustScore: number;
+  trustReasons: Array<{ signal: string; kind: "positive" | "caution"; detail: string }>;
+  /** True for sweepstakes / random-drawing awards — surfaced separately. */
+  isLottery: boolean;
+  lotteryReasons: Array<{ signal: string; detail: string }>;
+  corroborationCount: number;
   /** How strong the freshness claim on this row may be — see schema. */
   freshnessTier: FreshnessTier;
   firstSeenAt: Date;
@@ -118,6 +134,8 @@ export { DEADLINE_FILTERS, type DeadlineFilter } from "./feed-search";
 export interface FeedFilters {
   /** Include postings that have closed. Off by default. */
   includeClosed?: boolean;
+  /** Include postings whose term was inferred rather than stated. On by default. */
+  includeInferred?: boolean;
   /** Only postings whose term matches exactly. */
   term?: string | null;
   /** Only remote roles. */
@@ -128,6 +146,8 @@ export interface FeedFilters {
   deadline?: DeadlineFilter | null;
   /** Only rows whose stated award/pay meets this lower bound. */
   minAmount?: number | null;
+  /** Include rows whose award amount is unknown/varies/unparseable when a minimum is set. Off by default. */
+  includeUnknownAmounts?: boolean;
   /** Free-text match against a posting's listed locations. */
   location?: string | null;
   /** Free-text search over title, org/sponsor and eligibility. */
@@ -239,7 +259,18 @@ function resolutionsFor(items: FeedItem[]): Resolutions {
 function sortKey(item: FeedItem, timingPoints: number, res: Resolutions, day: number): number {
   // Confidence-weighted, not the raw score — see rankingScore. Sorting on the
   // displayed number puts the postings we understand *least* at the top.
-  const fit = rankingScore(item.fit);
+  let fit = rankingScore(item.fit);
+
+  /*
+   * Trust-based down-rank for scholarships. The trust score is not a scam
+   * probability; it is a relative caution signal. We apply it as a bounded
+   * penalty so rows with more caution signals fall below comparable rows with
+   * fewer, without hiding them entirely.
+   */
+  if (item.kind === "scholarship" && fit >= 0 && item.trustScore < 50) {
+    const penalty = Math.round((50 - item.trustScore) / 2);
+    fit = Math.max(0, fit - penalty);
+  }
 
   /*
    * A posting we cannot score at all keeps its sentinel and sorts below
@@ -428,6 +459,9 @@ const FEED_SELECT = {
   locations: postings.locations,
   isRemote: postings.isRemote,
   term: postings.term,
+  termSource: postings.termSource,
+  termSeason: postings.termSeason,
+  termYear: postings.termYear,
   workAuth: postings.workAuth,
   skills: postings.skills,
   deadlineAt: postings.deadlineAt,
@@ -438,10 +472,19 @@ const FEED_SELECT = {
   amountMin: postings.amountMin,
   amountMax: postings.amountMax,
   amountNeedsReview: postings.amountNeedsReview,
+  amountStatus: postings.amountStatus,
+  programTotal: postings.programTotal,
+  awardsCount: postings.awardsCount,
+  amountIsEstimated: postings.amountIsEstimated,
   urlDeadStrikes: postings.urlDeadStrikes,
   frameAllowStrikes: postings.frameAllowStrikes,
   eligibility: postings.eligibility,
   isContentMarketing: postings.isContentMarketing,
+  trustScore: postings.trustScore,
+  trustReasons: sql<Array<{ signal: string; kind: "positive" | "caution"; detail: string }>>`${postings.trustReasons}`,
+  isLottery: postings.isLottery,
+  lotteryReasons: sql<Array<{ signal: string; detail: string }>>`${postings.lotteryReasons}`,
+  corroborationCount: postings.corroborationCount,
   freshnessTier: postings.freshnessTier,
   // descriptionText is deliberately NOT selected. It is the largest column
   // in the table and the only thing that read it — skill extraction — now
@@ -463,17 +506,30 @@ interface FeedRow {
   locations: string[];
   isRemote: boolean;
   term: string | null;
+  termSource: "explicit" | "inferred" | "unknown";
+  termSeason: "summer" | "fall" | "spring" | "winter" | "co-op" | null;
+  termYear: number | null;
   workAuth: string | null;
+  /** Canonical skill names named by the posting, derived at ingest. */
   skills: string[];
   deadlineAt: Date | null;
   postedAt: Date | null;
   amountMin: number | null;
   amountMax: number | null;
   amountNeedsReview: boolean;
+  amountStatus: "exact" | "range" | "varies" | "unparseable";
+  programTotal: number | null;
+  awardsCount: number | null;
+  amountIsEstimated: boolean;
   urlDeadStrikes: number;
   frameAllowStrikes: number;
   eligibility: unknown;
   isContentMarketing: boolean;
+  trustScore: number;
+  trustReasons: Array<{ signal: string; kind: "positive" | "caution"; detail: string }>;
+  isLottery: boolean;
+  lotteryReasons: Array<{ signal: string; detail: string }>;
+  corroborationCount: number;
   freshnessTier: FreshnessTier;
   firstSeenAt: Date;
   lastSeenAt: Date;
@@ -482,6 +538,14 @@ interface FeedRow {
 
 function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
   const criteria = criteriaFrom(r.eligibility);
+  // The structured term columns drive every ended-term check, so they decide
+  // what the card says too. A card must never claim a term that has ended.
+  const term = resolveTermView({
+    term: r.term,
+    termSource: r.termSource,
+    termSeason: r.termSeason,
+    termYear: r.termYear,
+  });
 
   return {
     id: r.id,
@@ -491,7 +555,10 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
     url: r.url,
     locations: r.locations,
     isRemote: r.isRemote,
-    term: r.term,
+    term: term.term,
+    termSource: term.termSource,
+    termSeason: r.termSeason,
+    termYear: r.termYear,
     workAuth: r.workAuth,
     skills: r.skills,
     deadlineAt: r.deadlineAt,
@@ -499,10 +566,19 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
     amountMin: r.amountMin,
     amountMax: r.amountMax,
     amountNeedsReview: r.amountNeedsReview,
+    amountStatus: r.amountStatus,
+    programTotal: r.programTotal,
+    awardsCount: r.awardsCount,
+    amountIsEstimated: r.amountIsEstimated,
     applyLinkDead: isFlaggedDead({ urlDeadStrikes: r.urlDeadStrikes }),
     frameAllowStrikes: r.frameAllowStrikes,
     eligibility: criteria,
     isContentMarketing: r.isContentMarketing,
+    trustScore: r.trustScore,
+    trustReasons: r.trustReasons,
+    isLottery: r.isLottery,
+    lotteryReasons: r.lotteryReasons,
+    corroborationCount: r.corroborationCount,
     freshnessTier: r.freshnessTier,
     firstSeenAt: r.firstSeenAt,
     lastSeenAt: r.lastSeenAt,
@@ -520,12 +596,16 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
             sponsorName: r.sponsorName,
             amountMin: r.amountMin,
             amountMax: r.amountMax,
+            amountStatus: r.amountStatus,
+            programTotal: r.programTotal,
+            awardsCount: r.awardsCount,
+            amountIsEstimated: r.amountIsEstimated,
             isContentMarketing: r.isContentMarketing,
             eligibility: criteria,
           })
         : scoreFit(profile, {
             title: r.title,
-            term: r.term,
+            term: term.term,
             locations: r.locations,
             isRemote: r.isRemote,
             workAuth: r.workAuth,
@@ -592,6 +672,8 @@ export async function getFeed(
    * filter that should override that.
    */
   conditions.push(isNull(postings.hiddenAt));
+  // Rows with an ended term are quarantined for source recheck.
+  conditions.push(isNull(postings.termEndedFlagAt));
   if (!filters.includeClosed) conditions.push(isNull(postings.closedAt));
   if (filters.newSince) {
     conditions.push(sql`${postings.firstSeenAt} > ${filters.newSince.toISOString()}::timestamptz`);
@@ -604,7 +686,23 @@ export async function getFeed(
    */
   const query = parseQuery(filters.q);
 
-  if (filters.term) conditions.push(eq(postings.term, filters.term));
+  if (filters.term) {
+    // The control's labels are derived from the structured columns, so match
+    // those too. Matching only the free text would offer a student a filter
+    // that silently returns nothing for any row whose stored label disagreed.
+    const structured = parseTermLabel(filters.term);
+    conditions.push(
+      structured
+        ? or(
+            eq(postings.term, filters.term),
+            and(eq(postings.termSeason, structured.season), eq(postings.termYear, structured.year)),
+          )
+        : eq(postings.term, filters.term),
+    );
+  }
+  if (filters.includeInferred === false) {
+    conditions.push(sql`${postings.termSource} is distinct from 'inferred'`);
+  }
   // A control the student set explicitly wins over one we inferred from their
   // words; where both point the same way the merge is a no-op.
   if (filters.remoteOnly || query.remoteOnly) conditions.push(eq(postings.isRemote, true));
@@ -628,7 +726,13 @@ export async function getFeed(
   // filter the student can see is switched on.
   const minAmount = Math.max(filters.minAmount ?? 0, query.minAmount ?? 0);
   if (minAmount > 0) {
-    conditions.push(sql`coalesce(${postings.amountMin}, ${postings.amountMax}) >= ${minAmount}`);
+    const knownAmount = sql`${postings.amountStatus} IN ('exact', 'range')`;
+    const meetsMin = sql`coalesce(${postings.amountMin}, ${postings.amountMax}) >= ${minAmount}`;
+    if (filters.includeUnknownAmounts) {
+      conditions.push(sql`(${meetsMin} OR ${postings.amountStatus} IN ('varies', 'unparseable'))`);
+    } else {
+      conditions.push(knownAmount, meetsMin);
+    }
   }
 
   if (filters.location) {
@@ -785,6 +889,34 @@ export async function getFeedStats(kind?: PostingKind | null): Promise<FeedStats
 }
 
 /**
+ * Separate shelf for lottery / sweepstakes scholarships.
+ *
+ * These are intentionally not mixed into the ranked feed. They are real awards,
+ * but they are not comparable to judged institutional scholarships, so they get
+ * their own labelled section when a visitor is browsing scholarships.
+ */
+export async function getLotteryAwards(profile: ScoreProfile): Promise<FeedItem[]> {
+  const rows = await db
+    .select(FEED_SELECT)
+    .from(postings)
+    .leftJoin(organizations, eq(postings.orgId, organizations.id))
+    .where(
+      and(
+        eq(postings.kind, "scholarship"),
+        eq(postings.isLottery, true),
+        isNull(postings.hiddenAt),
+        isNull(postings.closedAt),
+        isNull(postings.termEndedFlagAt),
+      ),
+    )
+    .orderBy(desc(postings.trustScore), desc(postings.amountMax), desc(postings.firstSeenAt))
+    .limit(10);
+
+  const now = new Date();
+  return rows.map((r) => buildFeedItem(profile, r, now));
+}
+
+/**
  * How many open postings each blank profile field would actually affect.
  *
  * Lives here rather than in `profile/store.ts` because it is a corpus
@@ -882,9 +1014,25 @@ export function newSinceFromDays(days: number): Date {
 }
 
 /** Distinct terms present in the corpus, for the filter control. */
-export async function getAvailableTerms(): Promise<string[]> {  const rows = await db
-    .selectDistinct({ term: postings.term })
+export async function getAvailableTerms(includeClosed = false): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({
+      term: postings.term,
+      termSeason: postings.termSeason,
+      termYear: postings.termYear,
+    })
     .from(postings)
-    .where(isNull(postings.closedAt));
-  return rows.map((r) => r.term).filter((t): t is string => Boolean(t)).sort();
+    .where(includeClosed ? undefined : isNull(postings.closedAt));
+
+  return rows
+    .filter((r): r is typeof r & { termSeason: NonNullable<typeof r.termSeason>; termYear: number } =>
+      Boolean(r.termSeason && r.termYear),
+    )
+    .filter((r) => includeClosed || !isTermEnded(r.termSeason, r.termYear))
+    // The filter control must offer exactly the labels the cards show, so a
+    // student can never pick a term that matches nothing.
+    .map((r) => resolveTermView({ term: r.term, termSource: "explicit", termSeason: r.termSeason, termYear: r.termYear }).term)
+    .filter((t): t is string => Boolean(t))
+    .filter((t, i, all) => all.indexOf(t) === i)
+    .sort();
 }

@@ -52,6 +52,10 @@ export interface PostingFacts {
   eligibility: string[];
   amountMin: number | null;
   amountMax: number | null;
+  amountStatus: "exact" | "range" | "varies" | "unparseable";
+  programTotal: number | null;
+  awardsCount: number | null;
+  amountIsEstimated: boolean;
   deadlineAt: Date | null;
   /** A content-marketing scholarship is a sponsor marketing themselves; a
    *  letter to one must not be written as if it were a merit award. */
@@ -102,6 +106,10 @@ export function toPostingFacts(item: FeedItem): PostingFacts {
     eligibility: item.eligibility,
     amountMin: item.amountMin,
     amountMax: item.amountMax,
+    amountStatus: item.amountStatus,
+    programTotal: item.programTotal,
+    awardsCount: item.awardsCount,
+    amountIsEstimated: item.amountIsEstimated,
     deadlineAt: item.deadlineAt,
     isContentMarketing: item.isContentMarketing,
   };

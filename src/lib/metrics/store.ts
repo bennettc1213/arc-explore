@@ -41,6 +41,7 @@ export async function metricCounts(): Promise<MetricCounts> {
         workAuth: profiles.workAuth,
         targetVerticals: profiles.targetVerticals,
         targetLocations: profiles.targetLocations,
+        activatedAt: profiles.activatedAt,
       })
       .from(profiles),
 
@@ -102,6 +103,7 @@ export async function metricCounts(): Promise<MetricCounts> {
         targetVerticals: row.targetVerticals as UsableProfileFields["targetVerticals"],
       }),
     ).length,
+    activatedProfiles: activation.filter((row) => row.activatedAt !== null).length,
     withResume: output[0].with_resume,
     withTrackedApplication: output[0].with_application,
     applicationsTracked: output[0].tracked,

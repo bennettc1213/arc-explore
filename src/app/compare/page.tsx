@@ -6,7 +6,7 @@ import { MIN_COMPARE, buildComparison, parseCompareIds } from "@/lib/compare";
 import { getPosting } from "@/lib/feed";
 import { getUserTier } from "@/lib/pricing/entitlements";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
-import { toScoreProfile } from "@/lib/profile/types";
+import { isProfileReadyForFit, toScoreProfile } from "@/lib/profile/types";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 
 import type { CompareRow } from "@/lib/compare";
@@ -90,7 +90,16 @@ export default async function ComparePage({
   const [stored, resume] = user
     ? await Promise.all([getProfile(user.id), getLatestResume(user.id)])
     : [null, null];
-  const profile = toScoreProfile(stored, resume ? skillsFromParsedResume(resume.parsed) : []);
+  const resumeSkills = resume ? skillsFromParsedResume(resume.parsed) : [];
+  const profile = toScoreProfile(stored, resumeSkills);
+  const profileReady = user
+    ? isProfileReadyForFit(stored)
+    : isProfileReadyForFit({
+        major: profile.major ?? null,
+        gradYear: profile.gradYear ?? null,
+        workAuth: profile.workAuth ?? null,
+        targetLocations: profile.targetLocations ?? [],
+      });
 
   // A hidden or deleted posting comes back null and is dropped rather than
   // rendering an empty column.
@@ -120,7 +129,7 @@ export default async function ComparePage({
     );
   }
 
-  const comparison = buildComparison(found, new Date(), await getUserTier(user?.id));
+  const comparison = buildComparison(found, new Date(), await getUserTier(user?.id), profileReady);
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>

@@ -216,6 +216,10 @@ export function mapScholarshipsCom(rows: ScholarshipsComRow[]): ScholarshipListi
       amountMin: null,
       amountMax: null,
       amountNeedsReview: false,
+      amountStatus: "varies",
+      programTotal: null,
+      awardsCount: null,
+      amountIsEstimated: false,
       eligibility: [],
       deadlineAt: null,
       // No status or deadline in the listing payload → no evidence of closure.
@@ -295,7 +299,7 @@ export function mapScholarshipPortal(
     // reads $-denominated figures, so a €33,600 grant keeps its honest null
     // rather than being stored as if it were $33,600 — the schema carries no
     // currency column, so any non-USD figure must not render as dollars.
-    const { min, max, needsReview } = parseAmount(item.grant?.description ?? "");
+    const amount = parseAmount(item.grant?.description ?? "");
 
     const deadlineAt = item.is_deadline_specified ? parseDateText(item.deadline) : null;
 
@@ -305,9 +309,13 @@ export function mapScholarshipPortal(
       title: item.title,
       url: item.url,
       sponsorName: item.provider?.name || SCHOLARSHIPPORTAL_FALLBACK_SPONSOR,
-      amountMin: min,
-      amountMax: max,
-      amountNeedsReview: needsReview,
+      amountMin: amount.amountPerAwardMin,
+      amountMax: amount.amountPerAwardMax,
+      amountNeedsReview: amount.needsReview,
+      amountStatus: amount.status,
+      programTotal: amount.programTotal,
+      awardsCount: amount.awardsCount,
+      amountIsEstimated: amount.isEstimated,
       eligibility: [],
       deadlineAt,
       // A stated future deadline is open; a stated past one is closed; an

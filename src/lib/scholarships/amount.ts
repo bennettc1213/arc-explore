@@ -3,89 +3,308 @@
  *
  * Sources state award values as free prose, and the shapes vary more than
  * they look: "Up to $2,000 total per student", "Between $4,000-$8,000",
- * "$16,000-20,000" (no second dollar sign), "$1,411.05", and plenty that
- * are genuinely unparseable ("Varies — up to the full cost of tuition").
+ * "$16,000-20,000" (no second dollar sign), "$1,411.05", "Varies",
+ * "$0.00", "about $450,000 to 225 students", and plenty that are genuinely
+ * unparseable.
+ *
+ * The output is the report's four-field representation:
+ *   - amountPerAwardMin / amountPerAwardMax (the per-student figure)
+ *   - awardsCount
+ *   - programTotal
+ *   - status: exact | range | varies | unparseable
+ *
+ * A per-award amount is *never* guessed from a program total alone, and a
+ * program total is *never* displayed as a single-recipient award.
  */
 
-export interface ParsedAmount {
-  min: number | null;
-  max: number | null;
+export type AwardStatus = "exact" | "range" | "varies" | "unparseable";
+
+export interface ParsedAward {
+  /** Per-award lower bound, when known. */
+  amountPerAwardMin: number | null;
+  /** Per-award upper bound, when known. */
+  amountPerAwardMax: number | null;
+  /** Number of awards the source states, when known. */
+  awardsCount: number | null;
+  /** Known program-wide total, never confused with a single award. */
+  programTotal: number | null;
+  /** Normalized shape of what we could read. */
+  status: AwardStatus;
+  /** True when the per-award amount was computed from total / count. */
+  isEstimated: boolean;
   /**
-   * The source stated something monetary that we could not read.
-   *
-   * This is the difference between the two ways an amount ends up null, and
-   * they are not the same fact. "Varies" is the source declining to state a
-   * number — nothing is wrong and there is nothing to fix. "$,000" is the
-   * source stating a number we failed to parse, which means either their typo
-   * or our bug, and a human should look. Collapsing both into a bare null
-   * would bury every parser regression in the same silence as the honest
-   * blanks. Surfaced by `npm run ingest:status`.
+   * The source stated a dollar figure the parser could not read, as opposed to
+   * stating none. This is the legacy flag; new code should prefer `status`.
    */
   needsReview: boolean;
 }
 
-/** Any `$` at all — the marker that the cell was *meant* to carry a figure. */
-const MONETARY_RE = /\$/;
+const FIGURE_RE = /\$\s*([\d,]+(?:\.\d+)?)/g;
 
-/**
- * Zero is never a real award, so it is never a real parse.
- *
- * Sources have typos: UNL publishes a row whose amount cell reads "$,000",
- * missing the leading digit entirely. Stripping the comma leaves "$000",
- * which matches as a perfectly well-formed zero. Storing that would put a
- * confident "$0" on screen — an assertion the scholarship awards nothing,
- * which is false — when the honest answer is that we could not read it.
- */
-function positiveOrNull(n: number): number | null {
+function readWholeDollars(rawDigits: string): number | null {
+  const cleaned = rawDigits.replace(/^\$\s*/, "").replace(/,/g, "");
+  const n = Number(cleaned);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.trunc(n);
+}
+
+function allZerosOrPunctuation(s: string): boolean {
+  return /^[0.]+$/.test(s);
+}
+
+function looksLikeMalformedZero(rawDigits: string): boolean {
+  // "$0.00" -> "0.00" -> all zeros/period -> honest zero/varies.
+  // "$,000" -> ",000" -> starts with non-digit -> malformed.
+  return rawDigits.length === 0 || /^[^\d]/.test(rawDigits);
+}
+
+function countAwards(raw: string): number | null {
+  const m = raw.match(/(\d+)\s*(?:awards?|scholarships?|recipients?|students?|grants?|winners?|finalists?)/i);
+  if (!m) return null;
+  const n = Number(m[1]);
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/**
- * No bounds. Flags for review only when the raw text carried a `$`, so a
- * source that simply says "Varies" never lands in the review queue.
- */
-function none(raw: string): ParsedAmount {
-  return { min: null, max: null, needsReview: MONETARY_RE.test(raw) };
+function totalAmount(raw: string): { total: number; count?: number } | null {
+  // Explicit total language, but not when the figure is immediately followed
+  // by "per student/recipient/award" — that is a per-award ceiling.
+  const leading = raw.match(
+    /(?:total|program|fund|awarded|available|awards?\s+totaling)\s*(?:of\s*)?\$\s*([\d,]+(?:\.\d+)?)(?!\s*per\b)/i,
+  );
+  if (leading) return { total: readWholeDollars(leading[1])! };
+
+  const trailing = raw.match(
+    /\$\s*([\d,]+(?:\.\d+)?)\s*(?:total|overall|in\s+total|program)(?!\s*per\b)/i,
+  );
+  if (trailing) return { total: readWholeDollars(trailing[1])! };
+
+  // "about $450,000 to 225 students" — total and count in one phrase.
+  const paired = raw.match(
+    /\$\s*([\d,]+(?:\.\d+)?)\s*(?:to|for)\s*(\d+)\s*(?:students?|recipients?|awards?|scholarships?)/i,
+  );
+  if (paired) {
+    const total = readWholeDollars(paired[1]);
+    const count = Number(paired[2]);
+    if (total !== null && Number.isFinite(count) && count > 0) {
+      return { total, count };
+    }
+  }
+
+  return null;
+}
+
+function perAwardRange(raw: string): { min: number; max: number } | null {
+  const m = raw.match(/\$\s*([\d,]+(?:\.\d+)?)\s*(?:-|–|—|to)\s*\$?\s*([\d,]+(?:\.\d+)?)/i);
+  if (!m) return null;
+  const a = readWholeDollars(m[1]);
+  const b = readWholeDollars(m[2]);
+  if (a === null || b === null) return null;
+  return { min: Math.min(a, b), max: Math.max(a, b) };
+}
+
+function perAwardUpTo(raw: string): number | null {
+  const m = raw.match(/up to\s*\$\s*([\d,]+(?:\.\d+)?)/i);
+  return m ? readWholeDollars(m[1]) : null;
+}
+
+function singleDollarFigure(raw: string): number | null {
+  const figures = raw.match(FIGURE_RE) ?? [];
+  if (figures.length !== 1) return null;
+  return readWholeDollars(figures[0]);
+}
+
+function hasDollarFigure(raw: string): boolean {
+  return raw.includes("$");
 }
 
 /**
- * Parse an award line into whole-dollar bounds.
+ * Parse an award-amount line into the four-field representation.
  *
- * Order matters, the same lesson as the resume critique's date-range regex:
- * a range or "up to" has to be checked before a bare dollar figure, or "up
- * to $10,000" reads as an exact $10,000 rather than a ceiling. Anything that
- * doesn't match a known shape returns both null rather than guessing — a
- * wrong number here is worse than an honest blank, since a student would
- * filter on it.
+ * Order matters: program-total language has to be checked before a bare dollar
+ * figure, or "$450,000 to 225 students" reads as a $450,000 per-award award.
  */
-export function parseAmount(raw: string): ParsedAmount {
-  const text = raw.replace(/,/g, "");
+export function parseAmount(raw: string): ParsedAward {
+  const text = raw.trim();
 
-  // Second `$` is optional: UNL writes "$16,000-20,000".
-  const range = text.match(/\$(\d+)\s*(?:-|–|—|to)\s*\$?(\d+)/i);
+  // Honest silence or "Varies" is not a parse failure.
+  if (text === "" || /^varies$/i.test(text)) {
+    return {
+      amountPerAwardMin: null,
+      amountPerAwardMax: null,
+      awardsCount: null,
+      programTotal: null,
+      status: "varies",
+      isEstimated: false,
+      needsReview: false,
+    };
+  }
+
+  const totalResult = totalAmount(text);
+  const total = totalResult?.total ?? null;
+  const totalAndCount = totalResult?.count;
+  const count = totalAndCount ?? countAwards(text);
+
+  // Both total and count -> explicit, tested per-award estimate.
+  if (total !== null && count !== null) {
+    const estimated = Math.round(total / count);
+    return {
+      amountPerAwardMin: estimated,
+      amountPerAwardMax: estimated,
+      awardsCount: count,
+      programTotal: total,
+      status: "exact",
+      isEstimated: true,
+      needsReview: false,
+    };
+  }
+
+  // Known program total with no count: store the total, no per-award amount.
+  if (total !== null) {
+    return {
+      amountPerAwardMin: null,
+      amountPerAwardMax: null,
+      awardsCount: null,
+      programTotal: total,
+      status: "varies",
+      isEstimated: false,
+      needsReview: false,
+    };
+  }
+
+  // Count + a single per-award figure: derive the total, but the per-award
+  // amount is source-stated, not estimated.
+  if (count !== null) {
+    const perAward = singleDollarFigure(text);
+    if (perAward !== null) {
+      return {
+        amountPerAwardMin: perAward,
+        amountPerAwardMax: perAward,
+        awardsCount: count,
+        programTotal: perAward * count,
+        status: "exact",
+        isEstimated: false,
+        needsReview: false,
+      };
+    }
+    return {
+      amountPerAwardMin: null,
+      amountPerAwardMax: null,
+      awardsCount: count,
+      programTotal: null,
+      status: "varies",
+      isEstimated: false,
+      needsReview: false,
+    };
+  }
+
+  // Per-award range.
+  const range = perAwardRange(text);
   if (range) {
-    const a = positiveOrNull(Number(range[1]));
-    const b = positiveOrNull(Number(range[2]));
-    // A half-readable range is not a range. Both ends have to survive, or
-    // we would publish a bound the source never stated.
-    if (a === null || b === null) return none(raw);
-    return { min: Math.min(a, b), max: Math.max(a, b), needsReview: false };
+    return {
+      amountPerAwardMin: range.min,
+      amountPerAwardMax: range.max,
+      awardsCount: null,
+      programTotal: null,
+      status: "range",
+      isEstimated: false,
+      needsReview: false,
+    };
   }
 
-  const upTo = text.match(/up to\s*\$(\d+)/i);
-  if (upTo) {
-    const max = positiveOrNull(Number(upTo[1]));
-    return max === null ? none(raw) : { min: null, max, needsReview: false };
+  // "Up to $X" states a ceiling, not an exact amount.
+  const upTo = perAwardUpTo(text);
+  if (upTo !== null) {
+    return {
+      amountPerAwardMin: null,
+      amountPerAwardMax: upTo,
+      awardsCount: null,
+      programTotal: null,
+      status: "range",
+      isEstimated: false,
+      needsReview: false,
+    };
   }
 
-  // Exactly one figure means a stated amount. More than one means prose we
-  // are not confident reading ("$500 for books and $1,000 for tuition"), so
-  // it falls through to null rather than picking one arbitrarily.
-  const dollarFigures = text.match(/\$(\d+)/g);
-  if (dollarFigures && dollarFigures.length === 1) {
-    const n = positiveOrNull(Number(dollarFigures[0].slice(1)));
-    return n === null ? none(raw) : { min: n, max: n, needsReview: false };
+  // A single bare dollar figure is treated as a stated per-award amount only
+  // when it is the only monetary figure in the text. If multiple figures are
+  // present and none matched the rules above, we cannot safely choose one.
+  const figures = text.match(FIGURE_RE) ?? [];
+  if (figures.length === 1) {
+    const digits = figures[0].replace(/^\$\s*/, "");
+    const value = readWholeDollars(digits);
+
+    if (value !== null) {
+      return {
+        amountPerAwardMin: value,
+        amountPerAwardMax: value,
+        awardsCount: null,
+        programTotal: null,
+        status: "exact",
+        isEstimated: false,
+        needsReview: false,
+      };
+    }
+
+    // "$0" or "$0.00" was handled above; any other zero-shaped figure is
+    // malformed.
+    if (allZerosOrPunctuation(digits)) {
+      return {
+        amountPerAwardMin: null,
+        amountPerAwardMax: null,
+        awardsCount: null,
+        programTotal: null,
+        status: "varies",
+        isEstimated: false,
+        needsReview: false,
+      };
+    }
+
+    if (looksLikeMalformedZero(digits)) {
+      return {
+        amountPerAwardMin: null,
+        amountPerAwardMax: null,
+        awardsCount: null,
+        programTotal: null,
+        status: "unparseable",
+        isEstimated: false,
+        needsReview: true,
+      };
+    }
   }
 
-  return none(raw);
+  // Multiple figures we could not structure -> unreadable, not silent.
+  if (figures.length > 1) {
+    return {
+      amountPerAwardMin: null,
+      amountPerAwardMax: null,
+      awardsCount: null,
+      programTotal: null,
+      status: "unparseable",
+      isEstimated: false,
+      needsReview: true,
+    };
+  }
+
+  // Text had a `$` but no figure we could read.
+  if (hasDollarFigure(text)) {
+    return {
+      amountPerAwardMin: null,
+      amountPerAwardMax: null,
+      awardsCount: null,
+      programTotal: null,
+      status: "unparseable",
+      isEstimated: false,
+      needsReview: true,
+    };
+  }
+
+  return {
+    amountPerAwardMin: null,
+    amountPerAwardMax: null,
+    awardsCount: null,
+    programTotal: null,
+    status: "varies",
+    isEstimated: false,
+    needsReview: false,
+  };
 }

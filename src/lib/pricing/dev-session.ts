@@ -12,6 +12,7 @@ import { cookies } from "next/headers";
 
 import {
   DEV_COOKIE,
+  devModeAllowed,
   devPassword,
   devTierOverride,
   signDevTier,
@@ -19,11 +20,14 @@ import {
 } from "./dev-tier";
 import type { TierId } from "./tiers";
 
-/** Whether the `/dev` unlock exists at all on this deployment. With no
- *  `DEV_PASSWORD` there is nothing to log into and the page says so rather
- *  than accepting attempts against a secret that does not exist. */
+/** Whether the `/dev` unlock exists at all on this deployment.
+ *
+ *  Disabled in production builds even if `DEV_PASSWORD` is set, so no client
+ *  action can unlock a paid plan on the live site. With nothing configured,
+ *  the page says so rather than accepting attempts against a secret that does
+ *  not exist. */
 export function devModeConfigured(): boolean {
-  return devPassword() !== null;
+  return devModeAllowed() && devPassword() !== null;
 }
 
 /**
@@ -36,6 +40,7 @@ export function devModeConfigured(): boolean {
  * and send someone debugging the gate instead of their env file.
  */
 export async function devTier(): Promise<TierId | null> {
+  if (!devModeConfigured()) return null;
   const jar = await cookies();
   const fromCookie = verifyDevCookie(jar.get(DEV_COOKIE)?.value);
   if (fromCookie) return fromCookie;
@@ -45,6 +50,7 @@ export async function devTier(): Promise<TierId | null> {
 /** True when the tier in force came from the cookie rather than `DEV_TIER` —
  *  i.e. there is a session on `/dev` to sign out of. */
 export async function devUnlocked(): Promise<boolean> {
+  if (!devModeConfigured()) return false;
   const jar = await cookies();
   return verifyDevCookie(jar.get(DEV_COOKIE)?.value) !== null;
 }
@@ -55,6 +61,7 @@ export async function devUnlocked(): Promise<boolean> {
  * restriction here since unlocking is a thing you do, not a thing a page does.
  */
 export async function setDevTier(tier: TierId): Promise<void> {
+  if (!devModeConfigured()) return;
   const password = devPassword();
   if (!password) return; // Fails closed, same as every other path.
 

@@ -246,3 +246,54 @@ export function isProfileUsable(profile: UsableProfileFields | null): boolean {
       profile.targetLocations.length > 0,
   );
 }
+
+/**
+ * The four-field minimum that must be present before any fit label or
+ * percentage-like score can be shown.
+ *
+ * "State" maps to the location a student is willing to work in: the profile
+ * stores free-form target locations, and in this trust sprint we treat any
+ * non-empty list as satisfying the state requirement. Exact state/county/school
+ * extraction is INS-024.
+ *
+ * `workAuth` is left as `string | null` so a raw `ScoreProfile` or a narrowed
+ * database row can both be passed without a cast.
+ */
+export interface ReadyForFitFields {
+  major: string | null;
+  gradYear: number | null;
+  workAuth: string | null;
+  targetLocations: string[];
+}
+
+/** True only when all four required fit-score fields are present. */
+export function isProfileReadyForFit(profile: ReadyForFitFields | null): boolean {
+  if (!profile) return false;
+  return Boolean(
+    profile.major?.trim() &&
+      profile.gradYear &&
+      profile.workAuth &&
+      profile.targetLocations.length > 0,
+  );
+}
+
+/** Which of the four required fit-score fields are still missing. */
+export function missingFitFields(profile: ReadyForFitFields | null): Array<{
+  key: keyof ReadyForFitFields;
+  label: string;
+}> {
+  if (!profile) {
+    return [
+      { key: "major", label: "major" },
+      { key: "gradYear", label: "graduation year" },
+      { key: "workAuth", label: "work authorization" },
+      { key: "targetLocations", label: "state" },
+    ];
+  }
+  const missing: Array<{ key: keyof ReadyForFitFields; label: string }> = [];
+  if (!profile.major?.trim()) missing.push({ key: "major", label: "major" });
+  if (!profile.gradYear) missing.push({ key: "gradYear", label: "graduation year" });
+  if (!profile.workAuth) missing.push({ key: "workAuth", label: "work authorization" });
+  if (profile.targetLocations.length === 0) missing.push({ key: "targetLocations", label: "state" });
+  return missing;
+}

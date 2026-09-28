@@ -35,14 +35,22 @@ export interface ScholarshipListing {
   /** The awarding org as named on the source page. There is no ATS-style
    *  `organizations` row to link to — see schema.ts on `postings.orgId`. */
   sponsorName: string;
-  /** Whole-dollar bounds. Both null means "varies" or unparseable prose —
-   *  never guessed from a range we can't confidently read. */
+  /** Whole-dollar per-award bounds. Both null means "varies" or unparseable
+   *  prose — never guessed from a range we can't confidently read. */
   amountMin: number | null;
   amountMax: number | null;
   /** The source stated a dollar figure we could not parse, as opposed to
    *  stating none at all. Both leave the bounds null; only this one is a
    *  defect worth a human look. See `parseAmount`. */
   amountNeedsReview: boolean;
+  /** Normalized award shape: exact | range | varies | unparseable. */
+  amountStatus: "exact" | "range" | "varies" | "unparseable";
+  /** Known program-wide total, stored separately from per-award amounts. */
+  programTotal: number | null;
+  /** Number of awards the source states, when known. */
+  awardsCount: number | null;
+  /** True when the per-award amount was computed from total / count. */
+  amountIsEstimated: boolean;
   /** Raw eligibility bullets/prose as the source states them. Kept as text
    *  rather than parsed into majors/GPA/etc. fields — we have not seen
    *  enough real listings yet to know the right structured shape, and a

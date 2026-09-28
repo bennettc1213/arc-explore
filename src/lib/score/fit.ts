@@ -397,6 +397,7 @@ function scoreTerm(profile: ScoreProfile, posting: ScorePosting): Dimension {
     return {
       value: 0.15,
       weight: 20,
+      blocking: true,
       reason: {
         label: `${posting.term} is after you graduate`,
         dimension: "term",
@@ -556,6 +557,7 @@ function scoreLocation(profile: ScoreProfile, posting: ScorePosting): Dimension 
   return {
     value: 0.25,
     weight: 20,
+    blocking: true,
     reason: {
       label: locs[0],
       dimension: "location",

@@ -38,19 +38,20 @@ export function ScoreBadge({
   bucketLabel?: string | null;
 }) {
   if (bucketLabel) {
-    // The known/total fraction renders here exactly as it does for a full
-    // score. Bucketing withholds precision, never the marker that says what
-    // the judgement rests on — see presentFit for why that distinction is
-    // load-bearing rather than cosmetic.
+    // "Check eligibility" is a conflict warning, not a paywall, so it renders
+    // without the lock icon and keeps the confidence marker when one exists.
+    const isCheck = bucketLabel === "Check eligibility";
     const bucketPartial = known !== undefined && total !== undefined && known < total;
     return (
       <div
         className="flex items-baseline gap-2 border px-3 py-2"
         style={{ borderColor: "var(--line-strong)", background: "transparent" }}
         title={
-          bucketPartial
-            ? `Based on ${known} of ${total} factors — the rest are not stated in this posting. Upgrade to ${TIER_LABELS.apply} for the full score and breakdown.`
-            : "Upgrade to Edge to see the full score and factor breakdown"
+          isCheck
+            ? "This conflicts with something in your profile — confirm eligibility before applying."
+            : bucketPartial
+              ? `Based on ${known} of ${total} factors — the rest are not stated in this posting. Upgrade to ${TIER_LABELS.apply} for the full score and breakdown.`
+              : "Upgrade to Edge to see the full score and factor breakdown"
         }
       >
         <span className="mono">{label}</span>
@@ -62,9 +63,11 @@ export function ScoreBadge({
             {known}/{total}
           </span>
         )}
-        <span aria-hidden style={{ color: "var(--faint-readable)" }}>
-          🔒
-        </span>
+        {!isCheck && (
+          <span aria-hidden style={{ color: "var(--faint-readable)" }}>
+            🔒
+          </span>
+        )}
       </div>
     );
   }

@@ -55,9 +55,11 @@ const UPLOAD_INITIAL: ResumeUploadState = { status: "idle" };
 export function ProfileEditor({
   profile,
   resume,
+  returnTo,
 }: {
   profile: UserProfile | null;
   resume: { fileName: string | null; createdAt: string } | null;
+  returnTo?: string;
 }) {
   const [values, setValues] = useState<FormValues>(() => toFormValues(profile));
   const [saveState, saveAction, saving] = useActionState(saveProfileAction, SAVE_INITIAL);
@@ -174,6 +176,7 @@ export function ProfileEditor({
         action={saveAction}
         style={{ border: "1px solid var(--line-strong)", padding: 22, scrollMarginTop: 24 }}
       >
+        {returnTo && <input type="hidden" name="next" value={returnTo} />}
         <div className="eyebrow chrome" style={{ marginBottom: 18 }}>
           your details
         </div>

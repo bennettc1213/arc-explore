@@ -1,32 +1,41 @@
 /**
  * Turns parsed scholarship listings into database writes.
  *
- * Deliberately not a reuse of `ingest/persist.ts`. That module's
- * insert/touch/reopen/close plan exists to reconcile *incremental* polls of
- * one company's ATS board — org-scoped, poll-interval-aware, tuned for a
- * board returning a partial result being a red flag. A scholarship scrape is
- * a full snapshot of one page, and the source states open/closed directly
- * (`isOpen` on `ScholarshipListing`) rather than requiring us to infer it
- * from absence — so this is a plain upsert plus "no longer on the page at
- * all", not a diff against poll history.
+ * Scholarship sources provide full snapshots rather than incremental polls,
+ * but the close/reopen lifecycle is the same as the ATS path: a row must be
+ * absent on two consecutive successful scrapes before it is closed, and
+ * `closed_at` is the first-miss time. A completely empty snapshot suppresses
+ * closes and misses because it almost always means the scrape broke.
  */
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
+import { timestamptz } from "@/db/fragments";
 import { postingSources, postings } from "@/db/schema";
 import { canonicalHash, normalizeTitle } from "../ingest/normalize";
+import { recordEvent } from "../analytics/record";
+
 import { isContentMarketing } from "./classify";
-import { selectPostingsToClose } from "./close";
-import type { ScholarshipListing } from "./types";
+import { selectPostingsToClose, type CloseCandidate } from "./close";
+import type { ScholarshipListing, ScholarshipSource } from "./types";
+import {
+  assessTrust,
+  lotteryReasonsForStorage,
+  trustReasonsForStorage,
+  type TrustInput,
+} from "./trust";
 
 export interface ScholarshipPersistResult {
   inserted: number;
   updated: number;
   closed: number;
+  reopened: number;
 }
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+const POSTINGS_BATCH = 500;
 
 /**
  * Upsert one source's full listing snapshot.
@@ -36,7 +45,7 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
  * applied set.
  */
 export async function persistScholarships(
-  source: ScholarshipListing["source"],
+  source: ScholarshipSource,
   listings: ScholarshipListing[],
 ): Promise<ScholarshipPersistResult> {
   return db.transaction(async (tx) => {
@@ -44,6 +53,7 @@ export async function persistScholarships(
     let updated = 0;
     const now = new Date();
     const seenHashes: string[] = [];
+    const openHashes = new Set<string>();
     const idByHash = new Map<string, string>();
 
     const rows = listings.map((l) => {
@@ -54,6 +64,7 @@ export async function persistScholarships(
         term: null,
       });
       seenHashes.push(hash);
+      if (l.isOpen) openHashes.add(hash);
 
       const contentMarketing = isContentMarketing({
         sponsorName: l.sponsorName,
@@ -69,17 +80,14 @@ export async function persistScholarships(
       };
     });
 
-    // Batching matters here: a scholarship source's snapshot can be thousands
-    // of rows, and thousands of sequential upserts inside one transaction is
-    // how a Supabase pooler connection gets dropped mid-write (we watched it
-    // happen). Chunked so a batch never brushes Postgres's 65,535-parameter
-    // ceiling — at 17 columns that means ≤ ~3,500 rows per statement, and
-    // 500 keeps plenty of headroom.
-    //
-    // Governs both writes below. The `posting_sources` insert went unbatched
-    // until 2026-08-14 and sent every row in one statement, which is the same
-    // failure shape this constant exists to prevent.
-    const POSTINGS_BATCH = 500;
+    // Lifecycle first: existing rows that are absent from the snapshot need
+    // misses tracked or closing, and existing closed rows that reappeared as
+    // open need reopening. We do this before the upsert so a row that is
+    // closing on this run keeps its first-miss timestamp and is not re-touched
+    // by the upsert's closedAt logic.
+    const lifecycle = await applyScholarshipLifecycle(tx, source, openHashes, now);
+
+    const hashById = new Map<string, string>();
 
     const processChunk = async (chunk: typeof rows) => {
       const returned = await tx
@@ -96,6 +104,10 @@ export async function persistScholarships(
             amountMin: r.listing.amountMin,
             amountMax: r.listing.amountMax,
             amountNeedsReview: r.listing.amountNeedsReview,
+            amountStatus: r.listing.amountStatus,
+            programTotal: r.listing.programTotal,
+            awardsCount: r.listing.awardsCount,
+            amountIsEstimated: r.listing.amountIsEstimated,
             isContentMarketing: r.contentMarketing,
             eligibility:
               r.listing.eligibility.length > 0 ? { criteria: r.listing.eligibility } : null,
@@ -115,17 +127,17 @@ export async function persistScholarships(
             amountMin: sql`excluded.amount_min`,
             amountMax: sql`excluded.amount_max`,
             amountNeedsReview: sql`excluded.amount_needs_review`,
+            amountStatus: sql`excluded.amount_status`,
+            programTotal: sql`excluded.program_total`,
+            awardsCount: sql`excluded.awards_count`,
+            amountIsEstimated: sql`excluded.amount_is_estimated`,
             isContentMarketing: sql`excluded.is_content_marketing`,
             eligibility: sql`excluded.eligibility`,
             deadlineAt: sql`excluded.deadline_at`,
             lastSeenAt: now,
-            // The open/closed intent is on the incoming row, not on what the
-            // table already holds. An open listing must clear any previous
-            // close outright (a new cycle); a closed one keeps its first close
-            // time rather than re-stamping "closed today" forever. `excluded`
-            // is null for open rows and `now` for closed ones, so CASE is what
-            // distinguishes the two — coalesce alone would freeze an open row
-            // shut on the first run that saw it closed.
+            // The open/closed intent is on the incoming row. An open listing
+            // clears any previous close outright (a new cycle); a closed one
+            // keeps its first close time rather than re-stamping "closed today".
             closedAt: sql`case when excluded.closed_at is null then null
                                 else coalesce(postings.closed_at, excluded.closed_at) end`,
           },
@@ -136,6 +148,7 @@ export async function persistScholarships(
         if (row.createdAt.getTime() === now.getTime()) inserted++;
         else updated++;
         idByHash.set(row.canonicalHash, row.id);
+        hashById.set(row.id, row.canonicalHash);
       }
     };
 
@@ -143,11 +156,6 @@ export async function persistScholarships(
       await processChunk(rows.slice(i, i + POSTINGS_BATCH));
     }
 
-    // Batched for exactly the reason the postings upsert above is, which this
-    // statement was originally missed out of: it grows with the snapshot, and
-    // a source like ScholarshipPortal hands us thousands of rows at once. One
-    // statement carrying every row is the shape that got a pooler connection
-    // dropped mid-write.
     for (let i = 0; i < rows.length; i += POSTINGS_BATCH) {
       const chunk = rows.slice(i, i + POSTINGS_BATCH);
       await tx
@@ -168,35 +176,151 @@ export async function persistScholarships(
         });
     }
 
-    // Anything previously scraped from this source but absent from today's
-    // snapshot entirely (not just marked closed — genuinely gone from the
-    // page) is the fund being retired, not a cycle ending.
-    const closed = await closeRemoved(tx, source, seenHashes, now);
+    // Compute corroboration counts and v1 trust signals for every row this
+    // source touched. We do this after postingSources are written so the count
+    // reflects the latest source graph.
+    for (let i = 0; i < rows.length; i += POSTINGS_BATCH) {
+      const chunk = rows.slice(i, i + POSTINGS_BATCH);
+      await refreshTrustForChunk(tx, chunk, idByHash, hashById);
+    }
 
-    return { inserted, updated, closed };
+    return {
+      inserted,
+      updated,
+      closed: lifecycle.closed,
+      reopened: lifecycle.reopened,
+    };
   });
 }
 
-async function closeRemoved(
+async function refreshTrustForChunk(
   tx: Tx,
-  source: ScholarshipListing["source"],
-  seenHashes: string[],
+  chunk: Array<{ hash: string; listing: ScholarshipListing; contentMarketing: boolean; closedAt: Date | null }>,
+  idByHash: Map<string, string>,
+  hashById: Map<string, string>,
+): Promise<void> {
+  const ids = chunk.map((r) => idByHash.get(r.hash)!).filter(Boolean);
+  if (ids.length === 0) return;
+
+  const counts = await tx
+    .select({ postingId: postingSources.postingId, n: sql<number>`count(distinct ${postingSources.source})::int` })
+    .from(postingSources)
+    .where(inArray(postingSources.postingId, ids))
+    .groupBy(postingSources.postingId);
+
+  const countById = new Map(counts.map((c) => [c.postingId, c.n]));
+
+  for (const r of chunk) {
+    const id = idByHash.get(r.hash);
+    if (!id) continue;
+    const corroborationCount = countById.get(id) ?? 1;
+    const trustInput: TrustInput = {
+      sponsorName: r.listing.sponsorName,
+      title: r.listing.title,
+      eligibility: r.listing.eligibility,
+      amountMin: r.listing.amountMin,
+      amountMax: r.listing.amountMax,
+      corroborationCount,
+    };
+    const assessment = assessTrust(trustInput);
+
+    await tx
+      .update(postings)
+      .set({
+        trustScore: assessment.score,
+        trustReasons: trustReasonsForStorage(assessment.reasons),
+        isLottery: assessment.isLottery,
+        lotteryReasons: lotteryReasonsForStorage(assessment.lotteryReasons),
+        corroborationCount,
+      })
+      .where(eq(postings.id, id));
+  }
+}
+
+async function applyScholarshipLifecycle(
+  tx: Tx,
+  source: ScholarshipSource,
+  openHashes: Set<string>,
   now: Date,
-): Promise<number> {
+): Promise<{ closed: number; reopened: number }> {
   const candidates = await tx
     .select({
       id: postings.id,
       canonicalHash: postings.canonicalHash,
       closedAt: postings.closedAt,
+      missingStrikes: postings.missingStrikes,
+      missingSince: postings.missingSince,
     })
     .from(postings)
     .innerJoin(postingSources, eq(postingSources.postingId, postings.id))
     .where(and(eq(postingSources.source, source), eq(postings.kind, "scholarship")));
 
-  const ids = selectPostingsToClose(candidates, seenHashes);
-  if (ids.length === 0) return 0;
+  const lifecycleCandidates: CloseCandidate[] = candidates.map((c) => ({
+    id: c.id,
+    canonicalHash: c.canonicalHash,
+    closedAt: c.closedAt ?? null,
+    missingStrikes: Number(c.missingStrikes ?? 0),
+    missingSince: c.missingSince ?? null,
+  }));
 
-  await tx.update(postings).set({ closedAt: now }).where(inArray(postings.id, ids));
+  const plan = selectPostingsToClose(lifecycleCandidates, Array.from(openHashes), now);
 
-  return ids.length;
+  if (plan.toIncrementMissing.length > 0) {
+    const ids = plan.toIncrementMissing.map((c) => c.id);
+    await tx
+      .update(postings)
+      .set({
+        missingStrikes: sql`${postings.missingStrikes} + 1`,
+        missingSince: sql`COALESCE(${postings.missingSince}, ${timestamptz(now)})`,
+      })
+      .where(inArray(postings.id, ids));
+  }
+
+  if (plan.toClose.length > 0) {
+    const ids = plan.toClose.map((c) => c.id);
+    await tx
+      .update(postings)
+      .set({
+        closedAt: sql`COALESCE(${postings.missingSince}, ${timestamptz(now)})`,
+        missingStrikes: 0,
+        missingSince: null,
+      })
+      .where(inArray(postings.id, ids));
+  }
+
+  if (plan.toResetMissing.length > 0) {
+    const ids = plan.toResetMissing.map((c) => c.id);
+    await tx
+      .update(postings)
+      .set({ missingStrikes: 0, missingSince: null })
+      .where(inArray(postings.id, ids));
+  }
+
+  // Reopen closed rows that the source now lists as open.
+  const toReopen = lifecycleCandidates.filter(
+    (c) => c.closedAt && openHashes.has(c.canonicalHash),
+  );
+
+  if (toReopen.length > 0) {
+    const ids = toReopen.map((c) => c.id);
+    await tx
+      .update(postings)
+      .set({
+        closedAt: null,
+        lastSeenAt: now,
+        missingStrikes: 0,
+        missingSince: null,
+      })
+      .where(inArray(postings.id, ids));
+
+    for (const c of toReopen) {
+      void recordEvent("listing_reopened", {
+        kind: "scholarship",
+        source,
+        hash: c.canonicalHash,
+      });
+    }
+  }
+
+  return { closed: plan.toClose.length, reopened: toReopen.length };
 }

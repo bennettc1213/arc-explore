@@ -149,9 +149,13 @@ export function parseListings(html: string, now: Date = new Date()): Scholarship
       // the only attribution the page gives, so it stands in rather than an
       // invented organisation.
       sponsorName: title,
-      amountMin: amount.min,
-      amountMax: amount.max,
+      amountMin: amount.amountPerAwardMin,
+      amountMax: amount.amountPerAwardMax,
       amountNeedsReview: amount.needsReview,
+      amountStatus: amount.status,
+      programTotal: amount.programTotal,
+      awardsCount: amount.awardsCount,
+      amountIsEstimated: amount.isEstimated,
       // The whole reason for this source. Kept as the source's own prose —
       // one entry, unparsed, per the ScholarshipListing contract.
       eligibility: description ? [description] : [],

@@ -203,9 +203,13 @@ export function parseListings(html: string, now: Date = new Date()): Scholarship
       // attribution the page gives, so it stands in rather than an invented
       // organisation — the same choice UNR's parser makes.
       sponsorName: title,
-      amountMin: amount.min,
-      amountMax: amount.max,
+      amountMin: amount.amountPerAwardMin,
+      amountMax: amount.amountPerAwardMax,
       amountNeedsReview: amount.needsReview,
+      amountStatus: amount.status,
+      programTotal: amount.programTotal,
+      awardsCount: amount.awardsCount,
+      amountIsEstimated: amount.isEstimated,
       // The source's own prose, unparsed, per the ScholarshipListing contract.
       // This is what `fieldsFromDegreeLanguage` reads.
       eligibility: description ? [description] : [],

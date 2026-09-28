@@ -17,6 +17,10 @@ const POSTING: PostingFacts = {
   eligibility: [],
   amountMin: null,
   amountMax: null,
+  amountStatus: "varies",
+  programTotal: null,
+  awardsCount: null,
+  amountIsEstimated: false,
   deadlineAt: null,
   isContentMarketing: false,
 };

@@ -150,7 +150,12 @@ export async function pollOrg(
   }
 
   try {
-    const { postings, notModified, etag } = await adapter.fetchBoard(org.atsSlug, {
+    const {
+      postings,
+      notModified,
+      etag,
+      successfulComplete = true,
+    } = await adapter.fetchBoard(org.atsSlug, {
       etag: org.etag,
     });
 
@@ -176,9 +181,17 @@ export async function pollOrg(
       };
     }
 
+    if (!successfulComplete) {
+      const error = `${org.name}: poll did not complete successfully (partial or failed)`;
+      await recordPollFailure(org.id, error);
+      return { ok: false, error };
+    }
+
     const totalOnBoard = postings.length;
     const enriched = await enrichDescriptions(adapter.name, org.atsSlug, postings);
-    const outcome = await persistPoll(org.id, enriched, totalOnBoard, etag);
+    const outcome = await persistPoll(org.id, enriched, totalOnBoard, etag, {
+      successfulComplete: true,
+    });
     return { ok: true, outcome };
   } catch (e) {
     // Bounded and cause-aware: this string goes straight into

@@ -6,8 +6,19 @@ import type { FeedItem } from "./feed";
 
 const NOW = new Date("2026-08-15T12:00:00Z");
 
+function amountStatusFor(
+  min: number | null,
+  max: number | null,
+  needsReview: boolean,
+): FeedItem["amountStatus"] {
+  if (needsReview) return "unparseable";
+  if (min !== null && max !== null && min !== max) return "range";
+  if (min !== null || max !== null) return "exact";
+  return "varies";
+}
+
 function item(over: Partial<FeedItem> = {}): FeedItem {
-  return {
+  const base = {
     id: "a",
     kind: "internship",
     title: "Software Engineering Intern",
@@ -19,9 +30,13 @@ function item(over: Partial<FeedItem> = {}): FeedItem {
     workAuth: null,
     skills: ["Python", "SQL"],
     deadlineAt: null,
-    amountMin: null,
-    amountMax: null,
+    amountMin: null as number | null,
+    amountMax: null as number | null,
     amountNeedsReview: false,
+    amountStatus: "varies" as FeedItem["amountStatus"],
+    programTotal: null,
+    awardsCount: null,
+    amountIsEstimated: false,
     applyLinkDead: false,
     eligibility: [],
     isContentMarketing: false,
@@ -38,8 +53,16 @@ function item(over: Partial<FeedItem> = {}): FeedItem {
       reasons: [],
     },
     timing: { score: 80, label: "", liveness: "" },
-    ...over,
-  } as FeedItem;
+  };
+  const merged = { ...base, ...over };
+  if (!over.amountStatus) {
+    merged.amountStatus = amountStatusFor(
+      merged.amountMin,
+      merged.amountMax,
+      merged.amountNeedsReview ?? false,
+    );
+  }
+  return merged as FeedItem;
 }
 
 /* ------------------------------------------------------------------ *

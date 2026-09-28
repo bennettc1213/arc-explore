@@ -211,7 +211,7 @@ test("free tier never receives the number, the reasons, or the gap", () => {
    * could open in devtools. If this ever returns the score on free, the
    * paywall becomes decorative.
    */
-  const shown = presentFit(FIT, "free");
+  const shown = presentFit(FIT, "free", { profileReady: true });
   assert.equal(shown.score, null);
   assert.equal(shown.locked, true);
   assert.equal(shown.bucketLabel, "Strong Fit");
@@ -236,14 +236,14 @@ test("the confidence marker survives the paywall", () => {
    * the precision of the score; it may not strip the marker that stops the
    * score overstating itself.
    */
-  const shown = presentFit(FIT, "free");
+  const shown = presentFit(FIT, "free", { profileReady: true });
   assert.equal(shown.known, 4);
   assert.equal(shown.total, 5);
 });
 
 test("paid tiers receive the score, the confidence marker and the gap intact", () => {
   for (const tier of ["apply"] as const) {
-    const shown = presentFit(FIT, tier);
+    const shown = presentFit(FIT, tier, { profileReady: true });
     assert.equal(shown.score, 87);
     assert.equal(shown.locked, false);
     assert.equal(shown.bucketLabel, null);
@@ -261,9 +261,33 @@ test("an unscorable posting looks identical on every tier", () => {
   // an unlocked null rather than a bucket.
   const nullFit: FitResult = { ...FIT, score: null, knownDimensions: 0 };
   for (const tier of TIER_IDS) {
-    const shown = presentFit(nullFit, tier);
+    const shown = presentFit(nullFit, tier, { profileReady: true });
     assert.equal(shown.score, null);
     assert.equal(shown.locked, false, `${tier} must not read as locked`);
     assert.equal(shown.bucketLabel, null);
   }
+});
+
+test("an incomplete profile hides every fit label and percentage-like score", () => {
+  const shown = presentFit(FIT, "free", { profileReady: false });
+  assert.equal(shown.score, null);
+  assert.equal(shown.bucketLabel, null);
+  assert.equal(shown.locked, false);
+  assert.deepEqual(shown.reasons, []);
+  assert.deepEqual(shown.skills, { matched: [], missing: [] });
+  assert.ok(!JSON.stringify(shown).includes("87"));
+  assert.ok(!JSON.stringify(shown).includes("Strong Fit"));
+});
+
+test("a high-confidence conflict shows Check eligibility, not Strong Fit", () => {
+  const blocked: FitResult = { ...FIT, blocked: true };
+  const free = presentFit(blocked, "free", { profileReady: true });
+  assert.equal(free.score, null);
+  assert.equal(free.bucketLabel, "Check eligibility");
+  assert.equal(free.locked, false);
+  assert.ok(free.reasons.length > 0, "reasons explaining the conflict are kept");
+
+  const paid = presentFit(blocked, "apply", { profileReady: true });
+  assert.equal(paid.score, null);
+  assert.equal(paid.bucketLabel, "Check eligibility");
 });

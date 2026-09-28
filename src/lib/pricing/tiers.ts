@@ -498,12 +498,13 @@ export function evaluateFeature(
  * generation tools are the other, handled by evaluateFeature's limits).
  * ------------------------------------------------------------------ */
 
-export type FitBucket = "strong" | "good" | "low" | "unscored";
+export type FitBucket = "strong" | "good" | "low" | "check" | "unscored";
 
 export const FIT_BUCKET_LABELS: Record<FitBucket, string> = {
   strong: "Strong Fit",
   good: "Good Fit",
   low: "Low Fit",
+  check: "Check eligibility",
   unscored: "Not enough info",
 };
 
@@ -534,6 +535,15 @@ export interface PresentedFit {
   locked: boolean;
 }
 
+export interface PresentFitOptions {
+  /**
+   * The viewer's profile has the four minimum fields (major, graduation year,
+   * state/location preference, work authorization). When false, no fit label or
+   * percentage-like score may be returned — the score is treated as unknown.
+   */
+  profileReady: boolean;
+}
+
 /**
  * Shapes a `FitResult` for the viewer's tier — the discovery/scoring half of
  * the two gating patterns (the other is quantity caps, in `usage.ts`).
@@ -553,7 +563,44 @@ export interface PresentedFit {
  * testable without a database connection, the same split `allowlist.ts`
  * makes from `admin/auth.ts`.
  */
-export function presentFit(fit: FitResult, tier: TierId): PresentedFit {
+export function presentFit(
+  fit: FitResult,
+  tier: TierId,
+  options: PresentFitOptions,
+): PresentedFit {
+  const { profileReady } = options;
+
+  // A fit label or percentage-like output may only be shown against an actual
+  // student profile. When the profile is incomplete, the score is treated as
+  // genuinely unknown for presentation purposes, even if the server computed a
+  // ranking score for ordering.
+  if (!profileReady) {
+    return {
+      score: null,
+      known: 0,
+      total: fit.totalDimensions,
+      reasons: [],
+      skills: { matched: [], missing: [] },
+      bucketLabel: null,
+      locked: false,
+    };
+  }
+
+  // High-confidence conflicts (location, education-level) are already known
+  // from the data and must not be labelled Strong Fit. Show "Check eligibility"
+  // instead and keep the reasons so the user can see why.
+  if (fit.blocked) {
+    return {
+      score: null,
+      known: fit.knownDimensions,
+      total: fit.totalDimensions,
+      reasons: fit.reasons,
+      skills: { matched: [], missing: [] },
+      bucketLabel: FIT_BUCKET_LABELS.check,
+      locked: false,
+    };
+  }
+
   const fullScore = fit.score === null || evaluateFeature(tier, "fit_score_full").usable;
   const gapCloser = fit.score === null || evaluateFeature(tier, "fit_score_gap_closer").usable;
 

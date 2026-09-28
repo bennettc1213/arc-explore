@@ -52,6 +52,7 @@ export interface MetricCounts {
   signups: number;
   confirmedSignups: number;
   usableProfiles: number;
+  activatedProfiles: number;
   withResume: number;
   withTrackedApplication: number;
   applicationsTracked: number;
@@ -73,6 +74,7 @@ export const EMPTY_COUNTS: MetricCounts = {
   signups: 0,
   confirmedSignups: 0,
   usableProfiles: 0,
+  activatedProfiles: 0,
   withResume: 0,
   withTrackedApplication: 0,
   applicationsTracked: 0,
@@ -124,6 +126,14 @@ const SPECS: Spec[] = [
     definition:
       "profiles passing `isProfileUsable` — a major, graduation year, work authorization, an interest or a target location. The same function the feed uses to decide whether it can score for you.",
     caveat: "a profile with one field set counts here. It is a floor on engagement, not a measure of completeness.",
+    group: "activation",
+  },
+  {
+    key: "activatedProfiles",
+    label: "activated profiles",
+    definition:
+      "profiles with `activated_at` set — meaning all four fit-score fields (major, graduation year, work authorization and a target location) are filled in and the user has saved at least one posting.",
+    caveat: null,
     group: "activation",
   },
   {

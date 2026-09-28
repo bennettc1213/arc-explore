@@ -2282,6 +2282,27 @@ reason, not an omission.
   workflows able to fire at all — GitHub only runs a `schedule` trigger from
   the default branch._
 
+- [ ] **There is no staging environment, so "run it locally" and "change the
+  live site" are not separate things for data.** Found 2026-09-23 while
+  answering when the market-ready plan's changes would reach the live site.
+  Local `.env` and Vercel point at the **same Supabase project** (§2's sign-in
+  entry: the local values were copied up to Vercel), and the word "staging"
+  appears in no config or doc in the repo — only in
+  `INSTELA_MARKET_READY_MASTER_IMPLEMENTATION_PLAN.md`, which assumes one for
+  INS-011, 023, 036 and 054. Consequences: (1) a migration or backfill run from
+  a dev machine changes what the live site shows immediately, with no deploy;
+  the plan's early backfills (terms, amounts, trust flags, INS-004-009) rewrite
+  real rows that the currently-deployed code will then read. (2) The GitHub
+  Actions crons run `master`'s code against that same database, so pushing to
+  `master` changes live behaviour even if the website is not redeployed.
+  _Not verified: whether a push to `master` also auto-deploys the site.
+  `.vercel/project.json` exists (CLI-linked) and the sign-in fix was deployed
+  with the Vercel CLI, but `gh` is not installed here and the Vercel project's
+  Git integration was not inspected. The `origin` remote is still
+  `arc-explore` (see above). To close: create a second Supabase project and a
+  Vercel preview environment pointing at it, rehearse migrations and backfills
+  there, and record how a production release is actually triggered._
+
 - [x] **The ingest crawler introduced itself with the old product name, a URL
   that went nowhere, and the owner's email address.** `USER_AGENT` in
   `lib/ingest/http.ts` was still `internship-tracker/0.1 (+https://github.com/;

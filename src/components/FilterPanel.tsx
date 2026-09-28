@@ -46,6 +46,8 @@ export interface FilterPanelProps {
   category: string | null;
   remoteOnly: boolean;
   includeClosed: boolean;
+  includeInferred: boolean;
+  includeUnknownAmounts: boolean;
   term: string | null;
   newSinceDays: number | null;
   hideBlocked: boolean;
@@ -67,6 +69,8 @@ export function FilterPanel(props: FilterPanelProps) {
     category,
     remoteOnly,
     includeClosed,
+    includeInferred,
+    includeUnknownAmounts,
     term,
     newSinceDays,
     hideBlocked,
@@ -319,6 +323,16 @@ export function FilterPanel(props: FilterPanelProps) {
               />
             </label>
 
+            <label className="check-row mono chrome">
+              <input
+                type="checkbox"
+                name="includeUnknownAmounts"
+                value="1"
+                defaultChecked={includeUnknownAmounts}
+              />
+              include unknown amounts
+            </label>
+
             <label className="field-row">
               <span className="mono chrome">added in last</span>
               <select className="field" name="new" defaultValue={newSinceDays ?? ""}>
@@ -391,6 +405,16 @@ export function FilterPanel(props: FilterPanelProps) {
             <label className="check-row mono chrome">
               <input type="checkbox" name="includeClosed" value="1" defaultChecked={includeClosed} />
               show closed
+            </label>
+
+            <label className="check-row mono chrome">
+              <input
+                type="checkbox"
+                name="includeInferred"
+                value="1"
+                defaultChecked={includeInferred}
+              />
+              include inferred terms
             </label>
           </div>
         </div>

@@ -121,6 +121,7 @@ async function main() {
       canonicalHash: p.canonicalHash,
       closedAt: null,
       missingStrikes: 0,
+      missingSince: null,
     }));
     const removed = allEarly[0];
 

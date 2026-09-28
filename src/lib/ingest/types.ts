@@ -55,6 +55,13 @@ export interface FetchBoardResult {
   etag: string | null;
   /** True when the server answered 304 and `postings` is therefore empty. */
   notModified: boolean;
+  /**
+   * False when the poll did not complete successfully enough for absence to be
+   * meaningful: timeouts, network errors, 5xx, blocks/403, partial pagination,
+   * parser failures, or validation failures. Defaults to true for existing
+   * adapters.
+   */
+  successfulComplete?: boolean;
 }
 
 export interface BoardAdapter {

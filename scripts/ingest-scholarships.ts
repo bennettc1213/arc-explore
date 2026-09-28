@@ -66,7 +66,12 @@ async function runSource(source: Source): Promise<boolean> {
       postingsNew: result.inserted,
       postingsClosed: result.closed,
       errors: 0,
-      detail: { source: source.name, updated: result.updated, open: openCount },
+      detail: {
+        source: source.name,
+        updated: result.updated,
+        open: openCount,
+        reopened: result.reopened,
+      },
     });
 
     console.log(
@@ -76,6 +81,7 @@ async function runSource(source: Source): Promise<boolean> {
         `  inserted : ${result.inserted}`,
         `  updated  : ${result.updated}`,
         `  closed   : ${result.closed}`,
+        `  reopened : ${result.reopened}`,
         `  duration : ${((Date.now() - started) / 1000).toFixed(1)}s`,
       ].join("\n"),
     );

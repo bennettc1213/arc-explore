@@ -1,5 +1,7 @@
 import type { ApplicationStatus } from "@/db/schema";
 import type { FeedItem } from "@/lib/feed";
+import { formatAward } from "@/lib/scholarships/display";
+import { formatTerm } from "@/lib/terms/display";
 // From the pure module, not `entitlements` — a row needs the presentation
 // rule, not a database connection.
 import { presentFit, type TierId } from "@/lib/pricing/tiers";
@@ -8,15 +10,6 @@ import { RowLink } from "./RowLink";
 import { ScoreBadge } from "./ScoreBadge";
 import { ScoreReasons } from "./ScoreReasons";
 import { TrackButton } from "./TrackButton";
-
-/** "$1,000", "$1,000–$2,500", or null when the amount is unstated. */
-function formatAmount(min: number | null, max: number | null): string | null {
-  if (min !== null && max !== null && min !== max) {
-    return `$${min.toLocaleString("en-US")}–$${max.toLocaleString("en-US")}`;
-  }
-  const value = min ?? max;
-  return value === null ? null : `$${value.toLocaleString("en-US")}`;
-}
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
@@ -70,6 +63,7 @@ export function PostingRow({
   signedIn,
   hasResume,
   tier = "free",
+  profileReady = false,
 }: {
   item: FeedItem;
   /** This user's application status for the posting, if they have one. */
@@ -80,10 +74,16 @@ export function PostingRow({
   /** Viewer's pricing tier — defaults to the most restrictive, never the
    *  most permissive, for a caller that forgets to pass it. */
   tier?: TierId;
+  /**
+   * Whether the viewer has supplied the four fields required before any fit
+   * label or score may be shown. Defaults false so a forgotten prop does not
+   * leak a label against an empty profile.
+   */
+  profileReady?: boolean;
 }) {
   const closed = Boolean(item.closedAt);
   const blocked = item.fit.blocked;
-  const presented = presentFit(item.fit, tier);
+  const presented = presentFit(item.fit, tier, { profileReady });
 
   /*
    * The three date facts, each attributed to whoever actually stated it.
@@ -200,7 +200,7 @@ export function PostingRow({
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {item.term ? (
               <span className="mono" style={{ color: "var(--faint-readable)" }}>
-                {item.term}
+                {formatTerm(item)}
               </span>
             ) : item.kind === "internship" ? (
               <span className="slot" style={{ padding: "3px 8px" }}>
@@ -253,20 +253,34 @@ export function PostingRow({
                 </span>
               )}
 
-            {item.kind === "scholarship" &&
-              (item.amountMin != null || item.amountMax != null ? (
-                <span className="mono" style={{ color: "var(--text)" }}>
-                  {formatAmount(item.amountMin, item.amountMax)}
-                </span>
-              ) : (
-                <span className="slot" style={{ padding: "3px 8px" }}>
-                  {item.amountNeedsReview ? "amount unreadable" : "amount not stated"}
-                </span>
-              ))}
+            {item.kind === "scholarship" && (
+              <span className="mono" style={{ color: "var(--text)" }}>
+                {formatAward(item) ?? "amount not stated"}
+              </span>
+            )}
 
             {item.kind === "scholarship" && item.isContentMarketing && (
               <span className="mono" style={{ color: "var(--faint-readable)" }}>
                 content marketing
+              </span>
+            )}
+            {item.kind === "scholarship" && item.isLottery && (
+              <span className="mono" style={{ color: "var(--accent-lite)" }}>
+                lottery / sweepstakes
+              </span>
+            )}
+            {item.kind === "scholarship" && !item.isLottery && item.trustScore <= 40 && (
+              <span
+                className="mono"
+                style={{ color: "var(--accent-lite)" }}
+                title={item.trustReasons.map((r) => r.detail).join(" ")}
+              >
+                low trust
+              </span>
+            )}
+            {item.kind === "scholarship" && item.corroborationCount >= 2 && !item.isLottery && (
+              <span className="mono" style={{ color: "var(--faint-readable)" }}>
+                listed by {item.corroborationCount} sources
               </span>
             )}
           </div>

@@ -85,9 +85,17 @@ export function parseListings(html: string): ScholarshipListing[] {
     const amountBlock = block.match(AMOUNT_BLOCK_RE)?.[1];
     // A missing block is the page stating no amount, not a failed parse, so
     // it is not flagged for review — only a block we could not read is.
-    const { min, max, needsReview } = amountBlock
+    const amount = amountBlock
       ? parseAmount(htmlToText(amountBlock) ?? "")
-      : { min: null, max: null, needsReview: false };
+      : {
+          amountPerAwardMin: null,
+          amountPerAwardMax: null,
+          awardsCount: null,
+          programTotal: null,
+          status: "varies" as const,
+          isEstimated: false,
+          needsReview: false,
+        };
 
     const eligibilityBlock = block.match(ELIGIBILITY_BLOCK_RE)?.[1];
     const eligibility = eligibilityBlock ? parseEligibility(eligibilityBlock) : [];
@@ -98,9 +106,13 @@ export function parseListings(html: string): ScholarshipListing[] {
       title,
       url: detailUrl,
       sponsorName: SPONSOR_NAME,
-      amountMin: min,
-      amountMax: max,
-      amountNeedsReview: needsReview,
+      amountMin: amount.amountPerAwardMin,
+      amountMax: amount.amountPerAwardMax,
+      amountNeedsReview: amount.needsReview,
+      amountStatus: amount.status,
+      programTotal: amount.programTotal,
+      awardsCount: amount.awardsCount,
+      amountIsEstimated: amount.isEstimated,
       eligibility,
       deadlineAt: parseDeadline(titleMatch[2]),
       isOpen,

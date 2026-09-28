@@ -51,6 +51,17 @@ import { TIER_IDS, type TierId } from "./tiers";
 export const DEV_TIER_VAR = "DEV_TIER";
 export const DEV_PASSWORD_VAR = "DEV_PASSWORD";
 
+/**
+ * Whether dev mode is allowed on this deployment.
+ *
+ * Dev mode is intentionally disabled in production builds. The password and
+ * env-var paths are useful only on development/staging machines; keeping them
+ * out of production removes an entire class of "browser paid unlock" risks.
+ */
+export function devModeAllowed(nodeEnv = process.env.NODE_ENV): boolean {
+  return nodeEnv !== "production";
+}
+
 /** Cookie holding the unlocked tier. Prefixed like nothing else here, so it is
  *  obvious in devtools what it is and that it is not a session. */
 export const DEV_COOKIE = "instela_dev_tier";

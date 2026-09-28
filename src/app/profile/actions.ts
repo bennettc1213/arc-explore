@@ -71,6 +71,11 @@ export async function saveProfileAction(
   revalidatePath("/github");
   revalidatePath("/linkedin");
 
+  const next = String(formData.get("next") ?? "");
+  if (next.startsWith("/") && !next.startsWith("//")) {
+    redirect(next);
+  }
+
   return { status: "saved" };
 }
 

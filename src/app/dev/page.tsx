@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { BackLink } from "@/components/BackLink";
 import { PendingButton } from "@/components/PendingButton";
@@ -14,6 +15,10 @@ export const dynamic = "force-dynamic";
 /**
  * `/dev` — the password gate for dev mode.
  *
+ * This route 404s in production builds even when `DEV_PASSWORD` is set, so no
+ * public visitor can unlock a paid plan in the browser. Dev mode is strictly a
+ * development/staging affordance.
+ *
  * WHAT THIS IS NOT: a login. It creates no session, knows no user, and reads
  * no profile. It sets one signed cookie saying which pricing tier to pretend
  * for this browser, so the Edge and Apply surfaces can be looked at on a
@@ -26,6 +31,8 @@ export const dynamic = "force-dynamic";
  */
 export default async function DevPage() {
   const configured = devModeConfigured();
+  if (!configured) notFound();
+
   const tier = await devTier();
   const unlocked = await devUnlocked();
   // Set, but coming from the env var rather than the cookie — worth saying,

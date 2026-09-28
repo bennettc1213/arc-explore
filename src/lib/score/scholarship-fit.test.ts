@@ -16,12 +16,21 @@ const CS_PROFILE = {
   major: "computer science",
 };
 
+function amountStatusFor(min: unknown, max: unknown): "exact" | "range" | "varies" {
+  if (typeof min === "number" && typeof max === "number" && min !== max) return "range";
+  if (typeof min === "number" || typeof max === "number") return "exact";
+  return "varies";
+}
+
 function base(over: Record<string, unknown> = {}) {
+  const amountMin = (over.amountMin as number | null) ?? null;
+  const amountMax = (over.amountMax as number | null) ?? null;
   return {
     title: "Taco Bell Live Más Scholarship",
     sponsorName: "Taco Bell",
-    amountMin: null,
-    amountMax: null,
+    amountMin,
+    amountMax,
+    amountStatus: amountStatusFor(amountMin, amountMax),
     isContentMarketing: false,
     eligibility: [],
     ...over,

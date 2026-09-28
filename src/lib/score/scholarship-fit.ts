@@ -16,11 +16,11 @@
  *    a labelled heuristic, and an unstated amount drops out as unknown rather
  *    than scoring a miss.
  *  - **competition**: whether the sponsor is a link-building content-marketing
- *    award (stamped at ingest — see `scholarships/classify.ts`). These are real
- *    and winnable, but they are not the same kind of award as an institutional
- *    fund, so they take a down-rank in the fit — the roadmap's "competition-
- *    level heuristic", honestly proxied by sponsor type because no source
- *    publishes applicant counts. Always known: the flag defaults to false.
+ *    award (stamped at ingest — see `scholarships/classify.ts`) or a lottery/
+ *    sweepstakes. These are real and winnable, but they are not the same kind
+ *    of award as an institutional fund, so they are excluded from the fit
+ *    average and surfaced separately. Always knowable: both flags default to
+ *    false at ingest.
  *
  * Same honesty contract as `fit.ts`: every point is explained, unknown is
  * dropped not penalised, and the number is never presented as odds.
@@ -35,8 +35,14 @@ export interface ScholarshipScorePosting {
   /** Lower bound of the stated award, or the exact figure when equal to max. */
   amountMin?: number | null;
   amountMax?: number | null;
+  amountStatus?: "exact" | "range" | "varies" | "unparseable";
+  programTotal?: number | null;
+  awardsCount?: number | null;
+  amountIsEstimated?: boolean;
   /** Stamped at ingest by `scholarships/classify.ts`. Defaults to false. */
   isContentMarketing?: boolean;
+  /** Stamped at ingest by `scholarships/trust.ts`. Defaults to false. */
+  isLottery?: boolean;
   /** Raw eligibility bullets as the source states them. */
   eligibility?: string[];
 }
@@ -174,8 +180,17 @@ function scoreField(profile: ScoreProfile, posting: ScholarshipScorePosting): Di
 
 function scoreAward(posting: ScholarshipScorePosting): Dimension {
   const amount = posting.amountMin ?? posting.amountMax;
+  const status = posting.amountStatus ?? "varies";
 
-  if (amount === null || amount === undefined || amount <= 0) {
+  // Unknown/unparseable amounts are excluded from scoring; they must never be
+  // treated as zero or as a high value.
+  if (
+    status === "varies" ||
+    status === "unparseable" ||
+    amount === null ||
+    amount === undefined ||
+    amount <= 0
+  ) {
     return {
       value: null,
       weight: 35,
@@ -201,14 +216,27 @@ function scoreAward(posting: ScholarshipScorePosting): Dimension {
 }
 
 function scoreCompetition(posting: ScholarshipScorePosting): Dimension {
+  if (posting.isLottery) {
+    return {
+      value: null,
+      weight: 30,
+      reason: {
+        label: "lottery / sweepstakes",
+        dimension: "competition",
+        kind: "unknown",
+        detail: "This award is a random drawing, so competition level is not comparable to an institutional scholarship.",
+      },
+    };
+  }
+
   if (posting.isContentMarketing) {
     return {
-      value: 0.25,
+      value: null,
       weight: 30,
       reason: {
         label: "link-building award",
         dimension: "competition",
-        kind: "bad",
+        kind: "unknown",
         detail:
           "Run by a law firm or agency for inbound links rather than by an institution. Real and winnable, but not the same kind of award as an institutional fund.",
       },

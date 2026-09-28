@@ -130,7 +130,23 @@ export const postings = pgTable(
     isRemote: boolean("is_remote").notNull().default(false),
     /** e.g. "Summer 2027" for internships, an academic year for scholarships. */
     term: text("term"),
-    degrees: text("degrees").array().notNull().default([]),
+    /** Whether the term was stated in the source, inferred from first_seen, or is unknown. */
+    termSource: text("term_source")
+      .notNull()
+      .default("unknown")
+      .$type<"explicit" | "inferred" | "unknown">(),
+    /** Normalised season when known: summer, fall, spring, winter, or co-op. */
+    termSeason: text("term_season").$type<
+      "summer" | "fall" | "spring" | "winter" | "co-op"
+    >(),
+    /** Four-digit year derived from the term. */
+    termYear: integer("term_year"),
+    /** Raw source text that justified an explicit term, preserved for audit. */
+    termRaw: text("term_raw"),
+    /** Set when an open row carries a term that has already ended. The row is
+     * excluded from normal results until the source lifecycle closes or
+     * corrects it. */
+    termEndedFlagAt: timestamp("term_ended_flag_at", { withTimezone: true }),
 
     /** Scholarship dollar value. Both null means "amount varies" or unstated —
      *  never guessed. Equal min/max means an exact, stated amount. */
@@ -141,12 +157,53 @@ export const postings = pgTable(
      *  a defect — without the distinction every parser regression looks
      *  exactly like an honest blank. Surfaced by `npm run ingest:status`. */
     amountNeedsReview: boolean("amount_needs_review").notNull().default(false),
+    /** Normalized award shape: exact | range | varies | unparseable. */
+    amountStatus: text("amount_status")
+      .$type<"exact" | "range" | "varies" | "unparseable">()
+      .notNull()
+      .default("varies"),
+    /** Known program-wide total, never confused with a single award. */
+    programTotal: integer("program_total"),
+    /** Number of awards the source states, when known. */
+    awardsCount: integer("awards_count"),
+    /** True when the per-award amount was computed from program_total / awards_count. */
+    amountIsEstimated: boolean("amount_is_estimated").notNull().default(false),
     /** Small-award law-firm scholarships run for inbound links rather than
      *  by an institution. A tag, never a filter: the row stays in the feed
      *  and the scholarship Fit Score (Phase 02) decides what to do with it.
      *  Stamped at ingest so the signal is already on every row when that
      *  score is built. See `lib/scholarships/classify.ts`. */
     isContentMarketing: boolean("is_content_marketing").notNull().default(false),
+    /**
+     * V1 trust score (0–100) for scholarships. 50 is neutral; higher means
+     * more trustworthy signals, lower means more caution signals. Internships
+     * carry the neutral default. Never presented as certainty — every score
+     * travels with `trust_reasons` explaining what moved it.
+     */
+    trustScore: integer("trust_score").notNull().default(50),
+    /**
+     * Stored reasons for the trust score. Each reason names the signal, its
+     * direction ("positive" or "caution"), and a one-line human explanation.
+     * Keeping them in the row means every visible warning has a stored reason.
+     */
+    trustReasons: jsonb("trust_reasons").notNull().default([]),
+    /**
+     * True for sweepstakes/lottery-style awards: random drawing, no essay,
+     * enter-to-win language, etc. These are excluded from the Competition
+     * dimension and surfaced on a separate shelf.
+     */
+    isLottery: boolean("is_lottery").notNull().default(false),
+    /**
+     * Why a row was flagged as lottery-style. Stored for the same reason
+     * `trust_reasons` are: every visible warning must have a stored reason.
+     */
+    lotteryReasons: jsonb("lottery_reasons").notNull().default([]),
+    /**
+     * How many independent source portals list this canonical award. Used as
+     * a positive trust signal (corroboration). Updated during scholarship
+     * ingest and backfilled from `posting_sources`.
+     */
+    corroborationCount: integer("corroboration_count").notNull().default(0),
     /** Structured where we can confidently extract it (majors, minGpa,
      *  gradLevels, citizenship, states); absent fields are omitted, never
      *  invented, same rule as the resume parser. Kept as jsonb rather than
@@ -395,6 +452,13 @@ export const profiles = pgTable("profiles", {
    *  when" without a billing provider's own dashboard. Null until it moves
    *  once — a profile created on "free" was never actually "changed" to it. */
   planUpdatedAt: timestamp("plan_updated_at", { withTimezone: true }),
+  /**
+   * The first moment the profile was complete (major, graduation year, state,
+   * work authorization) and the user saved at least one posting. Set once and
+   * never moved; it is the durable activation fact behind the `profile_activated`
+   * event.
+   */
+  activatedAt: timestamp("activated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -845,7 +909,7 @@ export const savedSearches = pgTable(
  * that, so those two are a known blind spot, stated in the metrics rather than
  * quietly estimated.
  */
-export const EVENT_NAMES = ["search_run", "listing_viewed", "github_audited"] as const;
+export const EVENT_NAMES = ["search_run", "listing_viewed", "github_audited", "listing_reopened", "profile_activated"] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
 /**

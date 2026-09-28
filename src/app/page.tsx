@@ -8,7 +8,7 @@ import { ToolsTease } from "@/components/ToolsTease";
 import { recordEvent } from "@/lib/analytics/record";
 import { statusesForPostings } from "@/lib/applications/store";
 import { getSessionUser } from "@/lib/auth";
-import { getAvailableTerms, getFeed, getFeedStats, newSinceFromDays } from "@/lib/feed";
+import { getAvailableTerms, getFeed, getFeedStats, getLotteryAwards, newSinceFromDays } from "@/lib/feed";
 import { FREE_DAILY_RESULTS, reservationFor } from "@/lib/feed-trim";
 import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature, TIER_PRICE_USD, TIMING_PRIORITY_POINTS } from "@/lib/pricing/tiers";
@@ -19,7 +19,9 @@ import { filtersFromParams, isEmptyFilters } from "@/lib/searches/types";
 import {
   INTEREST_OPTIONS,
   WORK_AUTH_OPTIONS,
+  isProfileReadyForFit,
   isProfileUsable,
+  missingFitFields,
   parseLocations,
   toScoreProfile,
   type UserProfile,
@@ -186,6 +188,14 @@ export default async function FeedPage({
           (profile.targetVerticals?.length ?? 0) > 0 ||
           (profile.targetLocations?.length ?? 0) > 0,
       );
+  const profileReady = user
+    ? isProfileReadyForFit(stored)
+    : isProfileReadyForFit({
+        major: profile.major ?? null,
+        gradYear: profile.gradYear ?? null,
+        workAuth: profile.workAuth ?? null,
+        targetLocations: profile.targetLocations ?? [],
+      });
 
   /*
    * ONE PARSER, NOT TWO. This page used to re-read every filter out of
@@ -207,6 +217,8 @@ export default async function FeedPage({
 
   // Not saveable, so not part of the shared shape — see savedFiltersSchema.
   const includeClosed = sp.includeClosed === "1";
+  const includeInferred = sp.includeInferred !== "0";
+  const includeUnknownAmounts = sp.includeUnknownAmounts === "1";
   // View preferences, like includeClosed: read here, never stored on a saved
   // search. `new` is time-relative (so saving it would mean nothing), and
   // `hideBlocked` depends on the profile the search is scored against.
@@ -252,10 +264,12 @@ export default async function FeedPage({
   const dailyCapped = !evaluateFeature(tier, "feed_full_depth").usable;
   const show = dailyCapped ? FREE_DAILY_RESULTS : requested;
 
-  const [feed, stats, terms] = await Promise.all([
+  const [feed, stats, terms, lotteryAwards] = await Promise.all([
     getFeed(profile, {
       ...currentFilters,
       includeClosed,
+      includeInferred,
+      includeUnknownAmounts,
       hideBlocked,
       excludeMarketing,
       newSince: newSinceDays ? newSinceFromDays(newSinceDays) : null,
@@ -281,7 +295,8 @@ export default async function FeedPage({
       timingPoints: TIMING_PRIORITY_POINTS[tier],
     }),
     getFeedStats(kind),
-    getAvailableTerms(),
+    getAvailableTerms(includeClosed),
+    getLotteryAwards(profile),
   ]);
   const { items, categoryUnclassified, total } = feed;
 
@@ -336,7 +351,7 @@ export default async function FeedPage({
 
   // One query for the whole page rather than one per row.
   const tracked = user
-    ? await statusesForPostings(user.id, items.map((i) => i.id))
+    ? await statusesForPostings(user.id, [...items, ...lotteryAwards].map((i) => i.id))
     : new Map();
 
   return (
@@ -361,11 +376,14 @@ export default async function FeedPage({
       <header style={{ marginBottom: 40 }}>
         <div className="eyebrow chrome">01 — internships + scholarships</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>
-          every opportunity we can <span style={{ color: "var(--accent)" }}>verify is live</span>
+          Internships the day they open.{" "}
+          <span style={{ color: "var(--accent)" }}>Scholarships you can actually win.</span>
         </h1>
         <p className="t-base" style={{ color: "var(--muted)", maxWidth: "58ch", marginTop: 14 }}>
-          Internships by polling each employer&apos;s own applicant-tracking system, scholarships
-          by weekly scrapes of the sources we trust. Every row says when we last confirmed it.
+          Every listing is checked at the source. Your data is never sold.{" "}
+          <Link href="/how-we-verify" style={{ color: "var(--accent)" }}>
+            How we verify
+          </Link>
         </p>
       </header>
 
@@ -412,6 +430,8 @@ export default async function FeedPage({
         category={category}
         remoteOnly={remoteOnly}
         includeClosed={includeClosed}
+        includeInferred={includeInferred}
+        includeUnknownAmounts={includeUnknownAmounts}
         term={term}
         newSinceDays={newSinceDays}
         hideBlocked={hideBlocked}
@@ -419,22 +439,31 @@ export default async function FeedPage({
         activeCount={activeCount}
       />
 
-      {!hasProfile && (
+      {user && !profileReady && (
         <div className="slot" style={{ marginBottom: 24, padding: "14px 16px" }}>
-          {user ? (
-            <>
-              <Mascot size={26} />
-              <span>
-                your profile is empty — <Link href="/profile" style={{ color: "var(--accent)" }}>fill it in</Link>{" "}
-                and these get scored. until then we only rank by freshness
+          <Mascot size={26} />
+          <span className="flex-1">
+            <Link
+              href={`/profile?next=${encodeURIComponent("/")}`}
+              style={{ color: "var(--accent)" }}
+            >
+              Add {missingFitFields(stored).length} details to score your feed
+            </Link>
+            {stored && missingFitFields(stored).length < 4 && (
+              <span className="mono" style={{ color: "var(--faint-readable)", marginLeft: 8 }}>
+                missing: {missingFitFields(stored).map((m) => m.label).join(", ")}
               </span>
-            </>
-          ) : (
-            <span>
-              add your details above to score these — or{" "}
-              <Link href="/login" style={{ color: "var(--accent)" }}>sign in</Link> to save them
-            </span>
-          )}
+            )}
+          </span>
+        </div>
+      )}
+
+      {!user && !hasProfile && (
+        <div className="slot" style={{ marginBottom: 24, padding: "14px 16px" }}>
+          <span>
+            add your details above to score these — or{" "}
+            <Link href="/login" style={{ color: "var(--accent)" }}>sign in</Link> to save them
+          </span>
         </div>
       )}
 
@@ -486,6 +515,7 @@ export default async function FeedPage({
               signedIn={Boolean(user)}
               hasResume={resumeSkills.length > 0}
               tier={tier}
+              profileReady={profileReady}
             />
           ))}
 
@@ -507,7 +537,7 @@ export default async function FeedPage({
                 {/* Says what actually changes the set, rather than promising a
                     midnight reset we do not run. Ingest is every 20 minutes and
                     timing moves daily, so these twenty genuinely turn over. */}
-                The free plan shows your twenty highest-ranked matches. They re-rank as we poll
+                The free plan shows your {FREE_DAILY_RESULTS} highest-ranked matches. They re-rank as we poll
                 each employer&rsquo;s board and as deadlines approach, so this set changes day to
                 day{stats.newToday > 0 ? ` — ${stats.newToday.toLocaleString()} of the corpus was found in the last day` : ""}.
                 Searching, filtering and opening any listing are never limited.
@@ -558,6 +588,29 @@ export default async function FeedPage({
             </div>
           )}
         </div>
+      )}
+
+      {kind !== "internship" && lotteryAwards.length > 0 && (
+        <section style={{ marginTop: 56 }}>
+          <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
+            lottery-style awards
+          </div>
+          <p className="t-sm" style={{ color: "var(--muted)", maxWidth: "62ch", marginBottom: 16 }}>
+            Random drawings and sweepstakes. They are not judged scholarships, so we keep them on
+            their own shelf rather than ranking them with institutional awards.
+          </p>
+          {lotteryAwards.map((item) => (
+            <PostingRow
+              key={item.id}
+              item={item}
+              tracked={tracked.get(item.id) ?? null}
+              signedIn={Boolean(user)}
+              hasResume={resumeSkills.length > 0}
+              tier={tier}
+              profileReady={profileReady}
+            />
+          ))}
+        </section>
       )}
 
       <footer className="mono" style={{ marginTop: 48, color: "var(--faint-readable)" }}>

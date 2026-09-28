@@ -24,7 +24,22 @@ import { SignOutButton } from "./SignOutButton";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProfilePage() {
+function safeReturnPath(raw: string | string[] | undefined): string {
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  if (!v) return "/";
+  // Only accept same-origin absolute paths so a crafted `next` cannot redirect
+  // a user elsewhere after save.
+  if (v.startsWith("/") && !v.startsWith("//")) return v;
+  return "/";
+}
+
+export default async function ProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const returnTo = safeReturnPath(sp.next);
   const user = await requireUser("/profile");
   const [profile, resume, emailPrefs, corpus] = await Promise.all([
     getProfile(user.id),
@@ -175,6 +190,7 @@ export default async function ProfilePage() {
 
       <ProfileEditor
         profile={profile}
+        returnTo={returnTo}
         resume={
           resume
             ? {

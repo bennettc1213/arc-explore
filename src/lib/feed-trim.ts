@@ -12,19 +12,12 @@ import { POSTING_KINDS, type PostingKind } from "@/db/schema";
 /**
  * How many ranked matches the free plan shows.
  *
- * Ten is a set someone actually reads to the bottom, which is the point: the
- * free plan exists to prove the ranking is worth trusting, and a student who
- * scrolls fifty rows without reaching the end learns nothing about whether the
- * top of the list was any good.
- *
- * CUT FROM TWENTY once search began ranking by relevance. Twenty was chosen
- * when a query could only *filter*, so depth was the only way a free user
- * found anything specific; now that a search is ordered by how well it
- * actually matches, ten well-matched rows beat twenty mediocre ones and the
- * upgrade is a straightforwardly honest one — more of a list that is already
- * good, rather than the first list that works.
+ * Twenty is the public promise across the homepage, pricing, onboarding, and
+ * emails. It is large enough to demonstrate that the ranking works, small
+ * enough to make the upgrade (the full list) a clear next step, and it keeps
+ * every surface telling the same story.
  */
-export const FREE_DAILY_RESULTS = 10;
+export const FREE_DAILY_RESULTS = 20;
 
 /**
  * Slots held for each kind inside a capped list.

@@ -5,6 +5,7 @@ import { evaluateFeature, FEATURE_KEYS, FEATURES, TIER_IDS } from "./tiers";
 
 import {
   DEV_TIER_VAR,
+  devModeAllowed,
   devPassword,
   devPasswordMatches,
   devTierOverride,
@@ -14,6 +15,12 @@ import {
 } from "./dev-tier";
 
 const PW = "correct horse battery staple";
+
+test("dev mode is disallowed in production builds", () => {
+  assert.equal(devModeAllowed("production"), false);
+  assert.equal(devModeAllowed("development"), true);
+  assert.equal(devModeAllowed("test"), true);
+});
 
 test("a production build ignores DEV_TIER entirely, whatever it says", () => {
   /*

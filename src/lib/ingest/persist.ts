@@ -10,6 +10,7 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
+import { timestamptz } from "@/db/fragments";
 import {
   organizations,
   postingSources,
@@ -17,10 +18,19 @@ import {
   type AtsType,
   type FreshnessTier,
 } from "@/db/schema";
-import { detectTerm, detectWorkAuth } from "./normalize";
+import { detectWorkAuth } from "./normalize";
 import { extractSkills } from "../score/skills";
-import { reconcile, type ExistingPosting, type PreparedPosting } from "./reconcile";
+import { parseExplicitTerm, parseTerm } from "../terms/parser";
+import { isTermEnded } from "../terms/bounds";
+import {
+  reconcile,
+  termUpdateForReopen,
+  termUpdateForTouch,
+  type ExistingPosting,
+  type PreparedPosting,
+} from "./reconcile";
 import type { SourceName, SourcePosting } from "./types";
+import { recordEvent } from "../analytics/record";
 
 export interface PollOutcome {
   orgId: string;
@@ -41,11 +51,7 @@ export interface PollOutcome {
  * Runs in a transaction so a failure partway through never leaves closed and
  * inserted postings out of sync with each other.
  */
-export async function persistPoll(
-  orgId: string,
-  incoming: SourcePosting[],
-  totalOnBoard: number,
-  etag?: string | null,
+export interface PersistPollOptions {
   /**
    * How strong a freshness claim these rows may carry. Defaults to
    * `live_polled`, which is only true for Tier A: those boards are re-fetched
@@ -53,7 +59,20 @@ export async function persistPoll(
    * reconciled through this same path on a slower loop must say so — see
    * `scripts/ingest-usajobs.ts`, which runs daily and passes `periodic_check`.
    */
-  opts?: { freshnessTier?: FreshnessTier },
+  freshnessTier?: FreshnessTier;
+  /**
+   * True only when the poll completed successfully enough for absence to be
+   * meaningful. Failed or partial polls must not advance misses or close rows.
+   */
+  successfulComplete?: boolean;
+}
+
+export async function persistPoll(
+  orgId: string,
+  incoming: SourcePosting[],
+  totalOnBoard: number,
+  etag?: string | null,
+  opts?: PersistPollOptions,
 ): Promise<PollOutcome> {
   return db.transaction(async (tx) => {
     const existingRows = await tx
@@ -61,6 +80,7 @@ export async function persistPoll(
         canonicalHash: postings.canonicalHash,
         closedAt: postings.closedAt,
         missingStrikes: postings.missingStrikes,
+        missingSince: postings.missingSince,
       })
       .from(postings)
       .where(eq(postings.orgId, orgId));
@@ -69,9 +89,15 @@ export async function persistPoll(
       canonicalHash: r.canonicalHash,
       closedAt: r.closedAt ?? null,
       missingStrikes: Number(r.missingStrikes ?? 0),
+      missingSince: r.missingSince ?? null,
     }));
 
-    const plan = reconcile({ incoming, existing, totalOnBoard });
+    const plan = reconcile({
+      incoming,
+      existing,
+      totalOnBoard,
+      successfulComplete: opts?.successfulComplete ?? true,
+    });
     const now = new Date();
 
     if (plan.toInsert.length > 0) {
@@ -87,34 +113,39 @@ export async function persistPoll(
     }
 
     if (plan.toResetMissing.length > 0) {
+      const hashes = plan.toResetMissing.map((c) => c.canonicalHash);
       await tx
         .update(postings)
         .set({ missingStrikes: 0, missingSince: null })
-        .where(inArray(postings.canonicalHash, plan.toResetMissing));
+        .where(inArray(postings.canonicalHash, hashes));
+    }
+
+    if (plan.toIncrementMissing.length > 0) {
+      const hashes = plan.toIncrementMissing.map((c) => c.canonicalHash);
+      await tx
+        .update(postings)
+        .set({
+          missingStrikes: sql`${postings.missingStrikes} + 1`,
+          missingSince: sql`COALESCE(${postings.missingSince}, ${timestamptz(now)})`,
+        })
+        .where(inArray(postings.canonicalHash, hashes));
     }
 
     if (plan.toClose.length > 0) {
       /*
-       * Stamp missingSince on the crossing observation and never move it again,
-       * mirroring urlDeadSince in linkcheck.ts: "dead since we first had enough
-       * evidence", not "since last night". closedAt is the employer telling us
-       * it's gone, so the strike bookkeeping is moot once it's set.
+       * closedAt is the first-miss time, not the current poll time, so a fund
+       * that dropped off the board a week ago does not read as having closed
+       * today. The strike bookkeeping is moot once closedAt is set.
        */
+      const hashes = plan.toClose;
       await tx
         .update(postings)
         .set({
-          closedAt: now,
+          closedAt: sql`COALESCE(${postings.missingSince}, ${timestamptz(now)})`,
           missingStrikes: 0,
-          missingSince: sql`COALESCE(${postings.missingSince}, ${now})`,
+          missingSince: null,
         })
-        .where(inArray(postings.canonicalHash, plan.toClose));
-    }
-
-    if (plan.toIncrementMissing.length > 0) {
-      await tx
-        .update(postings)
-        .set({ missingStrikes: sql`${postings.missingStrikes} + 1` })
-        .where(inArray(postings.canonicalHash, plan.toIncrementMissing));
+        .where(inArray(postings.canonicalHash, hashes));
     }
 
     await tx
@@ -221,6 +252,11 @@ async function insertPostings(
         locations: p.locations,
         isRemote: p.isRemote,
         term: p.term,
+        termSource: p.termSource,
+        termSeason: p.termSeason,
+        termYear: p.termYear,
+        termRaw: p.termRaw,
+        termEndedFlagAt: p.termEndedFlagAt,
         workAuth: p.workAuth,
         skills: p.skills,
         descriptionText: p.descriptionText,
@@ -263,6 +299,11 @@ async function touchPostings(tx: Tx, prepared: PreparedPosting[], now: Date) {
     const id = idByHash.get(p.canonicalHash);
     if (!id) continue;
 
+    // Only a term derived from real source text may change stored term data —
+    // a list-endpoint poll with no description must not erase an ended-term
+    // quarantine flag that came from a previous detail fetch.
+    const explicitTermUpdate = termUpdateForTouch(p);
+
     await tx
       .update(postings)
       .set({
@@ -276,7 +317,7 @@ async function touchPostings(tx: Tx, prepared: PreparedPosting[], now: Date) {
         ...(p.descriptionText ? { descriptionText: p.descriptionText } : {}),
         ...(p.workAuth ? { workAuth: p.workAuth } : {}),
         ...(p.skills.length > 0 ? { skills: p.skills } : {}),
-        ...(p.term ? { term: p.term } : {}),
+        ...explicitTermUpdate,
         ...(p.postedAt ? { postedAt: p.postedAt } : {}),
         ...(p.deadlineAt ? { deadlineAt: p.deadlineAt } : {}),
       })
@@ -288,20 +329,49 @@ async function touchPostings(tx: Tx, prepared: PreparedPosting[], now: Date) {
 
 async function reopenPostings(tx: Tx, prepared: PreparedPosting[], now: Date) {
   const hashes = prepared.map((p) => p.canonicalHash);
-  await tx
-    .update(postings)
-    .set({ closedAt: null, lastSeenAt: now })
-    .where(inArray(postings.canonicalHash, hashes));
 
   const rows = await tx
-    .select({ id: postings.id, canonicalHash: postings.canonicalHash })
+    .select({
+      id: postings.id,
+      canonicalHash: postings.canonicalHash,
+      kind: postings.kind,
+      term: postings.term,
+      termSource: postings.termSource,
+      termSeason: postings.termSeason,
+      termYear: postings.termYear,
+      termEndedFlagAt: postings.termEndedFlagAt,
+    })
     .from(postings)
     .where(inArray(postings.canonicalHash, hashes));
   const idByHash = new Map(rows.map((r) => [r.canonicalHash, r.id]));
+  const existingByHash = new Map(rows.map((r) => [r.canonicalHash, r]));
 
   for (const p of prepared) {
     const id = idByHash.get(p.canonicalHash);
-    if (id) await upsertSource(tx, id, p, now);
+    if (!id) continue;
+
+    const existing = existingByHash.get(p.canonicalHash);
+    // Reopen with the best term evidence we have. A list-endpoint-only poll
+    // (inferred term) is not enough to drop an existing explicit term or its
+    // ended-term quarantine flag.
+    const termUpdate = termUpdateForReopen(p, existing);
+
+    await tx
+      .update(postings)
+      .set({
+        closedAt: null,
+        lastSeenAt: now,
+        missingStrikes: 0,
+        missingSince: null,
+        ...termUpdate,
+      })
+      .where(eq(postings.id, id));
+    await upsertSource(tx, id, p, now);
+    void recordEvent("listing_reopened", {
+      kind: existing?.kind ?? "unknown",
+      source: p.source,
+      hash: p.canonicalHash,
+    });
   }
 }
 
@@ -378,7 +448,11 @@ export async function applyDescription(
   title: string,
 ): Promise<void> {
   const workAuth = detectWorkAuth(text, title);
-  const term = detectTerm(title, text);
+  const explicit = parseExplicitTerm(title, text);
+  const now = new Date();
+  const termInfo: import("@/lib/terms/parser").TermParseResult | null = explicit
+    ? { ...explicit, termSource: "explicit" }
+    : parseTerm(title, text, now);
   const skills = extractSkills(title, text);
 
   await db
@@ -386,7 +460,20 @@ export async function applyDescription(
     .set({
       descriptionText: text,
       ...(workAuth ? { workAuth } : {}),
-      ...(term ? { term } : {}),
+      ...(termInfo
+        ? {
+            term: termInfo.term,
+            termSource: termInfo.termSource,
+            termSeason: termInfo.termSeason,
+            termYear: termInfo.termYear,
+            termRaw: termInfo.termRaw,
+            termEndedFlagAt:
+              termInfo.term && termInfo.termSeason && termInfo.termYear &&
+              isTermEnded(termInfo.termSeason, termInfo.termYear, now)
+                ? now
+                : null,
+          }
+        : {}),
       ...(skills.length > 0 ? { skills } : {}),
     })
     .where(eq(postings.id, postingId));

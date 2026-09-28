@@ -1,8 +1,21 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { preparePosting, reconcile, type ExistingPosting } from "./reconcile";
+import { preparePosting, reconcile, termUpdateForReopen, termUpdateForTouch, type ExistingPosting } from "./reconcile";
 import type { SourcePosting } from "./types";
+
+function existingRow(
+  canonicalHash: string,
+  overrides: Partial<ExistingPosting> = {},
+): ExistingPosting {
+  return {
+    canonicalHash,
+    closedAt: null,
+    missingStrikes: 0,
+    missingSince: null,
+    ...overrides,
+  };
+}
 
 function posting(overrides: Partial<SourcePosting> = {}): SourcePosting {
   return {
@@ -59,7 +72,7 @@ describe("reconcile", () => {
 
   it("touches a posting it already knows", () => {
     const p = preparePosting(posting());
-    const existing: ExistingPosting[] = [{ canonicalHash: p.canonicalHash, closedAt: null, missingStrikes: 0 }];
+    const existing: ExistingPosting[] = [existingRow(p.canonicalHash)];
     const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
     assert.equal(plan.toInsert.length, 0);
     assert.equal(plan.toTouch.length, 1);
@@ -72,21 +85,24 @@ describe("reconcile", () => {
     const gone = preparePosting(posting({ title: "Data Science Intern", sourceId: "2" }));
     const stillThere = preparePosting(posting());
     const existing: ExistingPosting[] = [
-      { canonicalHash: gone.canonicalHash, closedAt: null, missingStrikes: 0 },
-      { canonicalHash: stillThere.canonicalHash, closedAt: null, missingStrikes: 0 },
+      existingRow(gone.canonicalHash),
+      existingRow(stillThere.canonicalHash),
     ];
 
     const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
 
     assert.deepEqual(plan.toClose, []);
-    assert.deepEqual(plan.toIncrementMissing, [gone.canonicalHash]);
+    assert.deepEqual(
+      plan.toIncrementMissing.map((c) => c.canonicalHash),
+      [gone.canonicalHash],
+    );
     assert.equal(plan.toTouch.length, 1);
   });
 
   it("does not re-close something already closed", () => {
     const p = preparePosting(posting());
     const existing: ExistingPosting[] = [
-      { canonicalHash: p.canonicalHash, closedAt: new Date("2026-01-01"), missingStrikes: 0 },
+      existingRow(p.canonicalHash, { closedAt: new Date("2026-01-01") }),
     ];
     const plan = reconcile({ incoming: [], existing, totalOnBoard: 50 });
     assert.equal(plan.toClose.length, 0);
@@ -95,7 +111,7 @@ describe("reconcile", () => {
   it("reopens a reposted role instead of duplicating it", () => {
     const p = preparePosting(posting());
     const existing: ExistingPosting[] = [
-      { canonicalHash: p.canonicalHash, closedAt: new Date("2026-01-01"), missingStrikes: 0 },
+      existingRow(p.canonicalHash, { closedAt: new Date("2026-01-01") }),
     ];
     const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
     assert.equal(plan.toReopen.length, 1);
@@ -107,7 +123,7 @@ describe("reconcile", () => {
     // upstream hiccup or a renamed slug than every job vanishing at once.
     // Wiping the user's view on that signal would be the worst possible bug.
     const p = preparePosting(posting());
-    const existing: ExistingPosting[] = [{ canonicalHash: p.canonicalHash, closedAt: null, missingStrikes: 0 }];
+    const existing: ExistingPosting[] = [existingRow(p.canonicalHash)];
 
     const plan = reconcile({ incoming: [], existing, totalOnBoard: 0 });
 
@@ -121,7 +137,7 @@ describe("reconcile", () => {
     // single absence only increments; only the second consecutive one closes.
     const p = preparePosting(posting());
     const existing: ExistingPosting[] = [
-      { canonicalHash: p.canonicalHash, closedAt: null, missingStrikes: 1 },
+      existingRow(p.canonicalHash, { missingStrikes: 1, missingSince: new Date("2026-03-01") }),
     ];
 
     const plan = reconcile({ incoming: [], existing, totalOnBoard: 50 });
@@ -158,7 +174,7 @@ describe("reconcile", () => {
     // touched and its strike must be cleared rather than carried forward.
     const p = preparePosting(posting());
     const existing: ExistingPosting[] = [
-      { canonicalHash: p.canonicalHash, closedAt: null, missingStrikes: 1 },
+      existingRow(p.canonicalHash, { missingStrikes: 1, missingSince: new Date() }),
     ];
 
     const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
@@ -166,14 +182,17 @@ describe("reconcile", () => {
     assert.equal(plan.toTouch.length, 1);
     assert.equal(plan.toClose.length, 0);
     assert.equal(plan.toIncrementMissing.length, 0);
-    assert.deepEqual(plan.toResetMissing, [p.canonicalHash]);
+    assert.deepEqual(
+      plan.toResetMissing.map((c) => c.canonicalHash),
+      [p.canonicalHash],
+    );
   });
 
   it("does not re-strike a posting that is already closed", () => {
     // A closed posting is out of the liveness engine; re-appearing reopens it.
     const p = preparePosting(posting());
     const existing: ExistingPosting[] = [
-      { canonicalHash: p.canonicalHash, closedAt: new Date("2026-01-01"), missingStrikes: 0 },
+      existingRow(p.canonicalHash, { closedAt: new Date("2026-01-01") }),
     ];
 
     const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
@@ -188,7 +207,7 @@ describe("reconcile", () => {
     // strike toward a closing that should not happen.
     const p = preparePosting(posting());
     const existing: ExistingPosting[] = [
-      { canonicalHash: p.canonicalHash, closedAt: null, missingStrikes: 1 },
+      existingRow(p.canonicalHash, { missingStrikes: 1, missingSince: new Date() }),
     ];
 
     const plan = reconcile({ incoming: [], existing, totalOnBoard: 0 });
@@ -196,5 +215,121 @@ describe("reconcile", () => {
     assert.equal(plan.closeSuppressed, true);
     assert.equal(plan.toClose.length, 0);
     assert.equal(plan.toIncrementMissing.length, 0);
+  });
+
+  it("does not advance misses on a failed poll", () => {
+    const p = preparePosting(posting());
+    const existing: ExistingPosting[] = [
+      existingRow(p.canonicalHash, { missingStrikes: 1, missingSince: new Date() }),
+    ];
+
+    const plan = reconcile({
+      incoming: [],
+      existing,
+      totalOnBoard: 50,
+      successfulComplete: false,
+    });
+
+    assert.equal(plan.closeSuppressed, true);
+    assert.equal(plan.toClose.length, 0);
+    assert.equal(plan.toIncrementMissing.length, 0);
+  });
+});
+
+describe("term provenance is monotonic on touch and reopen", () => {
+  // Regression: Greenhouse and SmartRecruiters omit descriptions from their
+  // list endpoints, so a list-only poll re-derives the term from `first_seen`
+  // and produces an `inferred` term. Before this rule, that inferred term
+  // overwrote the stored explicit term AND cleared `termEndedFlagAt`, so a
+  // cheaper poll could silently un-quarantine a listing whose term had ended
+  // and put it back in the feed.
+  // The flag is stamped with the poll time, so assert it is present rather than
+  // pinning a date.
+  function explicitPosting() {
+    return preparePosting(
+      posting({ title: "Software Engineer Intern (Summer 2027)", descriptionText: "Summer 2027." }),
+    );
+  }
+
+  function inferredListPosting() {
+    // A list endpoint gives no description, so the term can only be inferred
+    // from `postedAt` (first-seen logic in the parser).
+    const p = preparePosting(
+      posting({ title: "Software Engineer Intern", postedAt: new Date("2027-06-01T00:00:00Z") }),
+    );
+    assert.equal(p.termSource, "inferred");
+    return p;
+  }
+
+  describe("termUpdateForTouch", () => {
+    it("keeps stored term data when the poll only inferred a term", () => {
+      const p = inferredListPosting();
+      assert.equal(p.termSource, "inferred");
+
+      assert.deepEqual(termUpdateForTouch(p), {});
+    });
+    it("writes term data when the poll saw the term in the source", () => {
+      const p = explicitPosting();
+      assert.equal(p.termSource, "explicit");
+      assert.equal(p.term, "Summer 2027");
+      assert.equal(p.termSeason, "summer");
+      assert.equal(p.termYear, 2027);
+
+      assert.deepEqual(termUpdateForTouch(p), {
+        term: "Summer 2027",
+        termSource: "explicit",
+        termSeason: "summer",
+        termYear: 2027,
+        termRaw: p.termRaw,
+        termEndedFlagAt: null,
+      });
+    });
+
+    it("never lets a touch clear an ended-term flag via a weaker term", () => {
+      const p = inferredListPosting();
+      // A null flag on the incoming inferred term must not be spread over an
+      // existing flag; the update is empty, so the stored flag is untouched.
+      const update = termUpdateForTouch(p);
+      assert.equal("termEndedFlagAt" in update, false);
+    });
+
+    it("carries a fresh ended-term flag when the source states an ended term", () => {
+      const p = preparePosting(
+        posting({
+          title: "Software Engineer Intern (Spring 2025)",
+          descriptionText: "Spring 2025 cohort.",
+        }),
+      );
+
+      assert.equal(p.termSource, "explicit");
+      assert.ok(p.termEndedFlagAt instanceof Date, "expected an ended-term flag");
+      const update = termUpdateForTouch(p);
+      assert.deepEqual(update.termEndedFlagAt, p.termEndedFlagAt);
+      assert.equal(update.term, "Spring 2025");
+    });
+  });
+
+  describe("termUpdateForReopen", () => {
+    it("keeps stored term data when the reopen only inferred a term", () => {
+      const p = inferredListPosting();
+      assert.deepEqual(termUpdateForReopen(p, { termSource: "explicit" }), {});
+    });
+
+    it("upgrades a weaker stored term when the reopen saw the term", () => {
+      const p = explicitPosting();
+      assert.equal(p.termSource, "explicit");
+      assert.equal(termUpdateForReopen(p, { termSource: "inferred" }).termSource, "explicit");
+    });
+
+    it("leaves an already-explicit term alone rather than churn", () => {
+      const p = explicitPosting();
+      assert.deepEqual(termUpdateForReopen(p, { termSource: "explicit" }), {});
+    });
+
+    it("handles a reopen with no stored provenance", () => {
+      const p = explicitPosting();
+      assert.equal(termUpdateForReopen(p, undefined).termSource, "explicit");
+      assert.equal(termUpdateForReopen(p, { termSource: null }).termSource, "explicit");
+    });
   });
 });

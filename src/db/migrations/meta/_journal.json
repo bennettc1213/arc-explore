@@ -134,6 +134,48 @@
       "when": 1787206400000,
       "tag": "0018_frame_observation",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790277768860,
+      "tag": "0019_term_model",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790291291776,
+      "tag": "0020_term_sanity_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790295018395,
+      "tag": "0021_award_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790390400000,
+      "tag": "0022_close_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790390400001,
+      "tag": "0023_profile_activation",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790486400000,
+      "tag": "0024_scholarship_trust",
+      "breakpoints": true
     }
   ]
 }

@@ -76,9 +76,10 @@ describe("scoreFit", () => {
     );
   });
 
-  it("penalises a term that falls after graduation", () => {
+  it("blocks a term that falls after graduation", () => {
     const r = scoreFit(profile, posting({ term: "Summer 2029" }));
     assert.ok(r.reasons.some((x) => x.dimension === "term" && x.kind === "bad"));
+    assert.equal(r.blocked, true);
   });
 
   it("penalises an unrelated field", () => {
@@ -89,6 +90,18 @@ describe("scoreFit", () => {
   it("credits a remote role regardless of location list", () => {
     const r = scoreFit(profile, posting({ isRemote: true, locations: ["Remote (US)"] }));
     assert.ok(r.reasons.some((x) => x.dimension === "location" && x.kind === "good"));
+  });
+
+  it("blocks a high-confidence location mismatch", () => {
+    const r = scoreFit(profile, posting({ locations: ["Austin, TX"] }));
+    assert.ok(r.reasons.some((x) => x.dimension === "location" && x.kind === "bad"));
+    assert.equal(r.blocked, true);
+  });
+
+  it("does not block when the user has not set any locations", () => {
+    const r = scoreFit({ ...profile, targetLocations: [] }, posting({ locations: ["Austin, TX"] }));
+    assert.ok(r.reasons.some((x) => x.dimension === "location" && x.kind === "unknown"));
+    assert.equal(r.blocked, false);
   });
 
   it("reports how many dimensions actually contributed", () => {

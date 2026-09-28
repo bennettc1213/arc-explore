@@ -17,6 +17,7 @@
  */
 
 import type { FeedItem } from "./feed";
+import { formatAward } from "./scholarships/display";
 import { presentFit, type TierId } from "./pricing/tiers";
 
 /** Two or three. Four columns stops being a comparison and becomes a feed. */
@@ -51,14 +52,6 @@ export interface Comparison {
 /* ------------------------------------------------------------------ *
  * Formatting
  * ------------------------------------------------------------------ */
-
-function formatAmount(min: number | null, max: number | null): string | null {
-  if (min !== null && max !== null && min !== max) {
-    return `$${min.toLocaleString("en-US")}–$${max.toLocaleString("en-US")}`;
-  }
-  const value = min ?? max;
-  return value === null ? null : `$${value.toLocaleString("en-US")}`;
-}
 
 function formatDate(d: Date | null): string | null {
   return d ? d.toISOString().slice(0, 10) : null;
@@ -135,6 +128,7 @@ export function buildComparison(
   items: FeedItem[],
   now: Date = new Date(),
   tier: TierId = "free",
+  profileReady = true,
 ): Comparison {
   const rows: CompareRow[] = [];
 
@@ -151,7 +145,7 @@ export function buildComparison(
    * each other on a number this viewer is not being shown, which is a
    * stronger claim than the row is allowed to make.
    */
-  const presented = items.map((i) => presentFit(i.fit, tier));
+  const presented = items.map((i) => presentFit(i.fit, tier, { profileReady }));
   const fitScores = presented.map((p) => p.score);
   rows.push(
     row(
@@ -186,14 +180,16 @@ export function buildComparison(
     ),
   );
 
-  const amounts = items.map((i) => formatAmount(i.amountMin, i.amountMax));
+  const amounts = items.map((i) => {
+    if (i.kind !== "scholarship") return null;
+    if (i.amountNeedsReview) return "stated, unreadable";
+    return formatAward(i);
+  });
   if (amounts.some((a) => a !== null)) {
     rows.push(
       row(
         "award",
-        items.map((i, n) => ({
-          value: amounts[n] ?? (i.amountNeedsReview ? "stated, unreadable" : null),
-        })),
+        items.map((_, n) => ({ value: amounts[n] })),
       ),
     );
   }

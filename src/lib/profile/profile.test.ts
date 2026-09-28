@@ -3,7 +3,9 @@ import { describe, it } from "node:test";
 
 import {
   EMPTY_PROFILE_INPUT,
+  isProfileReadyForFit,
   isProfileUsable,
+  missingFitFields,
   parseLocations,
   profileInputSchema,
   toScoreProfile,
@@ -177,5 +179,83 @@ describe("isProfileUsable", () => {
     assert.equal(isProfileUsable({ ...bare, major: "Physics" }), true);
     assert.equal(isProfileUsable({ ...bare, gradYear: 2028 }), true);
     assert.equal(isProfileUsable({ ...bare, targetVerticals: ["quant_finance"] }), true);
+  });
+});
+
+describe("isProfileReadyForFit", () => {
+  it("is false until all four required fields are present", () => {
+    assert.equal(isProfileReadyForFit(null), false);
+    assert.equal(
+      isProfileReadyForFit({
+        major: null,
+        gradYear: null,
+        workAuth: null,
+        targetLocations: [],
+      }),
+      false,
+    );
+    assert.equal(
+      isProfileReadyForFit({
+        major: "Computer Science",
+        gradYear: null,
+        workAuth: "us_citizen",
+        targetLocations: ["New York"],
+      }),
+      false,
+    );
+  });
+
+  it("is true only with major, graduation year, work auth and a location", () => {
+    assert.equal(
+      isProfileReadyForFit({
+        major: "Computer Science",
+        gradYear: 2027,
+        workAuth: "us_citizen",
+        targetLocations: ["New York"],
+      }),
+      true,
+    );
+  });
+
+  it("treats an empty major or prefer-not-to-say work auth as missing", () => {
+    assert.equal(
+      isProfileReadyForFit({
+        major: "   ",
+        gradYear: 2027,
+        workAuth: "us_citizen",
+        targetLocations: ["New York"],
+      }),
+      false,
+    );
+    assert.equal(
+      isProfileReadyForFit({
+        major: "Computer Science",
+        gradYear: 2027,
+        workAuth: null,
+        targetLocations: ["New York"],
+      }),
+      false,
+    );
+  });
+});
+
+describe("missingFitFields", () => {
+  it("lists all four fields when the profile is null", () => {
+    assert.deepEqual(
+      missingFitFields(null).map((m) => m.label),
+      ["major", "graduation year", "work authorization", "state"],
+    );
+  });
+
+  it("only names the fields that are absent", () => {
+    assert.deepEqual(
+      missingFitFields({
+        major: "Computer Science",
+        gradYear: null,
+        workAuth: "us_citizen",
+        targetLocations: [],
+      }).map((m) => m.label),
+      ["graduation year", "state"],
+    );
   });
 });

@@ -13,24 +13,17 @@ import { buildApplicationPacket } from "@/lib/apply/packet";
 import { getSessionUser } from "@/lib/auth";
 import { getCoverLetter } from "@/lib/cover-letter/store";
 import { getPosting } from "@/lib/feed";
+import { formatAward } from "@/lib/scholarships/display";
+import { formatTerm } from "@/lib/terms/display";
 import { getUserTier, presentFit } from "@/lib/pricing/entitlements";
 import { TIER_LABELS, evaluateFeature } from "@/lib/pricing/tiers";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { hasReported } from "@/lib/reports/store";
-import { toScoreProfile } from "@/lib/profile/types";
+import { isProfileReadyForFit, toScoreProfile } from "@/lib/profile/types";
 import { coerceParsedResume } from "@/lib/resume/types";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 
 export const dynamic = "force-dynamic";
-
-/** "$1,000", "$1,000–$2,500", or null when the amount is unstated. */
-function formatAmount(min: number | null, max: number | null): string | null {
-  if (min !== null && max !== null && min !== max) {
-    return `$${min.toLocaleString("en-US")}–$${max.toLocaleString("en-US")}`;
-  }
-  const value = min ?? max;
-  return value === null ? null : `$${value.toLocaleString("en-US")}`;
-}
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
@@ -66,7 +59,15 @@ export default async function ListingPage({
   if (!item) notFound();
 
   const tier = await getUserTier(user?.id);
-  const presented = presentFit(item.fit, tier);
+  const profileReady = user
+    ? isProfileReadyForFit(stored)
+    : isProfileReadyForFit({
+        major: profile.major ?? null,
+        gradYear: profile.gradYear ?? null,
+        workAuth: profile.workAuth ?? null,
+        targetLocations: profile.targetLocations ?? [],
+      });
+  const presented = presentFit(item.fit, tier, { profileReady });
 
   // After the 404 check, so a bad or hidden id is not counted as a view. The
   // kind is the only property worth keeping — the posting id is deliberately
@@ -118,7 +119,7 @@ export default async function ListingPage({
 
   const closed = Boolean(item.closedAt);
   const blocked = item.fit.blocked;
-  const amount = item.kind === "scholarship" ? formatAmount(item.amountMin, item.amountMax) : null;
+  const amount = item.kind === "scholarship" ? formatAward(item) : null;
 
   return (
     <main className="wrap" style={{ paddingBlock: "40px 96px" }}>
@@ -252,30 +253,56 @@ export default async function ListingPage({
           </section>
         )}
 
+        {item.kind === "scholarship" && (item.isLottery || item.trustScore <= 40) && (
+          <section
+            className="print-hide border"
+            style={{ borderColor: "var(--accent-lite)", padding: "14px 18px", marginBottom: 24 }}
+          >
+            <div className="mono-strong" style={{ color: "var(--accent-lite)" }}>
+              {item.isLottery ? "lottery / sweepstakes" : "low trust signals"}
+            </div>
+            <ul className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "62ch", paddingLeft: 18 }}>
+              {(item.isLottery ? item.lotteryReasons : item.trustReasons).map((r) => (
+                <li key={r.signal}>{r.detail}</li>
+              ))}
+            </ul>
+            <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "62ch" }}>
+              {item.isLottery
+                ? "This award is a random drawing, not a judged scholarship. We surface it so you can decide, but it is not comparable to an institutional award."
+                : "This award has caution signals. It may still be real and winnable; we show the reasons above so you can decide for yourself."}
+            </p>
+          </section>
+        )}
+
         <section
           className="print-hide border-y grid gap-x-8 gap-y-3 md:grid-cols-2"
           style={{ borderColor: "var(--line)", padding: "20px 0", marginBottom: 32 }}
         >
           {item.kind === "scholarship" ? (
             <>
-              {amount ? (
-                <MetaRow label="award" value={amount} />
-              ) : (
-                <MetaRow label="award" value={item.amountNeedsReview ? "unreadable" : "not stated"} />
-              )}
+              <MetaRow label="award" value={amount ?? "not stated"} />
               <MetaRow label="deadline" value={item.deadlineAt ? formatDate(item.deadlineAt) : "not stated"} />
               <MetaRow
                 label="terms"
-                value={item.term ? item.term : "not stated"}
+                value={item.term ? formatTerm(item) : "not stated"}
               />
               {item.isContentMarketing && (
                 <MetaRow label="type" value="content marketing — the sponsor markets themselves" />
+              )}
+              {item.isLottery && (
+                <MetaRow label="type" value="lottery / sweepstakes — winner chosen by random drawing" />
+              )}
+              {!item.isLottery && item.trustScore <= 40 && (
+                <MetaRow label="trust" value={`low (${item.trustScore}/100) — ${item.trustReasons.map((r) => r.detail).join("; ")}`} />
+              )}
+              {item.corroborationCount >= 2 && (
+                <MetaRow label="sources" value={`listed by ${item.corroborationCount} independent portals`} />
               )}
             </>
           ) : (
             <>
               {item.term ? (
-                <MetaRow label="term" value={item.term} />
+                <MetaRow label="term" value={formatTerm(item)} />
               ) : (
                 <MetaRow label="term" value="not stated" />
               )}

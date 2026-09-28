@@ -14,6 +14,7 @@ import {
 import { isApplicationStatus } from "@/lib/applications/types";
 import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature } from "@/lib/pricing/tiers";
+import { maybeRecordActivation } from "@/lib/profile/activation";
 
 /** The single paid plan's display name — never hardcoded. */
 const PAID = TIER_LABELS.apply;
@@ -62,6 +63,10 @@ export async function setStatusAction(
   }
 
   await setStatus(user.id, postingId, next);
+
+  // Saving a posting is the engagement half of the activation definition.
+  // The helper is idempotent, so it is safe to call on every status change.
+  void maybeRecordActivation(user.id);
 
   revalidatePath("/");
   revalidatePath("/tracker");
