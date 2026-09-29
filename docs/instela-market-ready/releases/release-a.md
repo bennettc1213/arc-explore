@@ -56,3 +56,42 @@ The one visible past-term the 20:04 audit found was a ZipRecruiter row whose lab
 - **Visual rendering at mobile/desktop widths is still unverified** (no browser/screenshot/e2e tooling in this repo). This release was verified by HTTP probes, rendered-text checks, and the read-only audit only.
 - **Term parser still reads whole JDs**, so a season mentioned only in an eligibility window is parsed as explicit. Harmless for display (structure is authoritative) and for the feed, but a context-aware parser pass remains worthwhile.
 - **2 unparseable scholarship amounts** display as "needs review" — next parser target.
+
+## Post-release: recovery, and one more defect found and hot-fixed
+
+**The recovery runs.** The cron had not fired since 16:48, so with the owner's OK one
+tier-A ingest ran manually at 20:22 UTC on the released code: **1198 boards polled, 2 failed**
+(was 353), **607 listings closed** — the first closes since the sprint began — and **1584 new
+listings**, the backlog the frozen boards had accumulated while asleep. The scheduled cron then
+ran on its own at 22:23: **1200 boards, 0 errors, 662 closed** — the first fully clean cron run
+on record. Board failures fell **405 → 49**, exactly the known `HTTP 404` dead-slug boards.
+
+**The defect.** The post-recovery audit found **11 cards showing ended terms**. Root cause (all
+three fixed in hotfix `fb3473a`, pushed and deployed as `project-o66x1-6scdv516c`):
+
+1. `persistPoll` called `reconcile` **without `now`**, so every term was anchored at the
+   listing's own `postedAt` instead of the poll date. A Palantir listing posted in 2023 arrived
+   as an unflagged **"Summer 2023"** card; ten such rows came in with the backlog.
+2. The same wrong anchor made a touch on ACLU Kentucky's "Spring 2025" listing evaluate the
+   ended-term flag *at post time* — where it was not yet ended — and write `null` over the
+   quarantine flag the backfill had set.
+3. `applyDescription` had the same erasure hole through a different door: a fetched description
+   that mentioned no term spread an inferred-from-now term over the stored columns, erasing a
+   stored explicit term and its flag. It now routes through the pure
+   `termUpdateFromDescription`, with the same monotonic rule as `termUpdateForTouch`.
+
+888/888 tests pass (4 new regressions covering all three).
+
+**The repair.** `backfill-terms.ts` (owner-approved, dry-run first) repaired the damage:
+40 explicit and 24 inferred writes, 40 past-term flags, divergence 0. A bounded ingest
+(118 boards, 149 descriptions through the new rule, 8 closed) confirmed the hotfixed code
+produces no new defects.
+
+**Final verified state** (`2026-09-29-baseline.md`, 00:45 UTC, after a live run on the hotfix):
+open 6611; unknown terms **0.0%**; past-term rows 3, **all flagged, 0 visible**; divergence
+**0**; false `$0` 0; marketing in default top 10 0; failing boards 49 (all `HTTP 404` dead
+slugs, INS-012/016 work).
+
+*Operational note:* the audit's artifact filename rolls with the UTC date — verifying against
+`2026-09-28-baseline.md` just after UTC midnight reads a stale file. Always match the
+"Generated" timestamp, not just the filename.
