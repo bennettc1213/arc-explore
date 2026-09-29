@@ -88,6 +88,39 @@ export function termUpdateForReopen(
   return termColumns(p);
 }
 
+/**
+ * Term columns a description fetch may write, or `{}` to leave them alone.
+ *
+ * A description fetch is the main path by which an explicit term arrives -
+ * list endpoints omit descriptions - so an explicit parse may change stored
+ * term data, including clearing `termEndedFlagAt` when the listing's term
+ * genuinely moved to a current one. An inferred parse may not: inferring from
+ * `now` would overwrite a stronger stored term and erase a quarantine flag a
+ * previous fetch earned, which is the erasure `termUpdateForTouch` guards
+ * against. The ended-term check is evaluated at `now` - a term is ended or not
+ * as of when we looked, never as of the listing's posted date.
+ */
+export function termUpdateFromDescription(
+  title: string,
+  text: string,
+  now: Date,
+): TermUpdate | Record<string, never> {
+  const explicit = parseExplicitTerm(title, text);
+  if (!explicit) return {};
+  return {
+    term: explicit.term,
+    termSource: "explicit",
+    termSeason: explicit.termSeason,
+    termYear: explicit.termYear,
+    termRaw: explicit.termRaw,
+    termEndedFlagAt:
+      explicit.term && explicit.termSeason && explicit.termYear &&
+      isTermEnded(explicit.termSeason, explicit.termYear, now)
+        ? now
+        : null,
+  };
+}
+
 function termColumns(p: PreparedPosting): TermUpdate {
   return {
     term: p.term,
@@ -170,8 +203,13 @@ export function preparePosting(sp: SourcePosting, now?: Date): PreparedPosting {
   // Explicit term is used for the stable dedup key so inference rules can
   // change without invalidating existing rows.
   const explicit = parseExplicitTerm(sp.title, sp.descriptionText);
-  // Full term result includes inference from first_seen when no explicit term.
-  const termInfo = parseTerm(sp.title, sp.descriptionText, now ?? sp.postedAt);
+  // Inference is anchored at when we looked (`now`), never at the listing's own
+  // posted date: a board can still carry a posting from years ago, and
+  // anchoring there infers a term that has long since ended - the recovery run
+  // of 2026-09-28 ingested such rows as unflagged "Summer 2023" listings. This
+  // also keeps ingest consistent with `backfill-terms.ts`, which anchors at
+  // first-seen.
+  const termInfo = parseTerm(sp.title, sp.descriptionText, now);
 
   return {
     canonicalHash: canonicalHash({
@@ -193,10 +231,14 @@ export function preparePosting(sp: SourcePosting, now?: Date): PreparedPosting {
     termSeason: termInfo.termSeason,
     termYear: termInfo.termYear,
     termRaw: termInfo.termRaw,
+    // A term is ended or not as of when we looked - `now`, never the listing's
+    // posted date. Evaluating at postedAt marked a "Spring 2025" listing as
+    // current (it was, when posted) and let the touch path write
+    // `termEndedFlagAt: null` over a correctly-set quarantine flag.
     termEndedFlagAt:
       termInfo.term && termInfo.termSeason && termInfo.termYear &&
-      isTermEnded(termInfo.termSeason, termInfo.termYear, now ?? sp.postedAt ?? undefined)
-        ? (now ?? sp.postedAt ?? new Date())
+      isTermEnded(termInfo.termSeason, termInfo.termYear, now)
+        ? (now ?? new Date())
         : null,
     workAuth: detectWorkAuth(sp.descriptionText, sp.title),
     skills: extractSkills(sp.title, sp.descriptionText),

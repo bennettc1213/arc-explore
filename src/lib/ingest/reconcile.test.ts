@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { preparePosting, reconcile, termUpdateForReopen, termUpdateForTouch, type ExistingPosting } from "./reconcile";
+import { preparePosting, reconcile, termUpdateForReopen, termUpdateForTouch, termUpdateFromDescription, type ExistingPosting } from "./reconcile";
 import type { SourcePosting } from "./types";
 
 function existingRow(
@@ -253,9 +253,13 @@ describe("term provenance is monotonic on touch and reopen", () => {
 
   function inferredListPosting() {
     // A list endpoint gives no description, so the term can only be inferred
-    // from `postedAt` (first-seen logic in the parser).
+    // from when the poll saw it - `now`, which for a brand-new listing is its
+    // first-seen date. (Anchoring at the listing's own postedAt was the
+    // 2026-09-28 defect: a 2023 posting came in as an unflagged
+    // "Summer 2023" listing.)
     const p = preparePosting(
-      posting({ title: "Software Engineer Intern", postedAt: new Date("2027-06-01T00:00:00Z") }),
+      posting({ title: "Software Engineer Intern" }),
+      new Date("2026-09-28T20:00:00.000Z"),
     );
     assert.equal(p.termSource, "inferred");
     return p;
@@ -330,6 +334,78 @@ describe("term provenance is monotonic on touch and reopen", () => {
       const p = explicitPosting();
       assert.equal(termUpdateForReopen(p, undefined).termSource, "explicit");
       assert.equal(termUpdateForReopen(p, { termSource: null }).termSource, "explicit");
+    });
+  });
+
+  describe("term anchoring (2026-09-28 regression)", () => {
+    it("flags an explicit ended term at poll time even when the listing was posted before the term ended", () => {
+      // Found on production: a "Spring 2025" listing posted in early 2025 was
+      // touched with the flag evaluated at postedAt - where it was not yet
+      // ended - so the touch wrote null over a correctly-set quarantine flag.
+      const now = new Date("2026-09-28T20:00:00.000Z");
+      const p = preparePosting(
+        posting({
+          title: "Spring 2025 Paid Undergraduate/Graduate Intern",
+          postedAt: new Date("2025-01-15T00:00:00.000Z"),
+        }),
+        now,
+      );
+
+      assert.equal(p.term, "Spring 2025");
+      assert.equal(p.termSource, "explicit");
+      assert.ok(p.termEndedFlagAt instanceof Date, "expected an ended-term flag at poll time");
+      assert.deepEqual(termUpdateForTouch(p).termEndedFlagAt, p.termEndedFlagAt);
+    });
+
+    it("anchors inference at the poll date, never the listing's posted date", () => {
+      // Found on production: a Palantir listing posted in 2023 was inferred as
+      // an unflagged "Summer 2023" listing because the fallback anchored the
+      // inference at postedAt. first-seen (= poll time for a new listing) is
+      // the documented anchor, and it also matches backfill-terms.ts.
+      const now = new Date("2026-09-28T20:00:00.000Z");
+      const p = preparePosting(
+        posting({
+          title: "Information Security Engineer, Internship",
+          postedAt: new Date("2023-05-01T00:00:00.000Z"),
+        }),
+        now,
+      );
+
+      assert.equal(p.term, "Summer 2027");
+      assert.equal(p.termSource, "inferred");
+      assert.equal(p.termEndedFlagAt, null);
+    });
+
+    it("flags an ended explicit term found by a description fetch, and does not flag a current one", () => {
+      const now = new Date("2026-09-28T20:00:00.000Z");
+
+      const ended = termUpdateFromDescription(
+        "Spring 2025 Paid Intern",
+        "Join the Spring 2025 cohort.",
+        now,
+      );
+      assert.equal(ended.term, "Spring 2025");
+      assert.ok(ended.termEndedFlagAt instanceof Date);
+
+      const current = termUpdateFromDescription(
+        "Software Engineer Intern (Summer 2027)",
+        "Join us in Summer 2027.",
+        now,
+      );
+      assert.equal(current.term, "Summer 2027");
+      assert.equal(current.termEndedFlagAt, null);
+    });
+
+    it("writes nothing from a description with no explicit term - it must not erase a stored term or its quarantine flag", () => {
+      // The pre-fix applyDescription spread an inferred-from-now term over the
+      // stored columns, erasing both a stored explicit term and its flag when
+      // the fetched description simply did not mention a term.
+      const update = termUpdateFromDescription(
+        "Software Engineer Intern",
+        "Great team. No term mentioned anywhere.",
+        new Date("2026-09-28T20:00:00.000Z"),
+      );
+      assert.deepEqual(update, {});
     });
   });
 });

@@ -20,11 +20,10 @@ import {
 } from "@/db/schema";
 import { detectWorkAuth } from "./normalize";
 import { extractSkills } from "../score/skills";
-import { parseExplicitTerm, parseTerm } from "../terms/parser";
-import { isTermEnded } from "../terms/bounds";
 import {
   reconcile,
   termUpdateForReopen,
+  termUpdateFromDescription,
   termUpdateForTouch,
   type ExistingPosting,
   type PreparedPosting,
@@ -92,13 +91,21 @@ export async function persistPoll(
       missingSince: r.missingSince ?? null,
     }));
 
+    // `now` is created before the plan and threaded into it: every term the
+    // poll derives - inference, and the ended-term flag - must be anchored at
+    // when we looked. Before this, the plan ran without `now`, so
+    // `preparePosting` fell back to each listing's own postedAt: a posting
+    // from 2023 was inferred as an unflagged "Summer 2023" listing, and a
+    // "Spring 2025" touch wrote `termEndedFlagAt: null` over a correctly-set
+    // quarantine flag.
+    const now = new Date();
     const plan = reconcile({
       incoming,
       existing,
       totalOnBoard,
       successfulComplete: opts?.successfulComplete ?? true,
+      now,
     });
-    const now = new Date();
 
     if (plan.toInsert.length > 0) {
       await insertPostings(tx, orgId, plan.toInsert, now, opts?.freshnessTier);
@@ -448,11 +455,12 @@ export async function applyDescription(
   title: string,
 ): Promise<void> {
   const workAuth = detectWorkAuth(text, title);
-  const explicit = parseExplicitTerm(title, text);
   const now = new Date();
-  const termInfo: import("@/lib/terms/parser").TermParseResult | null = explicit
-    ? { ...explicit, termSource: "explicit" }
-    : parseTerm(title, text, now);
+  // Only a term parsed from the fetched text may change stored term data - the
+  // same monotonic rule as `termUpdateForTouch`. An inferred parse writes
+  // nothing, so a description without a term can no longer overwrite a stored
+  // explicit term or erase its ended-term quarantine flag.
+  const termUpdate = termUpdateFromDescription(title, text, now);
   const skills = extractSkills(title, text);
 
   await db
@@ -460,20 +468,7 @@ export async function applyDescription(
     .set({
       descriptionText: text,
       ...(workAuth ? { workAuth } : {}),
-      ...(termInfo
-        ? {
-            term: termInfo.term,
-            termSource: termInfo.termSource,
-            termSeason: termInfo.termSeason,
-            termYear: termInfo.termYear,
-            termRaw: termInfo.termRaw,
-            termEndedFlagAt:
-              termInfo.term && termInfo.termSeason && termInfo.termYear &&
-              isTermEnded(termInfo.termSeason, termInfo.termYear, now)
-                ? now
-                : null,
-          }
-        : {}),
+      ...termUpdate,
       ...(skills.length > 0 ? { skills } : {}),
     })
     .where(eq(postings.id, postingId));
