@@ -176,6 +176,13 @@
       "when": 1790486400000,
       "tag": "0024_scholarship_trust",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1790703841500,
+      "tag": "0025_source_registry",
+      "breakpoints": true
     }
   ]
 }

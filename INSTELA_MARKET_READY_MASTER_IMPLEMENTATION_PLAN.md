@@ -68,7 +68,7 @@ A new user can search every listing, enter four profile facts, see a useful set 
 |---|---|
 | Speed | Instant new-listing alerts, complete Opening Soon calendar, and company watchlists |
 | Odds | Full fit/competition explanations, gap-closing guidance, and a Low Competition Only filter |
-| Saved effort | Unlimited generation/critique tools, essay answer bank, unlimited/automated tracking, weekly triage, verified autofill when ready, and semester recaps |
+| Saved effort | Unlimited generation/critique tools, essay answer bank, unlimited/automated tracking, a daily discovery deck, verified autofill when ready, and semester recaps |
 
 ### “Market-ready and sellable” means
 
@@ -238,7 +238,7 @@ The timing below follows the report's two-week trust sprint, 30-60 day Coverage 
 |---|---:|---:|---|---|
 | 0. Baseline and execution control | INS-001–003 | Days 1-3 | Repository map, repeatable baseline, safe test/release controls | INS-003 |
 | 1. Trust sprint | INS-004–011 | Weeks 1-2 | All eight live-site trust leaks fixed | INS-011 |
-| 2. Verified-data spine | INS-012–015 | Weeks 3-4 | Shared ingestion contract, provenance, cadence, and run observability | INS-015 |
+| 2. Verified-data spine | INS-012–015, INS-064 | Weeks 3-4 | Shared ingestion contract, provenance, cadence, and run observability | INS-015 |
 | 3. Coverage expansion | INS-016–023 | Days 15-60 | AcademicWorks, Workday, USAJOBS Pathways | INS-023 |
 | 4. Eligibility, competition, and ranking | INS-024–028 | Days 25-60 | Explainable “non-saturated” personalized feed | INS-028 |
 | 5. Free/Pro, alerts, and billing | INS-029–036 | Days 30-60 | Sellable plans, weekly vs instant alerts, honest upgrade moments | INS-036 |
@@ -275,7 +275,7 @@ Within a phase, prompts are sequential unless the individual prompt says otherwi
 | 3. Coverage | AcademicWorks provides repeatable, university-curated scholarship structure; Workday covers roughly 39% of the Fortune 500 and about 38% of top finance employers according to the report; USAJOBS adds official federal student opportunities. Those sources directly support scholarship trust and the next Business vertical. |
 | 4. Scoring | Students report that they cannot find accurate eligibility and often assume they will not win. The report's market gap is odds/competition rather than another keyword list, so structured eligibility and Competition must precede paid upsells around those benefits. |
 | 5. Pro core | Rolling review makes early alerts valuable, while competitors charge roughly $29-$40/month and draw criticism for hidden pricing, poor trials/refunds, and cancellation. The report therefore sells instant speed at $5.99 with public terms after the feed is trustworthy. |
-| 6. Historical moat | First-seen history compounds over recruiting cycles and cannot be copied quickly. The report also says 21% of non-applying families find the process too effortful, supporting the answer bank, tracking automation, and weekly plan after the core alerts/odds product works. |
+| 6. Historical moat | First-seen history compounds over recruiting cycles and cannot be copied quickly. The report also says 21% of non-applying families find the process too effortful, supporting the answer bank, tracking automation, and a daily discovery deck after the core alerts/odds product works. |
 | 7. Growth/Business | The report says to launch Business next, not several verticals, and ties it to Workday. Its preferred growth hooks—proprietary history pages, delayed community alerts, referrals, recaps, and a Utah pilot—reuse the product's real data rather than buying reach with unsupported claims. |
 | 8. Release/measurement | The report notes typical freemium conversion is modest (about 2-5%, with RevenueCat's cited day-35 median around 2.1%), so distribution and measurement matter as much as feature count. The release must measure activation, retention, alert response, conversion, and seasonal churn. |
 | 9. Post-launch backlog | The report conditions these items on proof that does not exist at initial launch: verified autofill, enough unsupported-ATS demand, source permission, a few hundred outcomes, sustained quality before a price test, or validated institutional demand. They are executable IDs, but not launch claims. |
@@ -382,7 +382,7 @@ score = 0.35 * Fit
 | Tracker | 10 items | Unlimited + email-forward automation |
 | Resume, cover letter, LinkedIn, GitHub, essay tools | One use of each per month | Unlimited |
 | Essay answer bank | Not included | Included |
-| Weekly triage | Not included | Five best applications that week |
+| Daily discovery deck | Included (5-7 verified cards/day) | Included; Pro may sell speed/saved effort on top, never basic discovery |
 | Autofill/apply | Not included | Included only after end-to-end verification |
 | Semester recap | Not included | Included and shareable |
 
@@ -861,7 +861,7 @@ Migrate existing sources and listings without losing their stable IDs, saved rel
 ### Acceptance criteria
 
 - Every currently published live row maps to a registry source or is explicitly quarantined for repair.
-- Discovery-only candidates cannot pass the verified publication gate.
+- Discovery-only candidates cannot pass the verified publication gate. **Model, backfill, and pure gate are delivered and verified; runtime enforcement in the read/ingest/RLS paths is deferred to INS-064.**
 - Field-level provenance/confidence can be returned to internal inspection tooling.
 - Existing user relationships survive migration.
 - Schema indexes support source lookup, live-state queries, poll scheduling, and first-seen ranking.
@@ -1496,7 +1496,7 @@ Model capabilities, not scattered plan-name checks, for at minimum:
 - tracker capacity 10 vs unlimited and email automation;
 - monthly one-use allowance per application tool vs unlimited;
 - essay answer bank;
-- weekly triage;
+- daily discovery deck;
 - verified autofill/apply when enabled;
 - semester recap.
 
@@ -1777,7 +1777,7 @@ Follow the confirmation-popup procedure in Section 3A exactly.
 1. **Preconditions, before any popup.** Confirm INS-036 is `PASS` with `phase-5-pro-core-gate.md`, and that the scoped INS-051 (analytics), INS-052 (claims audit), INS-053 (hardening), and INS-054 (staging candidate) results exist and are `PASS` or `GO` for the Phase 1-5 scope. Confirm live Stripe prices, the webhook endpoint and its signing secret, public pricing, cancellation, and the refund path are ready. Confirm the owner has decided the Semester Pass renewal policy (Section 9); if not, that price stays off. If anything is missing, stop as BLOCKED without asking.
 2. **Show the Section 3A popup.** The popup must also say that this release turns on live billing and real charges. Nothing live changes until the owner answers Yes.
 3. **On Yes,** follow the INS-055 release steps scoped to Phases 1-5: migrations and backfills in order with a dry run first, deploy the exact approved build, enable live Stripe only after the checks in INS-055 step 5, then turn on the Free weekly digest and Pro instant alerts gradually while watching duplicate, error, and latency numbers.
-4. **Keep later features off.** Opening Soon, the answer bank, email tracking, weekly triage, the Business vertical, SEO pages, the community feed, referrals, the recap, and the Utah pilot do not exist yet. They stay hidden or honestly labeled coming soon, and nothing on the pricing page may promise them as included.
+4. **Keep later features off.** Opening Soon, the answer bank, email tracking, the daily discovery deck, the Business vertical, SEO pages, the community feed, referrals, the recap, and the Utah pilot do not exist yet. They stay hidden or honestly labeled coming soon, and nothing on the pricing page may promise them as included.
 5. **Verify on production.** Search, the top-20 ranked feed, eligibility, filters, saves, tracker limits, pricing and account pages, checkout return, cancellation, refund, source health, and alert delivery. Rerun the non-destructive trust and data-quality metrics and compare them to the Phase 5 gate.
 6. **If any threshold is breached,** disable the implicated feature or roll back using the documented kill switches.
 7. Write `docs/instela-market-ready/releases/release-b.md` with the release identifier, migrations, flag state, evidence, and the day-0, day-7, and day-35 observation checklist. Do not claim any conversion benchmark has been reached, and do not raise the price to `$7.99`.
@@ -1953,31 +1953,38 @@ Implement a Pro-only inbound forwarding address/workflow for application confirm
 
 ---
 
-## INS-042 — Generate the Pro weekly five-application triage plan
+## INS-042 — Build the Daily Discovery Deck
 
-**Report basis:** R8 weekly triage; R9 build order.  
-**Depends on:** INS-027, INS-029, INS-031, and the tracker.  
-**Type:** Personalized planning, frontend/email, analytics.  
-**Outcome:** The ranked feed becomes a concrete weekly action plan.
+> **Supersedes the former "Pro weekly five-application triage plan."** Do not build or market a weekly plan. An assigned homework list works against the promise of effortless discovery. This prompt was rewritten on 2026-09-29 to match the accepted product decision recorded in the project context file.
+
+**Report basis:** R8 effort reduction; R9 build order; accepted product decision, Daily Discovery Deck.  
+**Depends on:** INS-024 through INS-028 (explainable eligibility and ranking), INS-012 through INS-014 (verified freshness and provenance), INS-029 through INS-036 (entitlements), and INS-056 where autofill is involved.  
+**Type:** Personalized discovery, frontend, analytics.  
+**Outcome:** A signed-in student can see a short, trustworthy daily set of verified opportunities in seconds, without it feeling like assigned work, and without any interaction ever submitting an application.
 
 ### Claude Code execution prompt
 
-Create `Your 5 best applications this week` for Pro users.
+Build the signed-in **Daily Discovery Deck** (working product name). It is powered by verified-data, eligibility, ranking, freshness, and entitlement work that must already exist.
 
-1. Select up to five verified, open, eligible opportunities using the ranking system, deadlines, freshness, saved/applied status, effort, and category diversity.
-2. Do not include already applied, clearly ineligible, expired, lottery-style, or duplicate/same-program variants.
-3. Explain each selection with grounded reasons and an action/deadline. Do not predict acceptance.
-4. Avoid selecting more work than the user can plausibly complete under any preferences already present; if none exist, offer simple effort/time preferences without making them required for launch.
-5. Allow dismiss/replace and mark started/applied, feeding the existing tracker rather than a parallel task store.
-6. Deliver in-product and optionally by email under preferences, with idempotent weekly generation.
-7. Record plan view, opportunity open, dismissal, tracker start, and application status for product analytics/outcome learning.
+1. Let a student choose **Scholarships**, **Internships**, or **Both** from the homepage/onboarding path, and remember that choice.
+2. Show a new, short daily set of **5–7 verified opportunities** appropriate to that choice, after a minimal profile/setup step. Each card must carry the essential decision information: award or pay, deadline/term, eligibility status or honest uncertainty, verification/freshness status, estimated application effort when known, and a short grounded reason it was selected.
+3. Offer an optional mobile-first swipe interaction: swipe **up** opens the opportunity's apply/details flow, swipe **right** saves it, swipe **left** passes it. Provide visible buttons and keyboard-accessible equivalents so a gesture is never required to do anything.
+4. Make `Apply`/swipe-up open only Instela's own application-preparation/details flow or the verified sponsor/employer destination. It must **never submit an application for the student**; the student presses Submit.
+5. Let students open **Explore all verified opportunities** at any time. Search, filters, eligibility facts, and safety information stay Free and cannot be hidden behind the deck.
+6. Avoid artificial scarcity. The daily set is a fast starting point, not a claim that these are the only worthwhile opportunities and not a forced 24-hour deadline.
+7. Record saves, passes, opens, and completed/declined actions with privacy-safe product analytics. A pass improves future ranking but must never erase the opportunity from search.
+8. Respect the Free/Pro entitlements already established by INS-029 through INS-036. Core daily discovery and verification facts are Free; any Pro enhancement must sell speed or saved effort without blocking basic discovery.
+
+The visual homepage entry point may be designed earlier, but the deck must not be activated while source or ranking data is unreliable.
 
 ### Acceptance criteria
 
-- Selection uses only verified and currently open opportunities.
-- Reasons correspond to actual ranking/eligibility/deadline facts.
-- Weekly retries do not create multiple competing plans.
-- Tracker updates remain the source of truth for application status.
+- A student can select Scholarships, Internships, or Both, and receives no more than seven source-verified, explainable cards.
+- Every card can be saved, passed, and opened without relying on a gesture; buttons and keyboard paths are equivalent.
+- Full browse, search, filters, eligibility facts, and safety information are reachable immediately and are never paywalled.
+- No interaction automatically submits, hides, mislabels, or claims certainty about an opportunity.
+- Selection uses only verified, currently open opportunities, and reasons reflect actual ranking/eligibility/deadline facts.
+- Repeating a day's deck does not create duplicate or competing plans.
 - No acceptance/win probability language appears.
 
 ---
@@ -2038,7 +2045,7 @@ Implement the Business vertical using verified sources already approved through 
 1. Define a reviewable taxonomy for business role families, beginning with finance, consulting, operations, marketing, sales, accounting, and related internship categories evident in the approved Workday/ATS inventory. Keep quant aligned with the role-family model without double-counting.
 2. Classify roles using deterministic rules first and evidence/versioned fallback if needed.
 3. Audit Workday coverage among finance and consulting employers in the approved 100-employer set; add more only through INS-016's approval process.
-4. Add Business to onboarding/profile preferences, browse/search/filter, personalized ranking, alerts, saved/tracker, and weekly plans.
+4. Add Business to onboarding/profile preferences, browse/search/filter, personalized ranking, alerts, saved/tracker, and the daily discovery deck.
 5. Preserve Tech as a supported vertical and avoid launching other verticals in this prompt.
 6. Ensure business users receive the same term, eligibility, freshness, verification, Competition, Trust, and plan behavior.
 7. Build a release inventory and hand-check at least 20 Business roles across categories/employers/apply links.
@@ -2385,7 +2392,7 @@ Run the full automated suite plus a staging journey matrix covering:
 - all plans, trial triggers, checkout/webhooks, cancel/refund/downgrade;
 - tool allowances, tracker 10/11, saves/reminders;
 - Opening Soon, watchlist, verified-opening alert;
-- answer bank, email tracking, weekly triage, outcomes, recap;
+- answer bank, email tracking, daily discovery deck, outcomes, recap;
 - SEO, community feed in disabled/test destination, referrals, Utah pilot disabled/configured;
 - analytics and claim register;
 - privacy/export/deletion/unsubscribe paths;
@@ -2712,6 +2719,44 @@ Instead:
 
 ---
 
+## INS-064 — Enforce the publication gate in the read and ingest paths
+
+**Report basis:** R6 discover-wide/verify-at-source rule; the unmet second acceptance criterion of INS-012.  
+**Depends on:** INS-012 (schema, backfill, and `publication-gate.ts` all exist) and INS-013.  
+**Type:** Runtime read-path enforcement, ingest write-path state, RLS.  
+**Outcome:** The verified publication gate is actually enforced, so a discovery-only candidate cannot be served to a user by any path.
+
+### Why this is separate from INS-012
+
+INS-012 delivered the model, the migration, the backfill, the inspection command, and a fully unit-tested pure gate. The gate is correct, but nothing calls it yet, so the INS-012 criterion "discovery-only candidates cannot pass the verified publication gate" holds only in unit tests and in stored `publication_state` values. Three specific gaps:
+
+1. **The read path ignores `publication_state`.** In `src/lib/feed.ts`, `getFeed` filters only on `hidden_at`/`closed_at`/`term_ended_flag_at`; `getPosting`, `getLotteryAwards`, `getFeedStats`, `getCompletionCorpus`, and `getAvailableTerms` likewise do not consider it. A row in state `candidate` is served today. `src/lib/apply/extension.ts` (`findPostingByUrl`) is the same.
+
+2. **The ingest path never writes the state.** `insertPostings` in `src/lib/ingest/persist.ts` does not set `publicationState`, so every newly ingested row falls through to the column default of `unverified` regardless of how authoritative its source is. This must be fixed *before* the feed filter: adding a `publication_state = 'verified'` feed predicate without wiring the writer would ship an empty live feed.
+
+3. **RLS bypasses any application filter.** `postings_public_read` in `src/db/migrations/0002_rls_policies.sql` is `USING (true)` for `anon, authenticated`. Any direct PostgREST/Supabase client read therefore ignores application-level predicates entirely, so an app-only fix cannot be a real guarantee.
+
+### Claude Code execution prompt
+
+Treat this as a behavior change to a live read path, not a data-model edit.
+
+1. In the ingest write path, derive `publication_state` through `publicationStateFor` from the real source registry row (authority, state, terms review) plus whether the poll was complete, instead of relying on the column default. Preserve the existing explicit `unknown`/quarantine semantics rather than inventing new states.
+2. Add a publishable-state predicate to the user-facing read paths named above, reusing `canPublish`/`publicationStateFor` so SQL and pure logic cannot drift. Cover the extension packet route too, and check whether saved-search matching and the digest inherit the gate automatically by calling the same feed function.
+3. Decide explicitly, and record the decision, whether to tighten `postings_public_read` with a follow-up migration. If yes, verify first that nothing legitimate depends on reading non-publishable rows through PostgREST, because that policy also fronts the extension packet route.
+4. Prove the fix with tests that do not require a production-scale dataset: extend `src/db/fragments.test.ts`-style query inspection to assert the generated WHERE clause, and add an ingest-path test that a source-of-truth complete poll yields `verified` while a discovery-only source yields `candidate`.
+5. Rehearse on staging, where the synthetic fixture from INS-012 already contains a known `candidate` row, and confirm that row disappears from the feed while the three `verified` rows remain.
+6. Do not enable the feed filter in production ahead of the ingest writer, and do not treat a green staging run at fixture scale as proof of production safety.
+
+### Acceptance criteria
+
+- A discovery-only `candidate` row is unreachable from every user-facing read path, including direct PostgREST reads.
+- A newly ingested source-of-truth listing reaches `verified`; a discovery-only listing reaches `candidate` and is not published.
+- The feed cannot be emptied by the change: existing live rows stay visible, proven against a production-shaped dataset rather than a seven-row fixture.
+- The SQL predicate and the pure gate cannot drift, or the drift is caught by a test.
+- The RLS decision is documented either way.
+
+---
+
 ## 6. Release milestones: when Instela is sellable versus report-complete
 
 The report deliberately separates **Now**, **Next**, and **Later**. This plan preserves that sequencing. Each milestone below is also a candidate release point; see Section 3A for which ones publish and what each requires.
@@ -2738,7 +2783,7 @@ This distinction prevents a 120-day moat roadmap from being confused with the mi
 |---|---|---|
 | Keep search/filter discovery free | INS-029, INS-034, INS-035 | Core launch blocker |
 | Sell speed, odds, saved effort | INS-026-043 | Core speed/odds by paid beta; effort suite by full release |
-| Verified freshness as moat | INS-012-015, INS-031, INS-037-039 | Core launch blocker; predictions full release |
+| Verified freshness as moat | INS-012-015, INS-031, INS-037-039, INS-064 | Core launch blocker; predictions full release |
 | Missing/impossible terms | INS-004, INS-005, INS-011 | Core launch blocker |
 | Program totals / `$0` parser | INS-006, INS-011 | Core launch blocker |
 | Fit without profile | INS-008, INS-025, INS-028 | Core launch blocker |
@@ -2761,7 +2806,7 @@ This distinction prevents a 120-day moat roadmap from being confused with the mi
 | Opening Soon/watchlist | INS-037-039 | Full-release moat |
 | Essay answer bank | INS-040 | Full-release effort feature |
 | Email-forward tracking | INS-041 | Full-release effort feature |
-| Weekly triage | INS-042 | Full-release effort feature |
+| Daily discovery deck | INS-042 | Full-release effort feature |
 | Outcome loop, no premature probability | INS-043, INS-052 | Full release / future calibration |
 | GitHub rate limit | INS-015 | Core reliability |
 | Business next; no multi-vertical launch | INS-044, INS-050 | Full release |
@@ -2849,6 +2894,7 @@ The report intentionally leaves some choices open. Claude Code must not guess th
 | INS-011 | Trust gate | Phase 1 evidence |
 | INS-011A | Release A | Publish the trust sprint (popup-confirmed) |
 | INS-012 | Source/provenance model | Traceable source registry |
+| INS-064 | Enforce publication gate | Read/ingest/RLS enforcement of the INS-012 gate |
 | INS-013 | Ingestion state machine | Shared idempotent adapter contract |
 | INS-014 | Cadence/observability | Scheduled tiers and source health |
 | INS-015 | GitHub/data gate | Scaled audit and Phase 2 evidence |
@@ -2879,7 +2925,7 @@ The report intentionally leaves some choices open. Claude Code must not guess th
 | INS-039 | Calendar/watchlist | Seven-day vs full calendar and verified alerts |
 | INS-040 | Essay answer bank | Grounded reusable Pro content |
 | INS-041 | Email auto-tracking | Privacy-preserving status ingestion |
-| INS-042 | Weekly triage | Five best applications |
+| INS-042 | Daily discovery deck | 5-7 verified daily cards, no assigned homework |
 | INS-043 | Outcomes/moat gate | Calibration-ready data and Phase 6 evidence |
 | INS-044 | Business vertical | One adjacent verified vertical |
 | INS-045 | Proprietary SEO | Company-opening and university pages |
