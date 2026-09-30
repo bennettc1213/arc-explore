@@ -26,6 +26,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 /* ------------------------------------------------------------------ *
  * Company registry — the heart of Tier A polling
@@ -74,6 +75,138 @@ export const organizations = pgTable(
     index("org_normalized_name_idx").on(t.normalizedName),
     // Drives the "who is due for polling" query.
     index("org_poll_due_idx").on(t.lastPolledAt),
+  ],
+);
+
+/* ------------------------------------------------------------------ *
+ * Source registry (INS-012) — where a fact may legally come from
+ * ------------------------------------------------------------------ */
+
+/**
+ * May this source's observation publish a verified listing on its own?
+ *
+ * `source_of_truth` — we read the employer's/sponsor's own feed, so the row is
+ *                    the thing itself rather than a description of it.
+ * `discovery_only`  — we learn the company *exists* here and must then fetch its
+ *                    own ATS before anything may be shown. Simplify is the case
+ *                    that matters: it names companies but carries no licence to
+ *                    redistribute listings, so a hit from it can never become a
+ *                    live row. See sources/simplify.ts.
+ *
+ * Enforced in code by `lib/ingest/publication-gate.ts` and by the database
+ * default on `posting_sources.is_authoritative_observation`.
+ */
+export const SOURCE_AUTHORITIES = ["source_of_truth", "discovery_only"] as const;
+export type SourceAuthority = (typeof SOURCE_AUTHORITIES)[number];
+
+/**
+ * Whether we are allowed to keep asking this source.
+ *
+ * Separate from a poll failing: `paused` is our own decision (cadence too
+ * aggressive, no value), `blocked` is a decision someone recorded after a terms
+ * or robots problem. The 49 dead ATS slugs belong in `paused` with a last-failure
+ * reason rather than being retried forever.
+ */
+export const SOURCE_STATES = ["active", "paused", "blocked"] as const;
+export type SourceState = (typeof SOURCE_STATES)[number];
+
+/** Result of reading a source's own terms/robots policy. Never assume "allowed". */
+export const ACCESS_REVIEW_STATUSES = [
+  "not_reviewed",
+  "approved",
+  "restricted",
+  "denied",
+] as const;
+export type AccessReviewStatus = (typeof ACCESS_REVIEW_STATUSES)[number];
+
+/** Poll tier, matching `ingest_runs.tier`: A = sub-hour ATS, B = aggregator. */
+export const POLL_TIERS = ["A", "B", "C"] as const;
+export type PollTier = (typeof POLL_TIERS)[number];
+
+/**
+ * One approved place we may read opportunities from.
+ *
+ * This is the row the whole Phase 2 "verified-data spine" hangs off. It answers,
+ * for one place: what is it, whose is it, is it allowed to publish, may we keep
+ * polling it, and did it last succeed. `organizations` answers "which company's
+ * board" and keeps the hot poll columns; this answers "are we allowed, and why".
+ */
+export const sources = pgTable(
+  "sources",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /**
+     * Stable, human-readable identity, e.g. `greenhouse:stripe` or
+     * `university-portal:mit-scholarships`. Survives renames so that provenance
+     * and lifecycle history stay attached to the same source over time.
+     */
+    key: text("key").notNull(),
+    /** Which adapter/provider serves it: "greenhouse", "lever", "university-portal", ... */
+    provider: text("provider").notNull(),
+    authority: text("authority").$type<SourceAuthority>().notNull().default("source_of_truth"),
+    state: text("state").$type<SourceState>().notNull().default("active"),
+
+    /** The company whose board this is. Null for portals with many sponsors
+     *  (a university scholarship page, USAJOBS) and for discovery hints. */
+    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "set null" }),
+    /** Which opportunity kinds this source can yield. */
+    opportunityKind: text("opportunity_kind")
+      .$type<"internship" | "scholarship" | "both">()
+      .notNull()
+      .default("both"),
+    /** The public board/page a human can see. Provenance for a claim, not a fetch target. */
+    publicPageUrl: text("public_page_url"),
+
+    pollTier: text("poll_tier").$type<PollTier>().notNull().default("B"),
+    pollIntervalSec: integer("poll_interval_sec").notNull().default(1200),
+    /** How much of each payload this source's terms let us keep. See posting_sources.rawStorage. */
+    rawStorage: text("raw_storage").$type<"full" | "hash_only" | "none">().notNull().default("full"),
+
+    /* --- terms/robots review: the record that we asked, and what it said --- */
+    termsReviewStatus: text("terms_review_status")
+      .$type<AccessReviewStatus>()
+      .notNull()
+      .default("not_reviewed"),
+    termsReviewedAt: timestamp("terms_reviewed_at", { withTimezone: true }),
+    /** Why it came out this way, in reviewer's words. Kept short and quotable. */
+    termsReviewNote: text("terms_review_note"),
+    robotsReviewStatus: text("robots_review_status")
+      .$type<AccessReviewStatus>()
+      .notNull()
+      .default("not_reviewed"),
+    robotsReviewedAt: timestamp("robots_reviewed_at", { withTimezone: true }),
+
+    /** How a human/operator identifies us to this source. An identity, not a
+     *  secret: never an API key, never a session token. */
+    crawlerContact: text("crawler_contact"),
+
+    /** Last poll that completed *completely* — not merely returned rows. Absence
+     *  is only allowed to close a listing when this is recent (INS-013). */
+    lastCompletePollAt: timestamp("last_complete_poll_at", { withTimezone: true }),
+    lastFailureAt: timestamp("last_failure_at", { withTimezone: true }),
+    /** Short, quotable reason: "HTTP 404", "timeout", "403 block". */
+    lastFailureSummary: text("last_failure_summary"),
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+
+    /**
+     * Adapter settings that are not secrets: cursor, page size, field mappings.
+     *
+     * Credentials never go here. The inspection command redacts anything that
+     * looks like a key regardless, so a future mistake cannot leak one.
+     */
+    adapterConfig: jsonb("adapter_config").notNull().default({}),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("source_key_unique").on(t.key),
+    // "What is due to poll, and is it allowed to?" — the scheduler's hot query.
+    index("source_state_tier_idx").on(t.state, t.pollTier, t.lastCompletePollAt),
+    index("source_org_idx").on(t.orgId),
+    index("source_authority_idx").on(t.authority),
+    // The INS-012 acceptance query: which live rows have no source of truth yet.
+    index("source_state_authority_idx").on(t.state, t.authority),
   ],
 );
 
@@ -227,6 +360,18 @@ export const postings = pgTable(
      */
     skills: text("skills").array().notNull().default([]),
 
+    /**
+     * Legacy leftover, declared here only so the schema matches the database.
+     *
+     * Nothing in the app reads or writes it — `degrees` was replaced by the
+     * structured `eligibility` jsonb long ago. It still exists in every
+     * environment because the drizzle snapshot chain stopped tracking columns
+     * after 0020, so a generated migration would have tried to drop it blind.
+     * Declaring it keeps `drizzle-kit generate` honest; removing it is a
+     * separate, deliberate decision (see the INS-012 ledger entry).
+     */
+    degrees: text("degrees").array(),
+
     /* --- freshness engine --- */
     /** First moment we ever observed this posting. Drives the timing score. */
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
@@ -252,6 +397,50 @@ export const postings = pgTable(
      * and never moved afterwards — the same rule `urlDeadSince` follows.
      */
     missingSince: timestamp("missing_since", { withTimezone: true }),
+
+    /* --- INS-012: source-of-truth confirmation and publication state --- */
+    /**
+     * Last time an *authoritative* source listed this posting.
+     *
+     * Deliberately separate from `lastSeenAt`. `lastSeenAt` moves for any
+     * observation, including a discovery-only aggregator that merely mentions
+     * the company — a Simplify hit must never be able to manufacture the
+     * "confirmed live 5h ago" claim that `lastSeenAt` alone would suggest.
+     * Only a source whose own board we poll writes this column.
+     */
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    /** When this posting last came back after being closed. Null if never. */
+    reopenedAt: timestamp("reopened_at", { withTimezone: true }),
+    /** How many times it has been closed and then seen again. */
+    reopenCount: integer("reopen_count").notNull().default(0),
+    /**
+     * Which registry source published this row, when known.
+     *
+     * Null means we never established the source of truth — for pre-INS-012 rows
+     * that is an honest unknown, not a claim. Paired with
+     * `posting_sources.sourceId` once the registry backfill has run.
+     */
+    authoritativeSourceId: uuid("authoritative_source_id").references(() => sources.id, {
+      onDelete: "set null",
+    }),
+    /**
+     * Whether this row may be shown as a verified opportunity.
+     *
+     * `verified`   — an authoritative source of truth published it.
+     * `unverified` — published before provenance existed; provenance unknown.
+     * `candidate`  — only discovery references exist; not a verified listing.
+     * `quarantined`— a person or a rule set it aside pending repair.
+     *
+     * Defaults to `unverified`, not `verified`. A migration that stamped every
+     * one of the ~6,600 existing rows as verified would be fabricating the one
+     * thing this whole phase exists to prove. Nothing reads this column yet, so
+     * the default changes no live behavior; the backfill that promotes rows to
+     * `verified` does the proving row by row.
+     */
+    publicationState: text("publication_state")
+      .$type<"verified" | "unverified" | "candidate" | "quarantined">()
+      .notNull()
+      .default("unverified"),
     /** Employer-stated posting date, when a source provides one. May be null —
      *  we never invent one, per the honest-slots rule. */
     postedAt: timestamp("posted_at", { withTimezone: true }),
@@ -328,6 +517,9 @@ export const postings = pgTable(
     uniqueIndex("posting_canonical_unique").on(t.canonicalHash),
     index("posting_org_idx").on(t.orgId),
     index("posting_open_idx").on(t.closedAt, t.firstSeenAt),
+    // INS-012: "which live rows still have no verified source of truth", and the
+    // sweep the provenance backfill will run.
+    index("posting_publication_state_idx").on(t.publicationState, t.closedAt),
     // Drives "check the least recently checked first". Nulls sort first, which
     // is what we want: a posting never checked is the highest priority.
     index("posting_url_check_idx").on(t.urlCheckedAt),
@@ -357,12 +549,295 @@ export const postingSources = pgTable(
      *  that repo carries no license, so we take company names (facts) and pull
      *  listings from each company's own ATS instead. */
     raw: jsonb("raw"),
+
+    /* --- INS-012: registry link and reproducible provenance --- */
+    /**
+     * The registry row for the place this observation came from.
+     *
+     * Named `registry_source_id`, not `source_id`: this table already has a
+     * `source_id` column meaning something entirely different — the *source's own*
+     * id for the row, used for incremental reconcile. Reusing that name would
+     * have made the two indistinguishable in a query and silently shadowed the
+     * text column in this object literal.
+     *
+     * Null until the INS-012 backfill runs, because 3,700+ existing rows have no
+     * registry entry to point at yet. The backfill resolves it from
+     * (`source`, organization, ats slug) and then quarantines whatever it cannot
+     * resolve rather than guessing a parent source.
+     */
+    registrySourceId: uuid("registry_source_id").references(() => sources.id, {
+      onDelete: "set null",
+    }),
+    /**
+     * Whether this source may publish a verified listing on its own, or is
+     * discovery-only.
+     *
+     * Denormalized from `sources.authority` so the publication gate is a single
+     * indexed read on the hot path instead of a join per posting. If the two
+     * ever disagree, the registry is authoritative and a test asserts it.
+     */
+    authority: text("authority")
+      .$type<"source_of_truth" | "discovery_only">()
+      .notNull()
+      .default("source_of_truth"),
+    /** True only when this source's own feed listed the row, not a mention. */
+    isAuthoritativeObservation: boolean("is_authoritative_observation")
+      .notNull()
+      .default(false),
+    /**
+     * SHA-256 of the raw payload we normalized.
+     *
+     * Lets us prove *which* bytes produced a stored value without keeping every
+     * payload forever, and detects silent parser drift when a re-fetch returns
+     * a different hash for an unchanged `sourceId`.
+     */
+    payloadHash: text("payload_hash"),
+    /** Parser/adapter version that produced the stored fields. */
+    adapterVersion: text("adapter_version"),
+    /** When this payload was fetched, as distinct from when the row was seen. */
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }),
+    /**
+     * How much of the payload we keep, per that source's terms/licence.
+     * - full      — raw JSON retained (sources whose terms allow it).
+     * - hash_only — payload discarded, hash kept for drift detection.
+     * - none      — nothing stored; discovery facts only (see sources/simplify.ts,
+     *               where the upstream repo carries no licence).
+     *
+     * The policy lives on the source row so a licence change is one update, not
+     * a sweep through every payload we ever stored.
+     */
+    rawStorage: text("raw_storage")
+      .$type<"full" | "hash_only" | "none">()
+      .notNull()
+      .default("full"),
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     uniqueIndex("posting_source_unique").on(t.source, t.sourceId),
     index("posting_source_posting_idx").on(t.postingId),
+    // INS-012: walk every observation of a source, and resolve an unmapped row
+    // to its registry entry during the provenance backfill.
+    index("posting_source_registry_idx").on(t.registrySourceId),
+  ],
+);
+
+/* ------------------------------------------------------------------ *
+ * Provenance, discovery candidates, and lifecycle history (INS-012)
+ * ------------------------------------------------------------------ */
+
+/** Where a discovery hint came from. Never a publishing source. */
+export const DISCOVERY_ORIGINS = ["simplify", "adzuna", "community", "manual"] as const;
+export type DiscoveryOrigin = (typeof DISCOVERY_ORIGINS)[number];
+
+/**
+ * "This company probably has a board we should read" — and nothing more.
+ *
+ * A candidate is deliberately *not* a listing. It carries no title, no
+ * description, no term, nothing a student could be shown, because we have not
+ * read the employer's own feed yet. It becomes a `postings` row only when the
+ * resolved ATS poll succeeds (`resolvedPostingId`). This table is what makes
+ * "a discovery hit must not become a live verified listing" checkable rather
+ * than a convention.
+ */
+export const discoveryCandidates = pgTable(
+  "discovery_candidates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Which discovery source produced the hint. */
+    sourceId: uuid("source_id")
+      .notNull()
+      .references(() => sources.id, { onDelete: "cascade" }),
+    origin: text("origin").$type<DiscoveryOrigin>().notNull(),
+    /**
+     * Stable dedup key for the hint, e.g. `domain:stripe.com` or
+     * `ats:greenhouse/stripe`. Mirrors `postings.canonicalHash`: mutable display
+     * text is never the identity.
+     */
+    candidateKey: text("candidate_key").notNull(),
+
+    organizationName: text("organization_name").notNull(),
+    organizationDomain: text("organization_domain"),
+    /** ATS the hint claims the company is on, if it claims one. */
+    atsType: text("ats_type"),
+    atsSlug: text("ats_slug"),
+
+    status: text("status")
+      .$type<"pending" | "resolved" | "rejected">()
+      .notNull()
+      .default("pending"),
+    /** Set when the company's own ATS succeeded and produced a real listing. */
+    resolvedPostingId: uuid("resolved_posting_id").references(() => postings.id, {
+      onDelete: "set null",
+    }),
+    resolvedOrgId: uuid("resolved_org_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    /** Why it was rejected (company has no board, domain is a redirect, ...). */
+    note: text("note"),
+
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("discovery_candidate_unique").on(t.sourceId, t.candidateKey),
+    // The work queue: what still needs a board lookup.
+    index("discovery_candidate_status_idx").on(t.status, t.lastSeenAt),
+  ],
+);
+
+/** The fields whose value we must be able to justify. */
+export const PROVENANCE_FIELDS = [
+  "term",
+  "eligibility",
+  "amount",
+  "effort",
+  "award_count",
+  "sponsor_type",
+] as const;
+export type ProvenanceField = (typeof PROVENANCE_FIELDS)[number];
+
+/**
+ * How a stored value was arrived at.
+ *
+ * `source_value`       — the source stated it; we copied it.
+ * `deterministic_rule` — a parser rule fired; `ruleId`/`ruleVersion` name it.
+ * `llm`                — a model decided it; `confidence` says how sure it was.
+ * `human`              — a person set it.
+ *
+ * Deterministic fields record a rule rather than a confidence number on
+ * purpose: "0.97 confident" is a guess about a guess, while "term-v3 rule 12"
+ * is a fact you can re-run and get the same answer.
+ */
+export const EXTRACTION_METHODS = [
+  "source_value",
+  "deterministic_rule",
+  "llm",
+  "human",
+] as const;
+export type ExtractionMethod = (typeof EXTRACTION_METHODS)[number];
+
+/**
+ * Why this field holds the value it holds — the record that lets us reproduce a
+ * normalization or enrichment decision later.
+ *
+ * Append-only: a re-parse writes a new row and stamps the old one
+ * `supersededAt` instead of overwriting it, so "why did it say Summer 2026 in
+ * March" has an answer. The partial unique index keeps exactly one current row
+ * per field, which is what the feed reads.
+ */
+export const postingFieldProvenance = pgTable(
+  "posting_field_provenance",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postingId: uuid("posting_id")
+      .notNull()
+      .references(() => postings.id, { onDelete: "cascade" }),
+    /** Which source's data justified the value. Null when derived locally. */
+    sourceId: uuid("source_id").references(() => sources.id, { onDelete: "set null" }),
+    field: text("field").$type<ProvenanceField>().notNull(),
+    method: text("method").$type<ExtractionMethod>().notNull(),
+
+    /** 0..1, required for `llm`, null for rules and copied source values. */
+    confidence: real("confidence"),
+    ruleId: text("rule_id"),
+    ruleVersion: text("rule_version"),
+    /** The snippet that decided it — short, and never a full private payload. */
+    evidence: text("evidence"),
+    /** The value produced, as text, so history reads without joining `postings`. */
+    valueText: text("value_text"),
+
+    decidedAt: timestamp("decided_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Set when a later decision replaced this one. Null = current. */
+    supersededAt: timestamp("superseded_at", { withTimezone: true }),
+  },
+  (t) => [
+    // Exactly one current row per (posting, field); history keeps the rest.
+    uniqueIndex("posting_field_provenance_current")
+      .on(t.postingId, t.field)
+      .where(sql`${t.supersededAt} is null`),
+    index("posting_field_provenance_posting_idx").on(t.postingId),
+    index("posting_field_provenance_field_idx").on(t.field),
+  ],
+);
+
+/**
+ * The lifecycle transitions we can prove happened, in order.
+ *
+ * `postings` holds the *current* state; this holds what happened. The two are
+ * kept apart on purpose — `lastSeenAt` answers "when did we last see it" and
+ * `confirmedAt` answers "when did its own source last vouch for it", and
+ * collapsing them into one column is how a product ends up claiming a 2023
+ * posting was confirmed this morning.
+ */
+export const LIFECYCLE_EVENTS = [
+  "first_seen",
+  "confirmed",
+  "last_seen",
+  "missing_1",
+  "closed",
+  "reopened",
+  "quarantined",
+  "unquarantined",
+  "rejected",
+  "term_flagged",
+  "term_unflagged",
+] as const;
+export type LifecycleEvent = (typeof LIFECYCLE_EVENTS)[number];
+
+export const postingLifecycleEvents = pgTable(
+  "posting_lifecycle_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postingId: uuid("posting_id")
+      .notNull()
+      .references(() => postings.id, { onDelete: "cascade" }),
+    event: text("event").$type<LifecycleEvent>().notNull(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    /** Which ingest run made the change, when it came from one. */
+    runId: uuid("run_id").references(() => ingestRuns.id, { onDelete: "set null" }),
+    /** The source whose observation caused it. */
+    sourceId: uuid("source_id").references(() => sources.id, { onDelete: "set null" }),
+    /** Small structured context: strike counts, prior values, reason codes. */
+    detail: jsonb("detail"),
+  },
+  (t) => [
+    index("posting_lifecycle_posting_at_idx").on(t.postingId, t.at),
+    index("posting_lifecycle_event_at_idx").on(t.event, t.at),
+  ],
+);
+
+/**
+ * Independent portals that also list this scholarship.
+ *
+ * The corroboration signal behind "two universities' financial-aid pages list
+ * this same award, and neither copied the other". Kept separate from
+ * `posting_sources` because a corroborating page is evidence about a listing's
+ * reality, not a place we fetched the listing from.
+ */
+export const postingCorroborations = pgTable(
+  "posting_corroborations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postingId: uuid("posting_id")
+      .notNull()
+      .references(() => postings.id, { onDelete: "cascade" }),
+    /** The portal that also lists it. */
+    portalSourceId: uuid("portal_source_id")
+      .notNull()
+      .references(() => sources.id, { onDelete: "cascade" }),
+    /** The university/operator behind that portal, when it is one organisation. */
+    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "set null" }),
+    /** That portal's own id for the listing, when it exposes one. */
+    sourceRef: text("source_ref").notNull().default(""),
+    url: text("url"),
+    listedAt: timestamp("listed_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("posting_corroboration_unique").on(t.postingId, t.portalSourceId, t.sourceRef),
+    index("posting_corroboration_portal_idx").on(t.portalSourceId),
+    // "Which scholarships do multiple independent portals agree on?"
+    index("posting_corroboration_posting_idx").on(t.postingId),
   ],
 );
 

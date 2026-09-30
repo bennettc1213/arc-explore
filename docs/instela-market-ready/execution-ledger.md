@@ -1,7 +1,7 @@
 # Instela Market-Ready Execution Ledger
 
 **Purpose:** Track every `INS-###` prompt from `INSTELA_MARKET_READY_MASTER_IMPLEMENTATION_PLAN.md` through completion.  
-**Updated:** 2026-09-27
+**Updated:** 2026-09-29
 
 ## Legend
 
@@ -40,7 +40,7 @@
 
 | ID | Short name | Status | Date | Evidence / notes |
 |---|---|---|---|---|
-| INS-012 | Source registry / provenance model | PARTIAL | — | `organizations` + `posting_sources` give source identity; no formal approval/robots/terms/crawler registry. |
+| INS-012 | Source registry / provenance model | PARTIAL | 2026-09-29 | **Model, migration, backfill, inspection, and gate delivered and verified; runtime enforcement deferred to INS-064.** Migration `0025_source_registry.sql` adds `sources` (authority, state, poll tier, terms/robots review, crawler contact, last complete poll, secret-free `adapter_config`), `discovery_candidates`, `posting_field_provenance`, `posting_lifecycle_events`, `posting_corroborations`, `postings.publication_state`/`freshness_tier`/`confirmed_at`/`authoritative_source_id`, and `posting_sources.registry_source_id`/`authority`/`is_authoritative_observation`, with FKs and a `postings(publication_state, closed_at)` index. Rehearsed on staging project `dgkjfmohtphrmispucwf` only: 26 migrations, 22 tables, `schema.ts` ≡ `0025_snapshot.json` ≡ live DB (zero drift). `scripts/backfill-source-registry.ts` is dry-run-by-default, single-transaction, production-guarded, and idempotent — dry run predicted the apply exactly and a repeat apply changed 0 rows; open postings resolved 3 verified / 1 candidate / 1 unverified / 2 quarantined = 100% accounted, 6 observations linked, 1 left unmapped for an unregistered provider, 1 corroboration, 3 field-provenance rows, 5 lifecycle events, user profile/saved-search/match intact. `scripts/inspect-source-registry.ts` is a redacted read-only inspector. `src/lib/ingest/publication-gate.ts` is pure and DB-free with 18 tests. `npm run typecheck` clean, `npm test` **906/906**, `npm run build` green. **Not satisfied:** criterion 2 is unmet at runtime — no read path filters on `publication_state` (`getFeed`, `getPosting`, `getLotteryAwards`, `getFeedStats`, `getCompletionCorpus`, `getAvailableTerms`, `findPostingByUrl`), `insertPostings` never writes the state so new rows default to `unverified`, and `postings_public_read` is `USING (true)` so PostgREST bypasses app filters. Tracked as **INS-064**. Read-only production dry run additionally found `job-boards.greenhouse.io` and `job-boards.eu.greenhouse.io` were missing from the own-board host list, under-recognizing 76 of 179 open zero-observation rows; fixed to 179/179. **Nothing committed, pushed, or deployed; migration 0025 was NOT applied to production and no production row was written.** |
 | INS-013 | Shared idempotent ingestion state machine | PARTIAL | — | `src/lib/ingest/*` provides reconciler/persister; no explicit `successful_complete`/`partial`/`failed` contract typed across adapters. |
 | INS-014 | Polling cadence / observability | PARTIAL | — | `ingestRuns`, `pollIntervalSec`, `npm run ingest:status` exist; cadences do not match report tiers. |
 | INS-015 | GitHub audit / data-spine gate | PARTIAL | — | `src/lib/github/*` audit exists; caching is ~15 min via Next fetch, not report's 24 h. |
@@ -127,6 +127,14 @@
 | INS-061 | Outcome-based calibration | NOT STARTED | — | NON-BLOCKING. |
 | INS-062 | $7.99 price experiment | NOT STARTED | — | NON-BLOCKING. |
 | INS-063 | B2B2C discovery | NOT STARTED | — | NON-BLOCKING. |
+
+---
+
+## Follow-up tickets (added after the original index)
+
+| ID | Short name | Status | Date | Evidence / notes |
+|---|---|---|---|---|
+| INS-064 | Enforce the publication gate in the read/ingest/RLS paths | NOT STARTED | — | Added 2026-09-29 to carry the unmet second acceptance criterion of INS-012. Its runtime write path, app-level filter, and RLS tightening must ship together; a feed filter enabled before the ingest writer would empty the live feed. **Blocking INS-012 from `PASS`.** |
 
 ---
 
@@ -487,3 +495,4 @@
 | INS-061 | Outcome calibration |
 | INS-062 | $7.99 test |
 | INS-063 | B2B2C discovery |
+| INS-064 | Publication-gate enforcement |
