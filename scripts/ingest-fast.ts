@@ -29,14 +29,24 @@ async function main() {
 
   console.log(
     [
-      `tier A run ${res.runId}`,
-      `  boards polled     : ${res.orgsPolled} (${res.notModified} unchanged, ${res.errors} failed)`,
+      `tier A run ${res.runId} [${res.status}]`,
+      `  boards polled     : ${res.orgsPolled} (${res.notModified} unchanged, ${res.errors} failed, ${res.incomplete} partial)`,
       `  skipped for time  : ${res.orgsSkippedForTime}`,
       `  postings seen     : ${res.postingsSeen}`,
       `  new               : ${res.postingsNew}`,
+      `  updated           : ${res.postingsUpdated}`,
+      `  unchanged         : ${res.postingsUnchanged}`,
+      `  missing (1st)     : ${res.postingsMissing1}`,
       `  closed            : ${res.postingsClosed}`,
       `  reopened          : ${res.postingsReopened}`,
-      `  close suppressed  : ${res.closeSuppressed} board(s)`,
+      `  rejected          : ${res.postingsRejected}`,
+      `  close suppressed  : ${res.closeSuppressed} board(s)${
+        Object.keys(res.suppressedByCause).length
+          ? ` (${Object.entries(res.suppressedByCause)
+              .map(([cause, n]) => `${cause}: ${n}`)
+              .join(", ")})`
+          : ""
+      }`,
       `  descriptions      : ${res.backfill.enriched}/${res.backfill.attempted} backfilled`,
       `  duration          : ${(res.durationMs / 1000).toFixed(1)}s`,
     ].join("\n"),
@@ -56,6 +66,19 @@ async function main() {
   if (attempted > 0 && res.errors > attempted / 2) {
     console.error(`\nFAILED: ${res.errors}/${attempted} boards errored — that is not normal`);
     process.exit(1);
+  }
+
+  /*
+   * Partial reads do not fail the job — the rows we did read were persisted, and
+   * nothing was closed. But a majority of boards being only partially readable
+   * is the same kind of systemic signal as a majority erroring, so it is
+   * surfaced without exiting non-zero.
+   */
+  if (attempted > 0 && res.incomplete > attempted / 2) {
+    console.error(
+      `\nWARNING: ${res.incomplete}/${attempted} boards were only partially read — ` +
+        `freshness is degraded upstream, and a run of these will hold back updates`,
+    );
   }
 }
 

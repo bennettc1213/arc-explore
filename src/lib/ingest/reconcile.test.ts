@@ -78,6 +78,32 @@ describe("reconcile", () => {
     assert.equal(plan.toTouch.length, 1);
   });
 
+  it("classifies an unchanged row only when the predicate says it would not change", () => {
+    // The predicate is injected because the pure planner cannot know what a
+    // touch would write. The branch direction here is what a regression once
+    // got backwards: the callback was named `unchangedBy` but returned "would
+    // change", so `else if (unchangedBy(p)) unchanged.push(p)` filed every
+    // real change as a no-op and every no-op as a change. These two tests pin
+    // the direction; without them the wiring has no coverage at all.
+    const p = preparePosting(posting());
+    const existing: ExistingPosting[] = [
+      existingRow(p.canonicalHash, { changedBy: () => false }),
+    ];
+    const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
+    assert.equal(plan.toTouch.length, 1);
+    assert.deepEqual(plan.unchanged.map((u) => u.canonicalHash), [p.canonicalHash]);
+  });
+
+  it("classifies a changed row as a touch, not as unchanged", () => {
+    const p = preparePosting(posting());
+    const existing: ExistingPosting[] = [
+      existingRow(p.canonicalHash, { changedBy: () => true }),
+    ];
+    const plan = reconcile({ incoming: [posting()], existing, totalOnBoard: 50 });
+    assert.equal(plan.toTouch.length, 1);
+    assert.deepEqual(plan.unchanged, []);
+  });
+
   it("does not close on a single absence — only increments a strike", () => {
     // The two-observation rule: one scrape that loses a row is as flaky as a
     // single 404 on the apply URL (linkcheck.ts). The posting is not closed;

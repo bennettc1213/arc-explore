@@ -54,6 +54,14 @@ export interface LifecyclePlan {
   toResetMissing: LifecycleCandidate[];
   /** True when the close/miss step was suppressed by a failed or empty poll. */
   closeSuppressed: boolean;
+  /**
+   * Why closes were suppressed.
+   *
+   * A suppression is the system choosing to hold its data rather than destroy
+   * it, which is exactly when someone needs to know it happened. Left as a code
+   * rather than prose so a run can count suppressions by cause.
+   */
+  closeSuppressedReason?: "poll_incomplete" | "empty_scrape";
 }
 
 const DEFAULTS: LifecycleOptions = {
@@ -83,13 +91,17 @@ export function computeLifecycleTransitions(
     closeSuppressed: false,
   };
 
+  // Ordered so the more fundamental cause is reported: an incomplete poll
+  // explains an empty result better than "the board was empty" does.
   if (!options.successfulComplete) {
     plan.closeSuppressed = true;
+    plan.closeSuppressedReason = "poll_incomplete";
     return plan;
   }
 
   if (options.suppressOnEmptySeen && seenHashes.length === 0) {
     plan.closeSuppressed = true;
+    plan.closeSuppressedReason = "empty_scrape";
     return plan;
   }
 

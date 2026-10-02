@@ -11,6 +11,7 @@
  * text is fetched per-job only for postings we actually care about.
  */
 
+import { incomplete, validateRows } from "../contract";
 import { htmlToText } from "../html";
 import { getJson } from "../http";
 import type { BoardAdapter, FetchBoardResult, SourcePosting } from "../types";
@@ -58,7 +59,35 @@ export const greenhouse: BoardAdapter = {
       return { postings: [], etag: res.etag, notModified: true };
     }
 
-    const postings: SourcePosting[] = (res.data.jobs ?? []).map((j) => {
+    // A 200 with a body that is not the documented shape is a broken response,
+    // not an empty board. Treating it as empty would make every posting on the
+    // board look absent, and two polls later the whole registry closes.
+    //
+    // The key must be *present*, not merely well-typed when present: an error
+    // body such as `{"error":"not found"}` has no `jobs` key at all, and
+    // defaulting that to `[]` is what previously turned a dead board into a
+    // complete empty one. A genuinely empty board returns `{"jobs":[]}`.
+    if (!res.data || !Array.isArray(res.data.jobs)) {
+      return {
+        postings: [],
+        etag: res.etag,
+        notModified: false,
+        successfulComplete: false,
+        completeness: incomplete("malformed_response", 1, res.data.meta?.total ?? null),
+      };
+    }
+
+    const raw = res.data.jobs;
+
+    // Greenhouse publishes `meta.total` for the unpaginated list endpoint. If it
+    // disagrees with what arrived, we did not read the whole board.
+    const claimedTotal = res.data.meta?.total ?? null;
+    const completeness =
+      claimedTotal !== null && raw.length < claimedTotal
+        ? incomplete("short_page", 1, claimedTotal)
+        : { complete: true, pagesFetched: 1, claimedTotal };
+
+    const postings: SourcePosting[] = raw.map((j) => {
       const locations = splitLocations(j.location?.name);
       return {
         source: "greenhouse",
@@ -77,7 +106,18 @@ export const greenhouse: BoardAdapter = {
       };
     });
 
-    return { postings, etag: res.etag, notModified: false };
+    // A row without an id cannot be deduplicated on replay; drop it and say so
+    // rather than letting it land under a title-derived key.
+    const { valid, rejected } = validateRows(postings);
+
+    return {
+      postings: valid,
+      etag: res.etag,
+      notModified: false,
+      successfulComplete: completeness.complete,
+      completeness,
+      rejected,
+    };
   },
 };
 

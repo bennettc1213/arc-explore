@@ -43,6 +43,27 @@ export interface ExistingPosting {
   missingSince: Date | null;
   /** Provenance currently stored for the listing's term. */
   termSource?: "explicit" | "inferred" | "unknown" | null;
+  /**
+   * Would this poll change the row? Injected by `persist.ts`.
+   *
+   * True means the stored content would be rewritten. The name matters here: an
+   * earlier version called this `unchangedBy` and branched on it as
+   * `else if (prev.unchangedBy?.(p)) unchanged.push(p)`, which read as
+   * "true means unchanged" — the opposite of what the implementation returned.
+   * The two disagreed in both directions and neither was caught by the unit
+   * suite, because it tests the pure planner and this predicate only exists at
+   * the call site: a changed row was counted as unchanged, and a genuinely
+   * unchanged row was counted as updated. So a run's headline number was
+   * exactly inverted, and a steady-state board looked like it had rewritten
+   * every posting on it.
+   *
+   * Injected as a closure over the stored row already fetched, rather than
+   * widening this type with a dozen more fields the pure logic has no use for.
+   * Optional, and defaulting to "changed" when absent, so a caller that does not
+   * supply it keeps the previous behaviour of treating every present row as a
+   * touch.
+   */
+  changedBy?: (incoming: PreparedPosting) => boolean;
 }
 
 /** The term columns written to a listing, as a partial update. */
@@ -191,10 +212,20 @@ export interface ReconcilePlan {
   toIncrementMissing: LifecycleCandidate[];
   /** Postings that returned after a prior absence: clear `missingStrikes`. */
   toResetMissing: LifecycleCandidate[];
+  /**
+   * Postings whose stored content this poll would not change.
+   *
+   * Split out from `toTouch` so a run can report "seen, nothing moved" without
+   * re-reading rows to find out, which is what makes a steady-state poll
+   * distinguishable from one that is churning.
+   */
+  unchanged: PreparedPosting[];
   /** Postings dropped by the early-career filter. */
   filteredOut: number;
   /** True when the close step was skipped by the liveness guard. */
   closeSuppressed: boolean;
+  /** Why closes were skipped, when they were. */
+  closeSuppressedReason?: "poll_incomplete" | "empty_scrape";
 }
 
 /** Normalize one source posting into the shape we store. */
@@ -282,6 +313,7 @@ export function reconcile(input: ReconcileInput): ReconcilePlan {
 
   const toInsert: PreparedPosting[] = [];
   const toTouch: PreparedPosting[] = [];
+  const unchanged: PreparedPosting[] = [];
   const toReopen: PreparedPosting[] = [];
 
   for (const [hash, p] of byHash) {
@@ -291,9 +323,20 @@ export function reconcile(input: ReconcileInput): ReconcilePlan {
     } else if (prev.closedAt) {
       // A reposted role — clear the closure rather than creating a duplicate.
       toReopen.push(p);
-    } else {
-      toTouch.push(p);
-    }
+} else if (prev.changedBy?.(p) === false) {
+        /*
+         * Present, open, and this poll would write nothing.
+         *
+         * Still counted in `toTouch`, because `last_seen_at` must advance — that
+         * is what proves the listing is live, and skipping it would let a
+         * steady-state board's postings go stale in the freshness index. The
+         * separate list exists so a run can report what actually changed.
+         */
+        unchanged.push(p);
+        toTouch.push(p);
+      } else {
+        toTouch.push(p);
+      }
   }
 
   /*
@@ -341,8 +384,10 @@ export function reconcile(input: ReconcileInput): ReconcilePlan {
     toTouch,
     toClose: lifecycle.toClose.map((c) => c.canonicalHash),
     toReopen,
+    unchanged,
     filteredOut,
     closeSuppressed: lifecycle.closeSuppressed,
+    closeSuppressedReason: lifecycle.closeSuppressedReason,
     toIncrementMissing: lifecycle.toIncrementMissing,
     toResetMissing: lifecycle.toResetMissing,
   };

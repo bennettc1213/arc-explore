@@ -18,6 +18,7 @@
  */
 
 import { htmlToText } from "../html";
+import { PageLedger, validateRows, type FetchCompleteness } from "../contract";
 import { getJson, repairMojibake } from "../http";
 import type { BoardAdapter, FetchBoardResult, SourcePosting } from "../types";
 
@@ -154,7 +155,25 @@ export const smartrecruiters: BoardAdapter = {
   async fetchBoard(slug: string): Promise<FetchBoardResult> {
     const byId = new Map<string, SrPosting>();
 
+    // Failures seen anywhere in the sweep. A collection rather than a reassigned
+    // `let` so the value is the same whether it is written from this scope or
+    // from inside the page loop. Only the first is reported: it is the root
+    // cause, and the rest are usually its consequences.
+    const sweepFailures: { reason: NonNullable<FetchCompleteness["reason"]>; detail: string }[] = [];
+    const noteFailure = (
+      reason: NonNullable<FetchCompleteness["reason"]>,
+      detail: string,
+    ) => {
+      if (sweepFailures.length === 0) sweepFailures.push({ reason, detail });
+    };
+
     for (const q of QUERIES) {
+      // Completeness is tracked *per query*. The queries partition the board
+      // rather than paging it, so their row counts add up to duplicates and a
+      // shared ledger would compare the whole sweep's rows against one query's
+      // total and call a healthy board short.
+      const ledger = new PageLedger();
+
       for (let page = 0; page < MAX_PAGES_PER_QUERY; page++) {
         const offset = page * PAGE_SIZE;
         const url =
@@ -162,16 +181,54 @@ export const smartrecruiters: BoardAdapter = {
           `?q=${encodeURIComponent(q)}&limit=${PAGE_SIZE}&offset=${offset}`;
 
         const res = await getJson<SrResponse>(url);
-        const content = res.data?.content ?? [];
+
+        // `content` must be present and be an array. SmartRecruiters answers an
+        // unknown company with a 200 and a `message`, so defaulting a missing
+        // key to `[]` would report the whole board as genuinely empty — the one
+        // answer that may close every listing on it.
+        if (!res.data || !Array.isArray(res.data.content)) {
+          ledger.fail("malformed_response", `query "${q}" returned a body without a content array`);
+          break;
+        }
+
+        const content = res.data.content;
+        const total = typeof res.data.totalFound === "number" ? res.data.totalFound : null;
+        ledger.addPage(content, total);
         for (const p of content) {
           if (p?.id) byId.set(p.id, p);
         }
 
-        const total = res.data?.totalFound ?? 0;
-        if (content.length < PAGE_SIZE || offset + PAGE_SIZE >= total) break;
+        // The source is exhausted for this query: either it gave us a short
+        // page, or it told us there is nothing past this offset. A source that
+        // reports no total is trusted at the end of its first page, since
+        // there is nothing to contradict.
+        if (content.length < PAGE_SIZE || (total !== null && offset + content.length >= total)) {
+          break;
+        }
+
+        // We still want more and our own cap says stop. That is a truncated
+        // read, and the rows we never fetched are exactly the rows that would
+        // then look absent and eventually close.
+        if (page === MAX_PAGES_PER_QUERY - 1) {
+          ledger.fail(
+            "page_cap_reached",
+            `query "${q}" exceeds ${MAX_PAGES_PER_QUERY * PAGE_SIZE} rows`,
+          );
+        }
+      }
+
+      const queryResult = ledger.completeness();
+      if (!queryResult.complete) {
+        noteFailure(
+          queryResult.reason ?? "short_page",
+          queryResult.detail ?? `query "${q}" incomplete`,
+        );
       }
     }
 
+    // A truncated sweep still keeps every row it did read. Incompleteness
+    // suppresses absence, not ingestion, so the fresh rows land and nothing
+    // closes on the strength of the gap.
     const postings: SourcePosting[] = [...byId.values()].map((p) => {
       const companyIdentifier = p.company?.identifier ?? slug;
       const loc = p.location;
@@ -195,8 +252,31 @@ export const smartrecruiters: BoardAdapter = {
       };
     });
 
+    const { valid, rejected } = validateRows(postings);
+
+    // Verdict for the sweep: complete only if every query completed. The rows we
+    // read are still returned — incompleteness suppresses closing, not
+    // ingestion.
+    const sweepFailure = sweepFailures[0];
+    const completeness: FetchCompleteness = sweepFailure
+      ? {
+          complete: false,
+          reason: sweepFailure.reason,
+          detail: sweepFailure.detail,
+          pagesFetched: byId.size,
+          claimedTotal: null,
+        }
+      : { complete: true, pagesFetched: 1, claimedTotal: byId.size };
+
     // This adapter queries rather than mirroring a whole board, so a stable
     // ETag is not meaningful here.
-    return { postings, etag: null, notModified: false };
+    return {
+      postings: valid,
+      etag: null,
+      notModified: false,
+      successfulComplete: completeness.complete,
+      completeness,
+      rejected,
+    };
   },
 };
