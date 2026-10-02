@@ -14,6 +14,7 @@ import {
   markPolled,
   persistPoll,
   postingsMissingDescription,
+  recordIncompletePoll,
   recordPollFailure,
   type PollOutcome,
 } from "./persist";
@@ -135,13 +136,35 @@ export interface PollOrgInput {
   etag?: string | null;
 }
 
+export interface PollOrgOptions {
+  /**
+   * The run this poll belongs to, threaded through to the replay guard.
+   *
+   * Supplying it makes `persistPoll` idempotent per (org, run). Omit it and a
+   * retried poll re-applies, which is how a single absence used to become a
+   * closure — so every scheduled caller passes it.
+   */
+  runId?: string;
+}
+
+/** How a poll ended, as the caller needs to count it. */
+export type PollOrgResult =
+  | { ok: true; outcome: PollOutcome }
+  /**
+   * A board that could not be fully read. `incomplete` distinguishes a partial
+   * read from a hard failure: both block closing, but only a partial read still
+   * persisted rows, and it carries that `outcome` so the caller can credit them.
+   */
+  | { ok: false; error: string; incomplete?: boolean; outcome?: PollOutcome };
+
 /**
  * Poll one org end to end. Never throws — a board failure is recorded against
  * the org and reported, so one bad board cannot abort a whole cron run.
  */
 export async function pollOrg(
   org: PollOrgInput,
-): Promise<{ ok: true; outcome: PollOutcome } | { ok: false; error: string }> {
+  opts?: PollOrgOptions,
+): Promise<PollOrgResult> {
   const adapter = org.atsSlug ? ADAPTERS[org.atsType] : undefined;
   if (!adapter || !org.atsSlug) {
     const error = `no adapter for atsType=${org.atsType} slug=${org.atsSlug ?? "null"}`;
@@ -155,6 +178,8 @@ export async function pollOrg(
       notModified,
       etag,
       successfulComplete = true,
+      completeness,
+      rejected,
     } = await adapter.fetchBoard(org.atsSlug, {
       etag: org.etag,
     });
@@ -171,8 +196,12 @@ export async function pollOrg(
           orgId: org.id,
           inserted: 0,
           touched: 0,
+          updated: 0,
+          unchanged: 0,
+          missing1: 0,
           closed: 0,
           reopened: 0,
+          rejected: 0,
           filteredOut: 0,
           closeSuppressed: false,
           totalOnBoard: 0,
@@ -181,17 +210,71 @@ export async function pollOrg(
       };
     }
 
-    if (!successfulComplete) {
-      const error = `${org.name}: poll did not complete successfully (partial or failed)`;
-      await recordPollFailure(org.id, error);
-      return { ok: false, error };
-    }
+    /*
+     * An incomplete read is a failure, not a thin success.
+     *
+     * It is recorded as one because the board was not fully read: the poll
+     * timestamp must still advance so the org is not re-polled in a tight loop,
+     * but `lastPollOk` stays false so the backoff clock and the run's error count
+     * both reflect it. Treating it as `ok: false` would abandon rows we did
+     * read — a large SmartRecruiters sweep usually yields most of its postings
+     * before hitting a cap, and discarding those costs real freshness for no
+     * benefit. `successfulComplete: false` down to `persistPoll` is what
+     * suppresses every close.
+     */
+if (!successfulComplete) {
+        const reason =
+          completeness?.reason ?? "poll did not complete successfully";
+        const detail = completeness?.detail ? ` (${completeness.detail})` : "";
+
+        /*
+         * The rows we did read are still worth having: a large SmartRecruiters
+         * sweep usually yields most of its postings before hitting a cap, and
+         * discarding those costs real freshness for no benefit. They are
+         * persisted with `successfulComplete: false`, which is what suppresses
+         * every close — incompleteness must suppress *closing*, not ingestion.
+         *
+         * The result is still reported as a failure, because the board was not
+         * fully read and the operator needs to know that. The poll timestamp
+         * advances so the org is not re-polled in a tight loop, while
+         * `lastPollOk` stays false so the backoff clock and the run's error count
+         * both reflect it. The outcome rides along on the failure so the caller
+         * can still credit the rows that landed.
+         */
+        const totalOnBoard = postings.length;
+        const enriched = await enrichDescriptions(
+          adapter.name,
+          org.atsSlug,
+          postings,
+        );
+        const outcome = await persistPoll(org.id, enriched, totalOnBoard, etag, {
+          successfulComplete: false,
+          runId: opts?.runId,
+          rejectedByValidation: rejected ?? 0,
+        });
+
+        await recordIncompletePoll(org.id, `${org.name}: ${reason}${detail}`, {
+          pagesFetched: completeness?.pagesFetched ?? 0,
+          claimedTotal: completeness?.claimedTotal ?? null,
+          rowsHeld: postings.length,
+          rowsPersisted: outcome.inserted + outcome.touched,
+        });
+
+        return {
+          ok: false,
+          error: `${reason}${detail}`,
+          incomplete: true,
+          outcome,
+        };
+      }
 
     const totalOnBoard = postings.length;
     const enriched = await enrichDescriptions(adapter.name, org.atsSlug, postings);
-    const outcome = await persistPoll(org.id, enriched, totalOnBoard, etag, {
-      successfulComplete: true,
-    });
+const outcome = await persistPoll(org.id, enriched, totalOnBoard, etag, {
+        successfulComplete: true,
+        runId: opts?.runId,
+        rejectedByValidation: rejected ?? 0,
+      });
     return { ok: true, outcome };
   } catch (e) {
     // Bounded and cause-aware: this string goes straight into

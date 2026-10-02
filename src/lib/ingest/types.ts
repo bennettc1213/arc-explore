@@ -1,5 +1,7 @@
 /** Shared contract every ingestion adapter produces. */
 
+import type { FetchCompleteness } from "./contract";
+
 /** Feeds we pull from. `simplify` is discovery-only — see sources/simplify.ts.
  *  `usajobs` is a whole-government search rather than one employer's board, so
  *  it has no `BoardAdapter` — see sources/usajobs.ts. */
@@ -60,8 +62,22 @@ export interface FetchBoardResult {
    * meaningful: timeouts, network errors, 5xx, blocks/403, partial pagination,
    * parser failures, or validation failures. Defaults to true for existing
    * adapters.
+   *
+   * Optional only for compatibility with adapters that are not yet paginated
+   * and therefore cannot truncate. Once an adapter pages, it must set this
+   * explicitly — see `contract.ts`, which is why the pagination helpers live
+   * there and not in each source file.
    */
   successfulComplete?: boolean;
+  /**
+   * Provenance of the result itself: how many pages were read, what total the
+   * source claimed, and why the read is incomplete when it is. Recorded on the
+   * lifecycle event and the run so "the board shrank" is distinguishable from
+   * "we failed to read the board".
+   */
+  completeness?: FetchCompleteness;
+  /** Rows dropped for failing minimum validation, per requirement 5. */
+  rejected?: number;
 }
 
 export interface BoardAdapter {

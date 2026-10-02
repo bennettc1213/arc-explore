@@ -17,8 +17,9 @@
  *    legally and better data.
  */
 
+import { deriveRunStatus, type RunStatus } from "@/db/schema";
 import { mapLimit } from "./http";
-import { orgsDueForPoll, upsertOrg } from "./persist";
+import { orgsDueForPoll, upsertOrg, type PollOutcome } from "./persist";
 import { backfillDescriptions, pollOrg } from "./poll";
 import { finishRun, startRun } from "./runs";
 import { discoverOrgs } from "./sources/simplify";
@@ -57,15 +58,28 @@ export interface TierAOptions {
 
 export interface TierAResult {
   runId: string;
+  /** The four-way outcome, recorded on the run row itself. */
+  status: RunStatus;
   orgsPolled: number;
   orgsSkippedForTime: number;
   notModified: number;
   postingsSeen: number;
   postingsNew: number;
+  /** Known rows this poll rewrote. */
+  postingsUpdated: number;
+  /** Known rows this poll confirmed unchanged. */
+  postingsUnchanged: number;
+  postingsMissing1: number;
   postingsClosed: number;
   postingsReopened: number;
+  /** Dropped by the early-career filter or minimum validation. */
+  postingsRejected: number;
   closeSuppressed: number;
+  /** Close suppressions by cause, so a run full of them is explainable. */
+  suppressedByCause: Record<string, number>;
   errors: number;
+  /** Boards read only partially. Counted separately from hard failures. */
+  incomplete: number;
   errorSamples: string[];
   backfill: { attempted: number; enriched: number };
   durationMs: number;
@@ -87,11 +101,34 @@ export async function runTierA(opts: TierAOptions = {}): Promise<TierAResult> {
   let notModified = 0;
   let postingsSeen = 0;
   let postingsNew = 0;
+  let postingsUpdated = 0;
+  let postingsUnchanged = 0;
+  let postingsMissing1 = 0;
   let postingsClosed = 0;
   let postingsReopened = 0;
+  let postingsRejected = 0;
   let closeSuppressed = 0;
   let errors = 0;
+  let incomplete = 0;
+  const suppressedByCause: Record<string, number> = {};
   const errorSamples: string[] = [];
+
+  /** Fold one board's outcome into the run totals. */
+  const accumulate = (o: PollOutcome) => {
+    postingsSeen += o.totalOnBoard;
+    postingsNew += o.inserted;
+    postingsUpdated += o.updated;
+    postingsUnchanged += o.unchanged;
+    postingsMissing1 += o.missing1;
+    postingsClosed += o.closed;
+    postingsReopened += o.reopened;
+    postingsRejected += o.rejected;
+    if (o.closeSuppressed) {
+      closeSuppressed++;
+      const cause = o.closeSuppressedReason ?? "unknown";
+      suppressedByCause[cause] = (suppressedByCause[cause] ?? 0) + 1;
+    }
+  };
 
   await mapLimit(due, concurrency, async (org) => {
     if (Date.now() - startedAt > budgetMs) {
@@ -99,16 +136,30 @@ export async function runTierA(opts: TierAOptions = {}): Promise<TierAResult> {
       return;
     }
 
-    const res = await pollOrg({
-      id: org.id,
-      name: org.name,
-      atsType: org.atsType,
-      atsSlug: org.atsSlug,
-      etag: org.etag,
-    });
+    // `runId` makes this poll idempotent. A CI retry, an overlapping cycle, or
+    // a manual re-poll would otherwise re-apply the same absence and close
+    // listings that only went missing once.
+    const res = await pollOrg(
+      {
+        id: org.id,
+        name: org.name,
+        atsType: org.atsType,
+        atsSlug: org.atsSlug,
+        etag: org.etag,
+      },
+      { runId },
+    );
 
     if (!res.ok) {
       errors++;
+      // A partial read is counted apart from a hard failure: the two mean
+      // different things and an operator debugging a stale board needs to know
+      // which one it was.
+      if (res.incomplete) incomplete++;
+      // A partial read still persisted the rows it did fetch. Crediting them
+      // here is the difference between "this poll did nothing" and "this poll
+      // did half the work and we know why".
+      if (res.outcome) accumulate(res.outcome);
       // A handful of samples, not every failure — the row is for diagnosis,
       // not a log dump.
       if (errorSamples.length < 10) errorSamples.push(`${org.name}: ${res.error}`);
@@ -116,13 +167,23 @@ export async function runTierA(opts: TierAOptions = {}): Promise<TierAResult> {
     }
 
     orgsPolled++;
-    const o = res.outcome;
-    if (o.notModified) notModified++;
-    postingsSeen += o.totalOnBoard;
-    postingsNew += o.inserted;
-    postingsClosed += o.closed;
-    postingsReopened += o.reopened;
-    if (o.closeSuppressed) closeSuppressed++;
+    if (res.outcome.notModified) notModified++;
+    accumulate(res.outcome);
+  });
+
+  /*
+   * `changed` is what separates "the run worked and nothing moved" from "the run
+   * did not work". A steady-state run — every board 304, or every row
+   * unchanged — is the system doing exactly its job, and it must not be
+   * reported as a failure or it will be alerted on every cycle.
+   */
+  const changed =
+    postingsNew + postingsUpdated + postingsClosed + postingsReopened + postingsMissing1;
+
+  const status = deriveRunStatus({
+    attempted: due.length,
+    succeeded: orgsPolled,
+    changed,
   });
 
   // Runs on its own cadence: once ETags are warm most boards answer 304, so a
@@ -132,15 +193,22 @@ export async function runTierA(opts: TierAOptions = {}): Promise<TierAResult> {
 
   const result: TierAResult = {
     runId,
+    status,
     orgsPolled,
     orgsSkippedForTime,
     notModified,
     postingsSeen,
     postingsNew,
+    postingsUpdated,
+    postingsUnchanged,
+    postingsMissing1,
     postingsClosed,
     postingsReopened,
+    postingsRejected,
     closeSuppressed,
+    suppressedByCause,
     errors,
+    incomplete,
     errorSamples,
     backfill,
     durationMs: Date.now() - startedAt,
@@ -152,12 +220,19 @@ export async function runTierA(opts: TierAOptions = {}): Promise<TierAResult> {
     postingsNew,
     postingsClosed,
     errors,
+    status,
     detail: {
       due: due.length,
       orgsSkippedForTime,
       notModified,
+      postingsUpdated,
+      postingsUnchanged,
+      postingsMissing1,
       postingsReopened,
+      postingsRejected,
       closeSuppressed,
+      suppressedByCause,
+      incomplete,
       backfill,
       errorSamples,
       durationMs: result.durationMs,
@@ -242,14 +317,23 @@ export async function runTierB(opts: TierBOptions = {}): Promise<TierBResult> {
     postingsSeen: 0,
     postingsNew: 0,
     postingsClosed: 0,
-    errors,
+errors,
+    // Discovery enrolls companies; it creates real state, so a run that added
+    // nothing is `successful_no_changes` rather than a bare success. Reading the
+    // repo is one atomic step — if it threw we never reach `finishRun` — so the
+    // only partial state available here is "some inserts failed".
+    status: deriveRunStatus({
+      attempted: pollable.length,
+      succeeded: pollable.length - errors,
+      changed: created,
+    }),
     detail: {
       recordsScanned: result.recordsScanned,
       companiesFound: result.companiesFound,
       pollable: result.pollable,
-      created,
-      alreadyKnown,
-      skippedForCap,
+      created: result.created,
+      alreadyKnown: result.alreadyKnown,
+      skippedForCap: result.skippedForCap,
       byAts: result.byAts,
       durationMs: result.durationMs,
     },

@@ -110,6 +110,45 @@ export type SourceAuthority = (typeof SOURCE_AUTHORITIES)[number];
 export const SOURCE_STATES = ["active", "paused", "blocked"] as const;
 export type SourceState = (typeof SOURCE_STATES)[number];
 
+/**
+ * How a poll or a run ended.
+ *
+ * Four states, because the operational response differs for each. `partial` and
+ * `failed` are the ones that matter: both must suppress every close, but only
+ * `failed` means something is broken. Collapsing them into a boolean is how
+ * "a third of our boards were unreadable last night" stops being visible.
+ */
+export const RUN_STATUSES = [
+  "successful_complete",
+  "successful_no_changes",
+  "partial",
+  "failed",
+] as const;
+export type RunStatus = (typeof RUN_STATUSES)[number];
+
+/**
+ * A run outcome derived from per-board outcomes, and the rule for what does not
+ * count as a failure.
+ *
+ * `successful_no_changes` is the steady state: every board answered 304, or
+ * answered with content that matched what we already had. That is the system
+ * working. Reporting it as `failed` would page someone every 20 minutes, and
+ * reporting it as `successful_complete` would hide the fact that ingestion is
+ * alive but not moving, which is a different problem with a different fix.
+ */
+export function deriveRunStatus(input: {
+  attempted: number;
+  succeeded: number;
+  changed: number;
+}): RunStatus {
+  if (input.attempted === 0) return "successful_no_changes";
+  // Every board failed, or all but a token minority did: this is our outage,
+  // not a few companies with dead slugs.
+  if (input.succeeded === 0) return "failed";
+  if (input.succeeded < input.attempted) return "partial";
+  return input.changed === 0 ? "successful_no_changes" : "successful_complete";
+}
+
 /** Result of reading a source's own terms/robots policy. Never assume "allowed". */
 export const ACCESS_REVIEW_STATUSES = [
   "not_reviewed",
@@ -804,6 +843,21 @@ export const postingLifecycleEvents = pgTable(
   (t) => [
     index("posting_lifecycle_posting_at_idx").on(t.postingId, t.at),
     index("posting_lifecycle_event_at_idx").on(t.event, t.at),
+    /*
+     * The idempotency guarantee for lifecycle writes, and the reason a replay
+     * cannot invent history.
+     *
+     * An event is uniquely identified by (posting, event, run): one run makes
+     * at most one `missing_1` and at most one `closed` decision per posting, so
+     * re-applying a run is a no-op at the database level rather than something
+     * the caller has to remember to check. `run_id` is nullable for events
+     * written outside a run, and Postgres treats every NULL as distinct — which
+     * is the right behaviour here, since an event with no run is not replayable
+     * anyway and must not be deduplicated against another.
+     */
+    uniqueIndex("posting_lifecycle_run_event_unique")
+      .on(t.postingId, t.runId, t.event)
+      .where(sql`${t.runId} is not null`),
   ],
 );
 
@@ -1186,6 +1240,37 @@ export const recruitingCycles = pgTable(
  * precisely the problem this product exists to solve.
  * ------------------------------------------------------------------ */
 
+/**
+ * Which run has already applied which org.
+ *
+ * The replay guard for the two-miss lifecycle. `postings.missing_strikes` is
+ * only meaningful as a count of *distinct polls*, but the poll pipeline is
+ * re-runnable: a CI retry, an overlapping 20-minute cycle, a manual re-poll.
+ * Without a record of what has been applied, replaying one poll advances a
+ * single genuine absence twice and closes a live listing, which is precisely
+ * the outcome the two-miss rule promises cannot happen on a single miss.
+ *
+ * The primary key is (org, run) rather than an id column, so the database
+ * refuses the second attempt even when two pollers race. `outcome` is stored
+ * rather than recomputed so a replayed call returns what it returned the first
+ * time, instead of a zeroed result that would read as "nothing was found".
+ */
+export const pollRunMarks = pgTable(
+  "poll_run_marks",
+  {
+    orgId: uuid("org_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => ingestRuns.id, { onDelete: "cascade" }),
+    appliedAt: timestamp("applied_at", { withTimezone: true }).notNull().defaultNow(),
+    /** The PollOutcome the first application produced, for replay. */
+    outcome: jsonb("outcome").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.orgId, t.runId] })],
+);
+
 export const ingestRuns = pgTable(
   "ingest_runs",
   {
@@ -1199,9 +1284,26 @@ export const ingestRuns = pgTable(
     postingsNew: integer("postings_new").notNull().default(0),
     postingsClosed: integer("postings_closed").notNull().default(0),
     errors: integer("errors").notNull().default(0),
+    /**
+     * How the run ended, in the four states that mean different things
+     * operationally (INS-013 requirement 2).
+     *
+     * A dedicated column rather than a key in `detail` because this is the first
+     * thing anyone asks about a bad morning: "did the run work?". It is also
+     * the one field that must never be inferred — a run that polled every board
+     * and closed nothing is `successful_no_changes`, not `failed`, and the
+     * difference decides whether anyone is paged.
+     */
+    status: text("status")
+      .$type<RunStatus>()
+      .notNull()
+      .default("successful_complete"),
     detail: jsonb("detail"),
   },
-  (t) => [index("ingest_run_started_idx").on(t.startedAt)],
+  (t) => [
+    index("ingest_run_started_idx").on(t.startedAt),
+    index("ingest_run_status_idx").on(t.status, t.startedAt),
+  ],
 );
 
 /* ------------------------------------------------------------------ *

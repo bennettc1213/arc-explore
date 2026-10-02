@@ -8,6 +8,7 @@
  * `categories.location` is only the primary one — we take the union.
  */
 
+import { incomplete, validateRows } from "../contract";
 import { getJson } from "../http";
 import type { BoardAdapter, FetchBoardResult, SourcePosting } from "../types";
 
@@ -36,13 +37,22 @@ export const lever: BoardAdapter = {
     const url = `https://api.lever.co/v0/postings/${encodeURIComponent(slug)}?mode=json`;
     const res = await getJson<LeverPosting[]>(url, { etag: opts?.etag });
 
-    if (res.notModified || !res.data) {
+    if (res.notModified) {
       return { postings: [], etag: res.etag, notModified: true };
     }
 
-    // Lever answers 200 with {"ok":false} for an unknown board.
-    if (!Array.isArray(res.data)) {
-      return { postings: [], etag: res.etag, notModified: false };
+    // Lever answers 200 with `{"ok":false}` for a board that does not exist, and
+    // a null body for one that has gone away. Neither is "this board has no
+    // postings" — both mean we learned nothing. Reporting them as a successful
+    // empty board is how a renamed slug closes a company's entire listing set.
+    if (!res.data || !Array.isArray(res.data)) {
+      return {
+        postings: [],
+        etag: res.etag,
+        notModified: false,
+        successfulComplete: false,
+        completeness: incomplete("malformed_response", 1, null, "non-array body"),
+      };
     }
 
     const postings: SourcePosting[] = res.data.map((p) => {
@@ -84,6 +94,17 @@ export const lever: BoardAdapter = {
       };
     });
 
-    return { postings, etag: res.etag, notModified: false };
+    // Lever's list endpoint is unpaginated and publishes no total, so once the
+    // body is an array we hold the whole board.
+    const { valid, rejected } = validateRows(postings);
+
+    return {
+      postings: valid,
+      etag: res.etag,
+      notModified: false,
+      successfulComplete: true,
+      completeness: { complete: true, pagesFetched: 1, claimedTotal: valid.length },
+      rejected,
+    };
   },
 };
