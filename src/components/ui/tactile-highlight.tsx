@@ -39,7 +39,15 @@ interface TactileHighlightProps {
  * 2. **Corners.** The original morphs its radius 12px → 4px. Square corners are
  *    the design system's pixel-art rule (`* { border-radius: 0 }`), and an
  *    inline style from the animation would beat that rule, so the radius is
- *    left out. The spring, the directional wipe and the hover tilt are intact.
+ *    left out. The spring and the directional wipe are intact.
+ *
+ * 3. **Hover grows the block; it does not tilt it.** The original rotates it
+ *    1.5° and scales it uniformly. On a wide phrase that read as the whole
+ *    shape lurching up at one end, so hover now expands the block around the
+ *    text — a little wider, noticeably taller, from its centre — with a
+ *    well-damped spring so it settles rather than wobbles. The block is also
+ *    slightly thinner than the line box and the text sits a touch lower in it,
+ *    which is what gives the growth room to read as an expansion.
  *
  * Reduced motion: the block is shown in place with no spring and no hover
  * wobble. The highlight carries meaning (it is the emphasis), so it is not
@@ -71,8 +79,7 @@ export const TactileHighlight = ({
     visible: {
       scaleX: 1,
       scaleY: 1,
-      rotate: 0,
-      scale: 1,
+      originX,
       transition: reduce
         ? { duration: 0 }
         : { type: "spring", damping: 22, stiffness: 130, mass: 0.8, delay },
@@ -80,9 +87,13 @@ export const TactileHighlight = ({
     hover: reduce
       ? {}
       : {
-          scale: 1.05,
-          rotate: direction === "left" ? -1.5 : direction === "right" ? 1.5 : 0,
-          transition: { type: "spring", damping: 15, stiffness: 400 },
+          scaleX: 1.04,
+          scaleY: 1.22,
+          // Grow from the middle: with a left-origin wipe the block would
+          // otherwise stretch only to the right and look like it slid.
+          originX: 0.5,
+          originY: 0.5,
+          transition: { type: "spring", damping: 26, stiffness: 320 },
         },
   };
 
@@ -102,8 +113,15 @@ export const TactileHighlight = ({
         animate={isAnimated ? "visible" : "hidden"}
         whileHover={trigger === "hover" ? "visible" : "hover"}
         variants={variants}
-        className="absolute inset-0 z-0"
+        className="absolute z-0"
         style={{
+          // Thinner than the line box: the top edge starts 0.1em down and the
+          // bottom reaches 0.05em past the line box so descenders (y, g) stay
+          // inside it; the text is lowered 0.05em to sit in what is left.
+          top: "0.1em",
+          right: 0,
+          bottom: "-0.05em",
+          left: 0,
           originX,
           originY,
           background: "var(--accent)",
@@ -112,7 +130,7 @@ export const TactileHighlight = ({
       />
       <span
         className="relative z-10 mix-blend-difference pointer-events-none"
-        style={{ color: "var(--accent)" }}
+        style={{ color: "var(--accent)", top: "0.05em" }}
       >
         {children}
       </span>
