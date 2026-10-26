@@ -1356,3 +1356,112 @@ html {
     animation: none;
   }
 }
+
+/* ==========================================================================
+   landing — three-step explainer, under the stats
+   ========================================================================== */
+
+.landing-how {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1080px;
+  margin-top: clamp(72px, 12vh, 128px);
+}
+.landing-how .landing-eyebrow {
+  margin-top: 0;
+}
+.landing-how-title {
+  margin-top: 18px;
+  font-size: clamp(1.75rem, 4.2vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.landing-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  margin-top: 44px;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+.landing-step-item {
+  display: flex;
+}
+
+/* The same solid-card language as the stats above it, so the page reads as one
+   system. The whole card is the link — a 40px "learn more" label would be a
+   small target for the thing a visitor is meant to do next. */
+.landing-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 28px 26px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 22px 44px -26px rgba(0, 0, 0, 0.9);
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+  transition:
+    border-color 160ms var(--ease-out),
+    background 160ms var(--ease-out);
+}
+.landing-step:hover,
+.landing-step:focus-visible {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+.landing-step-num {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+.landing-step-title {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+.landing-step-body {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+.landing-step-note {
+  padding-top: 2px;
+}
+/* Pinned to the bottom so the three links line up across cards of different
+   body length. */
+.landing-step-go {
+  margin-top: auto;
+  padding-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  color: var(--accent);
+}
+.landing-step-go [aria-hidden] {
+  display: inline-block;
+  transition: transform 160ms var(--ease-out);
+}
+.landing-step:hover .landing-step-go [aria-hidden] {
+  transform: translateX(4px);
+}
+
+@media (max-width: 899px) {
+  .landing-steps {
+    grid-template-columns: 1fr;
+  }
+}

@@ -60,6 +60,41 @@ export default async function LandingPage() {
     },
   ];
 
+  /*
+   * Each step links to where it actually happens. Step one goes to the feed
+   * signed out, because that is where a signed-out visitor's profile lives (it
+   * rides in the URL — the whole product works without an account), and to the
+   * profile page once there is an account to hold it. Step three goes to the
+   * extension's own page, the one tool teaser that is the apply step.
+   *
+   * The copy claims only what exists today. Autofill is on the paid plan and
+   * has not been driven end to end in Chrome with a real session (FIXES.md §3),
+   * so the step says both rather than selling it as finished.
+   */
+  const STEPS = [
+    {
+      title: "Tell us about you",
+      body: "Your major, graduation year, location and work authorization. Add a resume and we read your skills from it.",
+      cta: user ? "open your profile" : "start with your profile",
+      href: user ? "/profile" : FEED_PATH,
+      note: null,
+    },
+    {
+      title: "We score it honestly",
+      body: "Every listing gets a fit score and a plain list of why. What we can't tell is left out of the score, never counted against you, and the score says how many checks it rests on.",
+      cta: "see your matches",
+      href: FEED_PATH,
+      note: null,
+    },
+    {
+      title: "You apply",
+      body: "Autofill puts your details into the employer's own form; you read it and press submit. The tracker keeps every application and deadline in one place.",
+      cta: "see how autofill works",
+      href: "/extension",
+      note: "autofill is on the Apply plan · still being proven end to end",
+    },
+  ];
+
   return (
     <main className="wrap landing">
       <section className="landing-hero" aria-labelledby="landing-title">
@@ -141,6 +176,31 @@ export default async function LandingPage() {
         &ldquo;found&rdquo; means first seen by us, not the date an employer says they posted it.
         the listing counts move every time we poll.
       </p>
+
+      <section className="landing-how" aria-labelledby="how-title">
+        <div className="eyebrow chrome landing-eyebrow">how it works</div>
+        <h2 id="how-title" className="landing-how-title">
+          Three steps. <span style={{ color: "var(--accent)" }}>No guessing.</span>
+        </h2>
+
+        <ol className="landing-steps">
+          {STEPS.map((step, i) => (
+            <li key={step.title} className="landing-step-item">
+              <Link href={step.href} className="landing-step press">
+                <span className="landing-step-num" aria-hidden>
+                  0{i + 1}
+                </span>
+                <span className="landing-step-title">{step.title}</span>
+                <span className="landing-step-body">{step.body}</span>
+                {step.note && <span className="mono landing-step-note">{step.note}</span>}
+                <span className="landing-step-go">
+                  {step.cta} <span aria-hidden>→</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      </section>
     </main>
   );
 }
