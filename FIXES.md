@@ -2384,6 +2384,19 @@ reason, not an omission.
   close:** apply 0025 and 0026 to production (INS-055's explicit release
   prompt), then push.
 
+- [ ] **Migration `0027_funding_goal` is committed locally, not pushed, not
+  applied.** Adds `profiles.funding_goal` for the scholarship Plan view's goal
+  meter (released 2026-10-26 as `bb0fb59` without it). It sits on top of the
+  two INS commits on local `master` because `db:migrate` applies in journal
+  order and production is still missing 0025/0026 (entry above). Until it
+  lands, `lib/profile/funding-goal.ts` reads the column by name, treats `42703`
+  as "goals unavailable", and the meter hides its "how much do you need to
+  cover?" prompt — so signed-in students see submitted/saved totals but cannot
+  set a goal. Deliberately **not** declared in `db/schema.ts` yet: `getProfile`
+  selects every declared column, so declaring it first would 500 every
+  signed-in page. After applying, declare it and fold the module into
+  `profile/store.ts`.
+
 - [ ] **The explore analytics Server Action is a public POST.**
   `trackExploreEvent` (`app/explore/actions.ts`) accepts only the six explore
   event names and every prop still passes `sanitize`, so nothing identifying
