@@ -2390,6 +2390,27 @@ reason, not an omission.
   can get in — but anyone can inflate those six counts by calling it. Fine for
   counts nobody cites yet; worth a rate limit before any of them is quoted.
 
+- [ ] **Production gets `DATABASE_URL` from a `.env` file the Vercel CLI uploads, not from Vercel's environment.**
+  Found 2026-10-26 deploying the nav change from a clean checkout of
+  `origin/master`: the build failed with `DATABASE_URL is not set`, because
+  `vercel env ls` holds no `DATABASE_URL` at all (nor any `ADMIN_EMAILS`,
+  `GITHUB_TOKEN`, etc.). Every earlier deploy worked only because
+  `.vercelignore` exists, which makes the CLI use it *instead of*
+  `.gitignore` -- so the gitignored local `.env`, secrets included, is
+  uploaded with each deploy and Next reads it. Two consequences: (1) a deploy
+  from any checkout without a `.env` fails (a git-push-triggered deploy would
+  too -- a push to `origin/master` did **not** create a deployment, so deploys
+  are CLI-only today); (2) a deploy from a dirty working tree ships that
+  tree's unreleased code *and* its `.env`. Worked around by deploying a
+  worktree of `origin/master` with `.env` copied in. **To close:** set the
+  real variables in Vercel and add `.env*` to `.vercelignore`.
+
+- [ ] **React error #441 logged twice on instela.org/explore (signed out).**
+  Seen 2026-10-26 right after the nav-size deploy: "Minified React error #441"
+  plus "unhandled render error". Not investigated; the deploy changed only
+  CSS, a class and a wrapper span, so it is probably older, but it was not
+  compared against the previous deployment.
+
 - [ ] **There is no staging environment, so "run it locally" and "change the
   live site" are not separate things for data.** Found 2026-09-23 while
   answering when the market-ready plan's changes would reach the live site.
