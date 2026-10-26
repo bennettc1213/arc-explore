@@ -16,7 +16,7 @@ const INITIAL: TrackerActionState = { status: "idle" };
  * along its process belongs on /tracker, where that is the task at hand.
  *
  * OPTIMISTIC, AND THAT IS THE POINT. `setStatusAction` calls
- * `revalidatePath("/")`, so the truthful `current` prop cannot arrive until the
+ * `revalidatePath(FEED_PATH)`, so the truthful `current` prop cannot arrive until the
  * whole feed has been re-rendered on the server. Waiting for it made this
  * button sit on "saving…" for as long as that took — six seconds before the
  * feed was paginated, and still a visible beat after. Saving is a local,

@@ -305,6 +305,24 @@ only you can make, and the feature on the other side of it is already written.
   attempted here: it is auth-adjacent, it was not what this session was asked
   for, and a wrong edit there fails open._
 
+  _**`redirect()` has the same problem, found 2026-10-26.** Forwarding old
+  `/?kind=…` feed links from the new landing page with `redirect()` inside the
+  page measured **200 plus a `<meta http-equiv="refresh" content="1;url=…">`**
+  — the layout had already committed the status, so Next fell back to a
+  client-side bounce with a visible flash of the wrong page. Moved to
+  `src/proxy.ts` (`legacyFeedRedirect` in `lib/routes.ts`), which answers
+  before rendering, and it is now a real 307. That is the same move this entry
+  recommends for `/admin`, and it worked._
+
+- [ ] **The feed's own "open now" stat counts rows the feed will not show.**
+  `getFeedStats` filters only `closed_at is null`, while `getFeed` also drops
+  `hidden_at` and `term_ended_flag_at` rows — so the strip on `/explore` can
+  read higher than the feed beneath it. Found 2026-10-26 while building the
+  landing page's stats, which use a separate `getLandingStats` applying the
+  feed's full visibility rule for exactly this reason. Small, but it is a
+  number on the page that disagrees with the page; point `getFeedStats` at the
+  same three conditions.
+
 - [ ] **`/api/extension/packet` validates the URL before checking the
   session**, so an unauthenticated request gets `400 {"error":"missing url"}`
   where §5b's enforcement table says 401. Measured on production; the sibling
@@ -2281,6 +2299,20 @@ reason, not an omission.
   with `origin/master`, 0 commits ahead. This is what made the scheduled
   workflows able to fire at all — GitHub only runs a `schedule` trigger from
   the default branch._
+
+- [ ] **Local `master` carries two commits that must not be pushed until their
+  migrations are applied to production.** INS-012 (`0025_source_registry`) and
+  INS-013 (`0026_ingestion_state_machine`) were committed locally and never
+  released — the ledger says so — and production has neither: measured
+  2026-10-26, `select confirmed_at from postings` fails with `42703 column does
+  not exist`. INS-013 rewrote `persist.ts` and `ingest-fast.ts` to write those
+  columns, and the `ingest-fast` cron runs **whatever `master` holds on GitHub**
+  against the production database. So a plain `git push` would turn every
+  scheduled ingest red until the migrations land. The landing page was shipped
+  around this rather than through it: built on a branch from `origin/master`,
+  pushed alone, and the two INS commits rebased on top of it locally. **To
+  close:** apply 0025 and 0026 to production (INS-055's explicit release
+  prompt), then push.
 
 - [ ] **There is no staging environment, so "run it locally" and "change the
   live site" are not separate things for data.** Found 2026-09-23 while

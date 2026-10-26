@@ -15,6 +15,7 @@ import { isApplicationStatus } from "@/lib/applications/types";
 import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature } from "@/lib/pricing/tiers";
 import { maybeRecordActivation } from "@/lib/profile/activation";
+import { FEED_PATH } from "@/lib/routes";
 
 /** The single paid plan's display name — never hardcoded. */
 const PAID = TIER_LABELS.apply;
@@ -38,7 +39,7 @@ export async function setStatusAction(
   _prev: TrackerActionState,
   formData: FormData,
 ): Promise<TrackerActionState> {
-  const user = await requireUser("/");
+  const user = await requireUser(FEED_PATH);
 
   const postingId = String(formData.get("postingId") ?? "");
   const next = String(formData.get("status") ?? "");
@@ -68,7 +69,7 @@ export async function setStatusAction(
   // The helper is idempotent, so it is safe to call on every status change.
   void maybeRecordActivation(user.id);
 
-  revalidatePath("/");
+  revalidatePath(FEED_PATH);
   revalidatePath("/tracker");
   return OK;
 }
@@ -107,7 +108,7 @@ export async function removeAction(
 
   await removeApplication(user.id, applicationId);
 
-  revalidatePath("/");
+  revalidatePath(FEED_PATH);
   revalidatePath("/tracker");
   return OK;
 }

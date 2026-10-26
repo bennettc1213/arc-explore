@@ -21,16 +21,17 @@ import { PresencePrompt } from "./PresencePrompt";
 import { ProfileEditor } from "./ProfileEditor";
 import { ResumeCritique } from "./ResumeCritique";
 import { SignOutButton } from "./SignOutButton";
+import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
 
 function safeReturnPath(raw: string | string[] | undefined): string {
   const v = Array.isArray(raw) ? raw[0] : raw;
-  if (!v) return "/";
+  if (!v) return FEED_PATH;
   // Only accept same-origin absolute paths so a crafted `next` cannot redirect
   // a user elsewhere after save.
   if (v.startsWith("/") && !v.startsWith("//")) return v;
-  return "/";
+  return FEED_PATH;
 }
 
 export default async function ProfilePage({
@@ -72,7 +73,7 @@ export default async function ProfilePage({
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 880 }}>
-      <BackLink href="/" label="back to the feed" />
+      <BackLink href={FEED_PATH} label="back to the feed" />
       <div className="flex flex-wrap items-start justify-between gap-4" style={{ marginBottom: 32 }}>
         <div>
           <div className="eyebrow chrome">your profile</div>
@@ -208,7 +209,7 @@ export default async function ProfilePage({
       <DeleteAccount />
 
       <p className="mono" style={{ marginTop: 28 }}>
-        <Link href="/" className="press" style={{ color: "var(--accent)" }}>
+        <Link href={FEED_PATH} className="press" style={{ color: "var(--accent)" }}>
           back to the feed →
         </Link>
         {"  ·  "}

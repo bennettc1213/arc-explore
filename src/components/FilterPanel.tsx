@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { INTEREST_OPTIONS, WORK_AUTH_OPTIONS } from "@/lib/profile/types";
+import { FEED_PATH } from "@/lib/routes";
 
 /** A small sub-label for clustering related controls — quieter than `.eyebrow`,
     which is already spent at the page level. */
@@ -102,7 +103,7 @@ export function FilterPanel(props: FilterPanelProps) {
     <form
       ref={rootRef}
       method="GET"
-      action="/"
+      action={FEED_PATH}
       className="relative border"
       style={{ borderColor: "var(--line)", padding: 20, marginBottom: 32 }}
     >

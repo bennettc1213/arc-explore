@@ -8,6 +8,7 @@ import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature } from "@/lib/pricing/tiers";
 
 import { EssayReviewer } from "./EssayReviewer";
+import { FEED_PATH } from "@/lib/routes";
 
 /** The single paid plan's display name — never hardcoded. */
 const PAID = TIER_LABELS.apply;
@@ -38,7 +39,7 @@ export default async function EssayPage() {
   const access = evaluateFeature(tier, "essay_reviewer");
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 900 }}>
-      <BackLink href="/" label="back to the feed" />
+      <BackLink href={FEED_PATH} label="back to the feed" />
       <header style={{ marginBottom: 28 }}>
         <div className="eyebrow chrome">08 — essay</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>
@@ -93,7 +94,7 @@ export default async function EssayPage() {
       <footer className="mono" style={{ marginTop: 40, color: "var(--faint-readable)" }}>
         the same rule as everywhere else here: a check we could not run shows &ldquo;—&rdquo; and is
         left out of the score rather than counted against you.{" "}
-        <Link href="/" style={{ color: "var(--accent)" }}>
+        <Link href={FEED_PATH} style={{ color: "var(--accent)" }}>
           back to the feed →
         </Link>
       </footer>

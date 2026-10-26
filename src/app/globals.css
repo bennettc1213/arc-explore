@@ -1118,3 +1118,229 @@ html {
     break-after: avoid;
   }
 }
+
+/* ==========================================================================
+   landing — `/`, the page in front of the feed
+
+   Centered, and the only centered page in the product. Everything else is a
+   left-aligned working surface; this one has a single job — say what this is
+   and hand over two doors — and a centered column is how that reads at a
+   glance. Built from the same tokens, so it looks like the front of the same
+   product rather than a marketing site bolted onto it.
+   ========================================================================== */
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-block: clamp(36px, 6vh, 88px) clamp(64px, 10vh, 112px);
+}
+
+.landing-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1180px;
+}
+
+/* The eyebrow's tick is a left-hand ::before. Centered, one tick reads as a
+   misalignment, so it gets a matching one on the right. */
+.landing-eyebrow {
+  justify-content: center;
+  margin-top: 22px;
+}
+.landing-eyebrow::after {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
+  flex: none;
+}
+
+/* Sized so the highlighted phrase — which never wraps, it is one inline block —
+   still fits a 390px phone with the 20px gutter. Measured, not guessed: see
+   FIXES.md §2's mobile entry for why this site checks 390px specifically. */
+.landing-title {
+  margin-top: 22px;
+  max-width: 15.5em;
+  font-size: clamp(1.75rem, 6.6vw, 4.9rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.landing-sub {
+  margin-top: 26px;
+  max-width: 58ch;
+  color: var(--muted);
+  font-size: clamp(0.9375rem, 1.25vw, 1.0625rem);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.landing-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 38px;
+}
+
+/* Two-line buttons: the action, then the fact that makes it safe to click.
+   "no signup required" is the reason the primary one gets pressed, so it rides
+   inside the button rather than as a caption a thumb has to read separately. */
+.landing-cta {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 272px;
+  padding: 16px 24px 15px;
+  border: 1px solid var(--line-strong);
+  background: rgba(15, 15, 17, 0.72); /* --bg-2, so the grid shows through faintly */
+  color: var(--text);
+  font-family: var(--font-mono);
+  text-align: left;
+  text-transform: lowercase;
+  text-decoration: none;
+  transition:
+    background 160ms var(--ease-out),
+    border-color 160ms var(--ease-out);
+}
+.landing-cta:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.landing-cta-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.landing-cta-label [aria-hidden] {
+  display: inline-block;
+  transition: transform 160ms var(--ease-out);
+}
+.landing-cta:hover .landing-cta-label [aria-hidden] {
+  transform: translateX(4px);
+}
+.landing-cta-note {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--faint-readable);
+}
+
+/* Text on the accent is near-black at full strength, notes included — a
+   dimmed near-black on orange measured ~4.2:1, under AA for text this small. */
+.landing-cta-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 18px 48px -22px var(--accent-glow);
+}
+.landing-cta-primary:hover {
+  background: var(--accent-hot);
+  border-color: var(--accent-hot);
+}
+.landing-cta-primary .landing-cta-note {
+  color: var(--on-accent);
+}
+
+.landing-verify {
+  margin-top: 24px;
+  color: var(--faint-readable);
+  text-decoration: none;
+  transition: color 160ms var(--ease-out);
+}
+.landing-verify:hover {
+  color: var(--accent);
+}
+
+.landing-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  max-width: 1080px;
+  margin-top: clamp(48px, 7vh, 88px);
+  border-block: 1px solid var(--line);
+}
+.landing-stat {
+  padding: 32px 24px;
+}
+.landing-stat + .landing-stat {
+  border-left: 1px solid var(--line);
+}
+.landing-stat-value {
+  color: var(--text);
+  font-size: clamp(2.6rem, 5vw, 4rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+/* The one the page is built around gets the accent; the other two are its
+   evidence. One accent use per row, per the design system. */
+.landing-stat:first-child .landing-stat-value {
+  color: var(--accent);
+}
+.landing-stat-label {
+  margin-top: 14px;
+}
+.landing-stat-detail {
+  max-width: 34ch;
+  margin: 6px auto 0;
+  text-wrap: balance;
+}
+
+.landing-footnote {
+  max-width: 62ch;
+  margin-top: 20px;
+  text-wrap: balance;
+}
+
+@media (max-width: 767px) {
+  /* The eyebrow wraps to two lines at phone width, and a tick on each side of
+     a two-line block points at nothing. */
+  .landing-eyebrow::before,
+  .landing-eyebrow::after {
+    display: none;
+  }
+  .landing-cta {
+    width: 100%;
+    min-width: 0;
+  }
+  .landing-stats {
+    grid-template-columns: 1fr;
+  }
+  .landing-stat {
+    padding: 26px 8px;
+  }
+  .landing-stat + .landing-stat {
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+}
+
+/* Entrance: a short staggered rise, the same ease as everything else here.
+   `both` so each piece waits invisibly for its delay instead of flashing in
+   and then animating. */
+.landing-rise {
+  animation: landing-rise 700ms var(--ease-out) both;
+}
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-rise {
+    animation: none;
+  }
+}

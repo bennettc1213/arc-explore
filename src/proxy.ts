@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { legacyFeedRedirect } from "@/lib/routes";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
 
 /**
@@ -18,6 +19,15 @@ import { SUPABASE_ANON_KEY, SUPABASE_URL } from "@/lib/supabase/env";
  * that needs a user re-verifies it server-side via lib/auth.ts.
  */
 export async function proxy(request: NextRequest) {
+  // The one exception to "session refresh only": `/` became a landing page and
+  // the feed moved, so an old `/?kind=…` link is forwarded here, before any
+  // rendering, as a real 307. See `legacyFeedRedirect` for why it cannot live
+  // in the page. Not authorization — it reads only the URL.
+  if (request.nextUrl.pathname === "/") {
+    const target = legacyFeedRedirect(request.nextUrl.searchParams);
+    if (target) return NextResponse.redirect(new URL(target, request.url), 307);
+  }
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

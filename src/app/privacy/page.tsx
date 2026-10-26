@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BackLink } from "@/components/BackLink";
+import { FEED_PATH } from "@/lib/routes";
 
 export const metadata = {
   title: "Privacy — Instela",
@@ -48,7 +49,7 @@ function Row({ what, why }: { what: string; why: string }) {
 export default function PrivacyPage() {
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 820 }}>
-      <BackLink href="/" label="back to the feed" />
+      <BackLink href={FEED_PATH} label="back to the feed" />
       <header style={{ marginBottom: 36 }}>
         <div className="eyebrow chrome">privacy</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>
@@ -235,7 +236,7 @@ export default function PrivacyPage() {
         this page describes what the code does today. if the schema changes and this is not
         updated with it, this page is wrong — it is written specifically enough that being out of
         date shows.{" "}
-        <Link href="/" style={{ color: "var(--accent)" }}>
+        <Link href={FEED_PATH} style={{ color: "var(--accent)" }}>
           back to the feed →
         </Link>
       </footer>

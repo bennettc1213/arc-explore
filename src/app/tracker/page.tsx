@@ -15,6 +15,7 @@ import { evaluateFeature, TIER_LABELS } from "@/lib/pricing/tiers";
 
 import { ApplicationCard, type CardApplication } from "./ApplicationCard";
 import { ComparePicker } from "./ComparePicker";
+import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +79,7 @@ export default async function TrackerPage() {
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 1100 }}>
-      <BackLink href="/" label="back to the feed" />
+      <BackLink href={FEED_PATH} label="back to the feed" />
       <header style={{ marginBottom: 32 }}>
         <div className="eyebrow chrome">your applications</div>
         <h1
@@ -149,7 +150,7 @@ export default async function TrackerPage() {
           <span>
             nothing tracked yet — hit <strong style={{ color: "var(--text)" }}>save</strong> on a
             posting in{" "}
-            <Link href="/" style={{ color: "var(--accent)" }}>
+            <Link href={FEED_PATH} style={{ color: "var(--accent)" }}>
               the feed
             </Link>{" "}
             and it lands here

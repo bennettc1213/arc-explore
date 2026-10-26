@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Mascot } from "@/components/chrome/Mascot";
+import { FEED_PATH } from "@/lib/routes";
 
 export default function NotFound() {
   return (
@@ -22,7 +23,7 @@ export default function NotFound() {
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <Link href="/" className="btn btn-primary press" style={{ textDecoration: "none" }}>
+        <Link href={FEED_PATH} className="btn btn-primary press" style={{ textDecoration: "none" }}>
           back to the feed
         </Link>
         <Link href="/tracker" className="btn press" style={{ textDecoration: "none" }}>

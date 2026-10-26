@@ -889,6 +889,81 @@ export async function getFeedStats(kind?: PostingKind | null): Promise<FeedStats
 }
 
 /**
+ * The three numbers on the landing page.
+ *
+ * Each one counts something we observed, and the label on the page says what:
+ *  - `internshipsFoundToday` — open internships we **first saw** in the last 24
+ *    hours. First seen by us, not "posted": an employer's posting date is a
+ *    claim, and usually absent. Rolling 24 hours rather than a calendar day,
+ *    because "today" in UTC is tomorrow for an evening visitor in California.
+ *  - `boardsCheckedToday` — employer boards whose most recent poll landed in the
+ *    last 24 hours **and succeeded**. A failed poll observed nothing, so it is
+ *    not a check; `last_poll_ok` is what keeps this from counting attempts.
+ *  - `openNow` — what the feed would actually show on a bare visit.
+ *
+ * Every posting count uses the feed's own visibility rule — not hidden, not
+ * term-ended, not closed — so the landing page can never advertise rows the
+ * feed one click away refuses to show. `getFeedStats` above predates the
+ * hidden/term-ended rules and counts the raw table, which is why this is a
+ * separate query rather than a reuse.
+ *
+ * A total of scholarship *dollars* was measured and rejected: the largest
+ * "awards" in the corpus are program totals ($450,000, $175,000) stated beside
+ * per-student amounts in the same column, so a sum would be a large, confident
+ * and wrong number on the first page anyone sees.
+ */
+export interface LandingStats {
+  internshipsFoundToday: number;
+  boardsCheckedToday: number;
+  openNow: number;
+}
+
+/**
+ * Same in-process memo as `getCompletionCorpus`, shorter: this is the most
+ * visited page and the same answer for everyone, and a count that is a minute
+ * old is not wrong in any way a visitor could detect — ingest lands every few
+ * hours, not every few seconds.
+ */
+const LANDING_TTL_MS = 60_000;
+let landingMemo: { at: number; value: LandingStats } | null = null;
+
+export async function getLandingStats(): Promise<LandingStats> {
+  if (landingMemo && Date.now() - landingMemo.at < LANDING_TTL_MS) return landingMemo.value;
+
+  // Serialized explicitly — see `timestamptz` in db/fragments.ts.
+  const dayAgo = new Date(Date.now() - 24 * 3_600_000).toISOString();
+
+  const [[posting], [boards]] = await Promise.all([
+    db
+      .select({
+        internshipsFoundToday: sql<number>`count(*) filter (where ${postings.kind} = 'internship' and ${postings.firstSeenAt} > ${dayAgo}::timestamptz)::int`,
+        openNow: sql<number>`count(*)::int`,
+      })
+      .from(postings)
+      .where(
+        and(isNull(postings.hiddenAt), isNull(postings.termEndedFlagAt), isNull(postings.closedAt)),
+      ),
+    db
+      .select({ boardsCheckedToday: sql<number>`count(*)::int` })
+      .from(organizations)
+      .where(
+        and(
+          sql`${organizations.lastPolledAt} > ${dayAgo}::timestamptz`,
+          eq(organizations.lastPollOk, true),
+        ),
+      ),
+  ]);
+
+  const value: LandingStats = {
+    internshipsFoundToday: posting.internshipsFoundToday,
+    boardsCheckedToday: boards.boardsCheckedToday,
+    openNow: posting.openNow,
+  };
+  landingMemo = { at: Date.now(), value };
+  return value;
+}
+
+/**
  * Separate shelf for lottery / sweepstakes scholarships.
  *
  * These are intentionally not mixed into the ranked feed. They are real awards,

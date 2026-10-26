@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { submitReport } from "@/lib/reports/store";
 import { reportInputSchema } from "@/lib/reports/types";
+import { FEED_PATH } from "@/lib/routes";
 
 export interface ReportFormState {
   status: "idle" | "recorded" | "already" | "error";
@@ -27,7 +28,7 @@ export async function reportListingAction(
   _prev: ReportFormState,
   formData: FormData,
 ): Promise<ReportFormState> {
-  const user = await requireUser("/");
+  const user = await requireUser(FEED_PATH);
 
   const parsed = reportInputSchema.safeParse({
     postingId: String(formData.get("postingId") ?? ""),

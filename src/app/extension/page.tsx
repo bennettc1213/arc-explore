@@ -4,6 +4,7 @@ import { BackLink } from "@/components/BackLink";
 import { getSessionUser } from "@/lib/auth";
 import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature, TIER_LABELS, TIER_PRICE_USD } from "@/lib/pricing/tiers";
+import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +60,7 @@ export default async function ExtensionPage() {
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 820 }}>
-      <BackLink href="/" label="back to the feed" />
+      <BackLink href={FEED_PATH} label="back to the feed" />
 
       {/* Said up front, not discovered after installing. The extension is
           free to install and useless without the plan — its packet endpoint

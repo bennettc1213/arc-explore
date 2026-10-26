@@ -225,6 +225,10 @@ recorded in `FIXES.md` §3 rather than assumed fine.
 
 ## 6. Landmines
 
+- **`/` is the landing page, not the feed.** The feed lives at `/explore`
+  (since 2026-10-26). Never write `href="/"` or `revalidatePath("/")` to mean
+  the feed — use `FEED_PATH` / `feedHref()` from `lib/routes.ts`. The only
+  `href="/"` left is the brand lockup, which genuinely means home.
 - **`db.execute` returns timestamptz as a `string`**, and `db.execute<T>()`
   casts blindly. A field typed `Date` compiles fine and throws
   `getTime is not a function` on the first real row. Format timestamps to ISO

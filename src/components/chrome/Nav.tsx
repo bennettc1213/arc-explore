@@ -4,6 +4,7 @@ import { viewerIsAdmin } from "@/lib/admin/auth";
 import { getSessionUser } from "@/lib/auth";
 import { devModeConfigured, devTier, getUserTier } from "@/lib/pricing/entitlements";
 import { TIER_LABELS } from "@/lib/pricing/tiers";
+import { FEED_PATH } from "@/lib/routes";
 
 import { Mascot } from "./Mascot";
 import { MobileNav } from "./MobileNav";
@@ -52,6 +53,14 @@ export async function Nav() {
           <span className="eyebrow chrome">
             verified live, not scraped from memory
           </span>
+
+          {/* The feed's own link. Until the landing page existed the brand
+              lockup WAS the feed link, so this costs the nav no net
+              destination: "home" moved to the landing page and the feed took
+              this slot. First, because it is the product. */}
+          <Link href={FEED_PATH} className="navlink press">
+            explore
+          </Link>
 
           {/* The three paste-in tools share one shape (a form that reads text
               you bring, a result that stays in your browser) and one home in

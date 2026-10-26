@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 
 import { Mascot } from "@/components/chrome/Mascot";
+import { FEED_PATH } from "@/lib/routes";
 
 /**
  * The catch-all for a render that threw.
@@ -54,7 +55,7 @@ export default function Error({
         <button type="button" className="btn btn-primary press" onClick={reset}>
           try again
         </button>
-        <Link href="/" className="btn press" style={{ textDecoration: "none" }}>
+        <Link href={FEED_PATH} className="btn press" style={{ textDecoration: "none" }}>
           back to the feed
         </Link>
       </div>

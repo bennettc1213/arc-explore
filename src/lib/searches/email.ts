@@ -8,6 +8,8 @@
  * different code sent them.
  */
 
+import { feedHref } from "../routes";
+
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
 function fromAddress(): string {
@@ -78,7 +80,7 @@ export function composeAlert(input: {
     // not behind an employer's stated posting date.
     "“New” means we first saw it since the last time we wrote to you.",
     "",
-    `See them in the feed: ${site}/${input.feedQuery ? `?${input.feedQuery}` : ""}`,
+    `See them in the feed: ${site}${feedHref(input.feedQuery)}`,
     "",
     `Stop alerts for this search: ${unsubscribeUrl}`,
     `Stop all search alerts: ${site}/unsubscribe?token=${input.unsubscribeToken}&searches=all`,
