@@ -1265,13 +1265,29 @@ html {
   width: 100%;
   max-width: 1080px;
   margin-top: clamp(48px, 7vh, 88px);
-  border-block: 1px solid var(--line);
+  gap: 16px;
 }
+/* Solid cards, not rules on the page. These used to be transparent cells
+   divided by hairlines, so the background grid ran straight through the
+   numbers and they read as part of the wallpaper. An opaque surface fill hides
+   the grid behind each card, and the stronger border plus a dark drop shadow
+   lift it off the page — the shadow is black rather than orange because the
+   accent glow is spent on the primary button above. */
 .landing-stat {
   padding: 32px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 22px 44px -26px rgba(0, 0, 0, 0.9);
+  transition:
+    border-color 160ms var(--ease-out),
+    translate 160ms var(--ease-out);
 }
-.landing-stat + .landing-stat {
-  border-left: 1px solid var(--line);
+.landing-stat:hover {
+  border-color: var(--accent);
+  translate: 0 -3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-stat:hover { translate: none; }
 }
 .landing-stat-value {
   color: var(--text);
@@ -1315,11 +1331,7 @@ html {
     grid-template-columns: 1fr;
   }
   .landing-stat {
-    padding: 26px 8px;
-  }
-  .landing-stat + .landing-stat {
-    border-left: none;
-    border-top: 1px solid var(--line);
+    padding: 26px 16px;
   }
 }
 
