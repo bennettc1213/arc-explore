@@ -1479,3 +1479,118 @@ html {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   scholarship plan view — cards, reason rows, goal meter, sign-up modal
+   Square corners, hairlines and the one accent, like every other surface.
+   Nothing here animates beyond the shared 1px .press offset, so there is no
+   reduced-motion branch to forget.
+   ========================================================================== */
+
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--line-strong);
+}
+.segmented-item {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0 16px;
+  min-height: 44px; /* tap target */
+  display: inline-flex;
+  align-items: center;
+}
+.segmented-item + .segmented-item { border-left: 1px solid var(--line-strong); }
+.segmented-item:hover { color: var(--text); background: var(--accent-dim); }
+.segmented-item[aria-current="page"] { color: var(--bg); background: var(--accent); }
+
+.sch-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 16px 18px;
+  height: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+.sch-card-facts {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+.sch-card-facts > div { display: flex; gap: 10px; align-items: baseline; }
+.sch-card-facts dt { min-width: 7.5em; color: var(--faint-readable); }
+.sch-card-facts dd { color: var(--text); }
+
+/* A locked card has no content to blur — the payload holds none — so it draws
+   blurred bars where a card's lines would be. */
+.sch-card-locked {
+  position: relative;
+  min-height: 260px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  font: inherit;
+}
+.sch-card-locked:hover { border-color: var(--accent); }
+.sch-card-ghost {
+  position: absolute;
+  inset: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  filter: blur(3px);
+  opacity: 0.5;
+}
+.sch-card-ghost > span { display: block; height: 10px; background: var(--surface-2); }
+
+/* Mobile-first: one column of next moves, then three from tablet up. */
+.plan-grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .plan-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Reason rows scroll sideways; the page itself never does. */
+.plan-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(300px, 84vw);
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 10px;
+  overscroll-behavior-x: contain;
+}
+.plan-row > * { scroll-snap-align: start; }
+
+.goal-bar {
+  display: flex;
+  height: 10px;
+  margin-top: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.goal-bar-submitted { background: var(--accent); }
+/* Saved is the dim accent rather than a second hue — one accent, no exceptions. */
+.goal-bar-saved { background: var(--accent-dim); box-shadow: inset 0 0 0 1px var(--accent); }
+
+.email-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500; /* same layer as the apply wizard */
+  background: rgba(10, 10, 11, 0.72);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 96px var(--gutter) 40px;
+  overflow-y: auto;
+}
+.email-modal {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  padding: 22px;
+}

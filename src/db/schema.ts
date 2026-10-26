@@ -909,7 +909,21 @@ export const savedSearches = pgTable(
  * that, so those two are a known blind spot, stated in the metrics rather than
  * quietly estimated.
  */
-export const EVENT_NAMES = ["search_run", "listing_viewed", "github_audited", "listing_reopened", "profile_activated"] as const;
+export const EVENT_NAMES = [
+  "search_run",
+  "listing_viewed",
+  "github_audited",
+  "listing_reopened",
+  "profile_activated",
+  // The scholarship Plan view. Fired from the browser through
+  // `app/explore/actions.ts`, which only accepts these names.
+  "explore_view_changed",
+  "explore_row_viewed",
+  "card_start_clicked",
+  "card_saved",
+  "goal_set",
+  "locked_card_clicked",
+] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
 /**

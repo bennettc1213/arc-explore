@@ -20,15 +20,20 @@ import { filtersFromParams, isEmptyFilters } from "@/lib/searches/types";
 import {
   INTEREST_OPTIONS,
   WORK_AUTH_OPTIONS,
-  isProfileReadyForFit,
   isProfileUsable,
   missingFitFields,
-  parseLocations,
   toScoreProfile,
   type UserProfile,
 } from "@/lib/profile/types";
+import { EmailModalProvider } from "@/components/scholarships/EmailModal";
+import { KindSwitcher, ViewToggle } from "@/components/scholarships/ExploreSwitchers";
+import { PlanView, type FundingState } from "@/components/scholarships/PlanView";
+import { getFundingGoal } from "@/lib/profile/funding-goal";
 import { FEED_PATH } from "@/lib/routes";
-import type { ScoreProfile } from "@/lib/score/fit";
+import { getFundingTotals, getScholarshipPlan } from "@/lib/scholarships/explore";
+import { parseExploreView, type ExploreView } from "@/lib/scholarships/plan";
+
+import { profileFromParams, profileReadyFor, viewPrefsFromParams } from "./viewer";
 
 export const dynamic = "force-dynamic";
 
@@ -56,27 +61,6 @@ const FEED_PAGE_SIZE = 50;
  *  - Signed in, the stored profile wins and the form collapses to a summary.
  *    Filters stay in the URL either way.
  */
-
-function profileFromParams(sp: Record<string, string | string[] | undefined>): ScoreProfile {
-  const one = (k: string) => {
-    const v = sp[k];
-    return Array.isArray(v) ? v[0] : v;
-  };
-  const all = (k: string) => {
-    const v = sp[k];
-    return Array.isArray(v) ? v : v ? [v] : [];
-  };
-  const gradYear = Number(one("gradYear"));
-
-  return {
-    major: one("major") ?? null,
-    gradYear: Number.isFinite(gradYear) && gradYear > 0 ? gradYear : null,
-    workAuth: one("workAuth") ?? null,
-    targetLocations: parseLocations(one("locations") ?? ""),
-    targetVerticals: all("targetVerticals"),
-    openToRemote: one("remote") !== "0",
-  };
-}
 
 function Stat({ value, label }: { value: number | string; label: string }) {
   return (
@@ -194,14 +178,7 @@ export default async function FeedPage({
           (profile.targetVerticals?.length ?? 0) > 0 ||
           (profile.targetLocations?.length ?? 0) > 0,
       );
-  const profileReady = user
-    ? isProfileReadyForFit(stored)
-    : isProfileReadyForFit({
-        major: profile.major ?? null,
-        gradYear: profile.gradYear ?? null,
-        workAuth: profile.workAuth ?? null,
-        targetLocations: profile.targetLocations ?? [],
-      });
+  const profileReady = profileReadyFor(user, stored, profile);
 
   /*
    * ONE PARSER, NOT TWO. This page used to re-read every filter out of
@@ -222,14 +199,21 @@ export default async function FeedPage({
   const { term, remoteOnly, kind, deadline, minAmount, location, q, category } = currentFilters;
 
   // Not saveable, so not part of the shared shape — see savedFiltersSchema.
-  const includeClosed = sp.includeClosed === "1";
-  const includeInferred = sp.includeInferred !== "0";
-  const includeUnknownAmounts = sp.includeUnknownAmounts === "1";
-  // View preferences, like includeClosed: read here, never stored on a saved
-  // search. `new` is time-relative (so saving it would mean nothing), and
-  // `hideBlocked` depends on the profile the search is scored against.
-  const hideBlocked = sp.hideBlocked === "1";
-  const excludeMarketing = sp.excludeMarketing === "1";
+  // View preferences: read here, never stored on a saved search. `new` is
+  // time-relative (so saving it would mean nothing), and `hideBlocked` depends
+  // on the profile the search is scored against. Read through the same helper
+  // the scholarship Plan endpoint uses, so the two cannot disagree.
+  const { includeClosed, includeInferred, includeUnknownAmounts, hideBlocked, excludeMarketing } =
+    viewPrefsFromParams(sp);
+
+  /*
+   * THE SCHOLARSHIP VIEWS. Only when the feed is scoped to scholarships; the
+   * combined feed and the internship feed render exactly as before. Plan is
+   * the default there, List is the existing ranked feed below.
+   */
+  const scholarshipViews = kind === "scholarship";
+  const view: ExploreView = parseExploreView(sp.view);
+  const planView = scholarshipViews && view === "plan";
   const newDaysRaw = Number(Array.isArray(sp.new) ? sp.new[0] : sp.new);
   const newSinceDays = Number.isFinite(newDaysRaw) && newDaysRaw > 0 ? Math.round(newDaysRaw) : null;
 
@@ -270,8 +254,10 @@ export default async function FeedPage({
   const dailyCapped = !evaluateFeature(tier, "feed_full_depth").usable;
   const show = dailyCapped ? FREE_DAILY_RESULTS : requested;
 
-  const [feed, stats, terms, lotteryAwards] = await Promise.all([
-    getFeed(profile, {
+  const [listFeed, stats, terms, lotteryAwards, plan, funding] = await Promise.all([
+    // The Plan view ranks through getFeed itself (inside getScholarshipPlan),
+    // so the list query is skipped rather than run twice.
+    planView ? null : getFeed(profile, {
       ...currentFilters,
       includeClosed,
       includeInferred,
@@ -303,8 +289,61 @@ export default async function FeedPage({
     getFeedStats(kind),
     getAvailableTerms(includeClosed),
     getLotteryAwards(profile),
+    planView
+      ? getScholarshipPlan({
+          profile,
+          // includeClosed is deliberately not passed: the plan holds open
+          // listings only, whatever the "show closed" box says.
+          filters: {
+            ...currentFilters,
+            includeInferred,
+            includeUnknownAmounts,
+            hideBlocked,
+            excludeMarketing,
+            newSince: newSinceDays ? newSinceFromDays(newSinceDays) : null,
+            timingPoints: TIMING_PRIORITY_POINTS[tier],
+          },
+          tier,
+          profileReady,
+          userId: user?.id ?? null,
+        })
+      : null,
+    planView && user
+      ? Promise.all([getFundingGoal(user.id), getFundingTotals(user.id)])
+      : null,
   ]);
-  const { items, categoryUnclassified, total } = feed;
+  const { items, categoryUnclassified, total } = listFeed ?? {
+    items: [],
+    categoryUnclassified: 0,
+    total: 0,
+  };
+  const fundingState: FundingState = {
+    signedIn: Boolean(user),
+    goalAvailable: funding?.[0].available ?? false,
+    goal: funding?.[0].goal ?? null,
+    totals: funding?.[1] ?? null,
+  };
+
+  /** This page's URL with some params changed — for the switchers. */
+  const hrefWith = (changes: Record<string, string | null>): string => {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(sp)) {
+      if (v === undefined || k === "show" || k in changes) continue;
+      for (const one of Array.isArray(v) ? v : [v]) params.append(k, one);
+    }
+    for (const [k, v] of Object.entries(changes)) if (v !== null) params.set(k, v);
+    const qs = params.toString();
+    return qs ? `${FEED_PATH}?${qs}` : FEED_PATH;
+  };
+  const kindHrefs = {
+    all: hrefWith({ kind: null, view: null }),
+    scholarship: hrefWith({ kind: "scholarship" }),
+    internship: hrefWith({ kind: "internship", view: null }),
+  };
+  const viewHrefs = {
+    plan: hrefWith({ view: "plan" }),
+    list: hrefWith({ view: "list" }),
+  };
 
   // A search, not a page view: a bare `/` is browsing and is not counted. What
   // is recorded is which filter *keys* were used and whether the result was
@@ -343,13 +382,15 @@ export default async function FeedPage({
     (excludeMarketing ? 1 : 0);
 
   if (activeFilters.length > 0) {
+    // In the Plan view the matched set is the plan's listings, not a list page.
+    const resultCount = plan ? plan.counts.listings : items.length;
     await recordEvent("search_run", {
       filters: activeFilters,
-      empty: items.length === 0,
+      empty: resultCount === 0,
       // Bucketed rather than exact: the useful question is "did this return
       // nothing / a little / a lot", and a raw count is a finer fingerprint of
       // one request than the answer needs.
-      results: items.length === 0 ? "none" : items.length < 10 ? "few" : "many",
+      results: resultCount === 0 ? "none" : resultCount < 10 ? "few" : "many",
     });
   }
 
@@ -413,6 +454,19 @@ export default async function FeedPage({
           no account. */}
       {!user && <ToolsTease />}
 
+      {/* What the feed is scoped to. Was reachable only through a select
+          inside the collapsed filter panel, which is why scholarships felt
+          missing. Writes the same `kind` param that select does. */}
+      <div className="flex flex-wrap items-start gap-x-4">
+        <KindSwitcher
+          current={kind === "scholarship" ? "scholarship" : kind === "internship" ? "internship" : "all"}
+          hrefs={kindHrefs}
+        />
+        {scholarshipViews && (
+          <ViewToggle current={view} explicit={sp.view !== undefined} hrefs={viewHrefs} />
+        )}
+      </div>
+
       {/* GET so filter state lives in the URL and is shareable. The whole
           surface is now a dropdown behind the "filters" trigger; its inputs
           still serialize on submit even while collapsed. Signed out, the
@@ -443,6 +497,7 @@ export default async function FeedPage({
         hideBlocked={hideBlocked}
         excludeMarketing={excludeMarketing}
         activeCount={activeCount}
+        view={scholarshipViews ? view : null}
       />
 
       {user && !profileReady && (
@@ -474,7 +529,9 @@ export default async function FeedPage({
       )}
 
       <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
-        03 — {items.length} results
+        {plan
+          ? `03 — your plan, from ${plan.counts.listings.toLocaleString("en-US")} open scholarships`
+          : `03 — ${items.length} results`}
       </div>
 
       {/* A category can only be read off what the source actually wrote. Most
@@ -504,7 +561,16 @@ export default async function FeedPage({
         />
       )}
 
-      {items.length === 0 ? (
+      {plan ? (
+        <EmailModalProvider>
+          <PlanView
+            plan={plan}
+            funding={fundingState}
+            signedIn={Boolean(user)}
+            listHref={viewHrefs.list}
+          />
+        </EmailModalProvider>
+      ) : items.length === 0 ? (
         <div className="slot" style={{ padding: "20px", gap: 16 }}>
           <Mascot size={32} />
           {q

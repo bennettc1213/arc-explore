@@ -258,6 +258,31 @@ only you can make, and the feature on the other side of it is already written.
 
 ## 2. Known bugs
 
+- [ ] **Saved scholarships never appear on `/tracker`.** `listApplications`
+  (`lib/applications/store.ts`) inner-joins `organizations`, and scholarships
+  have no `org_id` — so a student can press "save" on a scholarship, see the
+  button turn to "▪ saved", and never find it on the tracker. Found 2026-10-26
+  while building the scholarship Plan view's funding meter, which needed the
+  same rows and therefore uses its own left-joined query
+  (`getFundingTotals` in `lib/scholarships/explore.ts`). Fix is a `leftJoin`
+  plus `coalesce(organizations.name, postings.sponsor_name)` for the company,
+  the same coalesce `FEED_SELECT` already does. Not touched here: it changes
+  the tracker, which this work was told to leave alone.
+
+- [ ] **Two program totals are stored as per-award amounts, and "up to" ranges
+  render as a flat figure.** Measured 2026-10-26 over the 349 open
+  scholarships with a stated amount: "American Indian Education Foundation
+  Scholarship" stores `amount_min = 450000` beside `program_total = 101250000`
+  and `awards_count = 225`, and "The Mensa Foundation Scholarship Program"
+  stores `175000`; the next largest is $22,000. Separately, 7 ranges have no
+  floor (`amount_min` null, e.g. Horatio Alger "up to $22,000"), and
+  `formatAward` renders them as "$22,000" in the list. **The Plan view guards
+  both** — `PLAUSIBLE_AWARD_MAX = 100_000` treats a larger per-award figure as
+  unconfirmed, and a floorless range is shown as "up to $X" and never ranked
+  as confirmed (`lib/scholarships/plan.ts`) — but the list and the listing page
+  still show them as stated. The real fix is at ingest, where the program total
+  should never have reached the per-award column.
+
 - [ ] **Every `notFound()` in a page answers HTTP 200, and that quietly
   defeats `/admin`'s whole access design.** Found 2026-09-03 while verifying
   the tools on production. Measured directly against instela.org:
@@ -1277,6 +1302,34 @@ Things that are currently true but should not stay true.
   students were actually counted (a prior product, a campus program, a sign-up
   sheet) — keep that source somewhere findable, since this repo does not hold
   it.
+
+- [ ] **No scholarship states how many essays or letters it needs, or where it
+  is open to — so half the Plan view has nothing to stand on.** Built
+  2026-10-26 (`/explore?kind=scholarship`, `lib/scholarships/plan.ts`).
+  Measured on 1,951 open scholarships: known essay count **0%**, known
+  recommendation-letter count **0%** (no column exists for either; 15 rows
+  mention "essay" in prose, 2 mention letters), structured state/local scope
+  **0%** (`locations` empty on every row, `eligibility` holds only `criteria`;
+  18 rows carry residency wording in prose), and description text on **0**
+  rows. Confirmed amount 17.4% (340), stated deadline 16.9% (330). Because
+  effort is unknown everywhere, **"your next 3 moves" is always empty, and the
+  Quick wins, No-essay and Local rows are always hidden** — the view says so
+  with the counts rather than guessing. Only "Closing this week" and "Big
+  swings" render. The map (Stage 3) is specified but not built: every dot
+  would sit in its "effort unknown" lane. `effortInputsFor` in
+  `lib/scholarships/effort.ts` is the one seam where counts get wired in once
+  something stores them; the 390 direct-source rows (89% with an amount, 82%
+  with a deadline) are where hand-entered or parsed counts would pay off first.
+  "Almost eligible" is hidden too: no helper computes it.
+
+- [ ] **Signed out, the Plan view shows 10 scholarships but the List view
+  shows 20.** The Plan cap (`SIGNED_OUT_CARD_CAP`) was specified for the Plan
+  view only, and the List view keeps the existing free depth
+  (`FREE_DAILY_RESULTS = 20`) — so a visitor who wants more than the locked
+  plan can switch to List and see twice as many, titles and links included.
+  Needs a call: either the cap is a Plan-view presentation choice (then fine
+  as is), or it is meant to gate signed-out depth everywhere (then List should
+  agree).
 
 - [ ] **USAJobs is `periodic_check`, not `live_polled`.** Correct as written —
   it runs daily in `ingest-daily`. Moving the step to `ingest-fast` is what
@@ -2330,6 +2383,12 @@ reason, not an omission.
   pushed alone, and the two INS commits rebased on top of it locally. **To
   close:** apply 0025 and 0026 to production (INS-055's explicit release
   prompt), then push.
+
+- [ ] **The explore analytics Server Action is a public POST.**
+  `trackExploreEvent` (`app/explore/actions.ts`) accepts only the six explore
+  event names and every prop still passes `sanitize`, so nothing identifying
+  can get in — but anyone can inflate those six counts by calling it. Fine for
+  counts nobody cites yet; worth a rate limit before any of them is quoted.
 
 - [ ] **There is no staging environment, so "run it locally" and "change the
   live site" are not separate things for data.** Found 2026-09-23 while
