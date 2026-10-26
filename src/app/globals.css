@@ -61,7 +61,7 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-inout: cubic-bezier(0.76, 0, 0.24, 1);
 
-  --nav-h: 72px;
+  --nav-h: 84px;
   --gutter: clamp(20px, 4vw, 64px);
 }
 
@@ -373,6 +373,20 @@ body {
   background: var(--accent-dim);
   border-color: var(--accent);
   color: var(--accent-hot);
+}
+
+/* The top bar's links are the site's primary navigation and were the same
+   11px as the footer's, which read as fine print. Scoped to `body > header` so
+   the footer's `.navlink`s keep their size — the footer is fine print. The
+   nav height token grows with it (see --nav-h) so the bar is not cramped. */
+body > header .navlink {
+  font-size: 0.9375rem;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+body > header .brand-word {
+  font-size: 1.125rem;
 }
 
 /* The admin link keeps its softer hue at rest — it is the one nav item most

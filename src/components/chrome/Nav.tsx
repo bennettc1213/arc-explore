@@ -35,7 +35,7 @@ export async function Nav() {
             destination outright. `aria-label` carries the same fact for a
             screen reader, which never sees the hover. */}
         <Link href="/" className="brand" aria-label="Instela — home">
-          <Mascot size={26} className="brand-mark" />
+          <Mascot size={32} className="brand-mark" />
           <span className="mono-strong chrome brand-word">Instela</span>
           <span className="mono brand-hint" aria-hidden>
             home
@@ -49,9 +49,15 @@ export async function Nav() {
             exact element (equal specificity, later source order wins); a
             `display: none` ancestor sidesteps that, since it never renders its
             children regardless of what display they individually request. */}
-        <div className="hidden lg:flex items-center gap-6">
-          <span className="eyebrow chrome">
-            verified live, not scraped from memory
+        <div className="hidden lg:flex items-center gap-2 xl:gap-4">
+          {/* Wrapped, not hidden on the span itself: `.eyebrow` sets
+              `display: flex` and out-ranks Tailwind's `hidden` on the same
+              element. Only shown from `xl` — with the larger links the bar has
+              no room for it at 1024px and it wraps to five lines. */}
+          <span className="hidden xl:block">
+            <span className="eyebrow chrome whitespace-nowrap">
+              verified live, not scraped from memory
+            </span>
           </span>
 
           {/* The feed's own link. Until the landing page existed the brand
