@@ -30,9 +30,9 @@ export default async function LandingPage() {
 
   const STATS = [
     {
-      value: stats.internshipsFoundToday,
-      label: "internships found today",
-      detail: "first seen on an employer’s own board in the last 24 hours",
+      value: stats.foundAllTime,
+      label: "opportunities found, all time",
+      detail: "internships and scholarships we have listed, including ones since closed",
     },
     {
       value: stats.boardsCheckedToday,

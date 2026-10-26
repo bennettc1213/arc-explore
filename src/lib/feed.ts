@@ -892,10 +892,12 @@ export async function getFeedStats(kind?: PostingKind | null): Promise<FeedStats
  * The three numbers on the landing page.
  *
  * Each one counts something we observed, and the label on the page says what:
- *  - `internshipsFoundToday` — open internships we **first saw** in the last 24
- *    hours. First seen by us, not "posted": an employer's posting date is a
- *    claim, and usually absent. Rolling 24 hours rather than a calendar day,
- *    because "today" in UTC is tomorrow for an evening visitor in California.
+ *  - `foundAllTime` — every internship and scholarship we have ever listed,
+ *    **including ones since closed**. That is what "found" means: distinct
+ *    opportunities (the dedup key makes a re-posted req one row) that reached
+ *    us at some point, not how many are open. It still excludes rows a person
+ *    hid as wrong — a hidden row was withdrawn as a mistake, and a mistake is
+ *    not something we found. Cumulative, so it only grows.
  *  - `boardsCheckedToday` — employer boards whose most recent poll landed in the
  *    last 24 hours **and succeeded**. A failed poll observed nothing, so it is
  *    not a check; `last_poll_ok` is what keeps this from counting attempts.
@@ -913,7 +915,7 @@ export async function getFeedStats(kind?: PostingKind | null): Promise<FeedStats
  * and wrong number on the first page anyone sees.
  */
 export interface LandingStats {
-  internshipsFoundToday: number;
+  foundAllTime: number;
   boardsCheckedToday: number;
   openNow: number;
 }
@@ -936,13 +938,11 @@ export async function getLandingStats(): Promise<LandingStats> {
   const [[posting], [boards]] = await Promise.all([
     db
       .select({
-        internshipsFoundToday: sql<number>`count(*) filter (where ${postings.kind} = 'internship' and ${postings.firstSeenAt} > ${dayAgo}::timestamptz)::int`,
-        openNow: sql<number>`count(*)::int`,
+        foundAllTime: sql<number>`count(*) filter (where ${postings.hiddenAt} is null)::int`,
+        // The feed's own visibility rule: not hidden, not term-ended, not closed.
+        openNow: sql<number>`count(*) filter (where ${postings.hiddenAt} is null and ${postings.termEndedFlagAt} is null and ${postings.closedAt} is null)::int`,
       })
-      .from(postings)
-      .where(
-        and(isNull(postings.hiddenAt), isNull(postings.termEndedFlagAt), isNull(postings.closedAt)),
-      ),
+      .from(postings),
     db
       .select({ boardsCheckedToday: sql<number>`count(*)::int` })
       .from(organizations)
@@ -955,7 +955,7 @@ export async function getLandingStats(): Promise<LandingStats> {
   ]);
 
   const value: LandingStats = {
-    internshipsFoundToday: posting.internshipsFoundToday,
+    foundAllTime: posting.foundAllTime,
     boardsCheckedToday: boards.boardsCheckedToday,
     openNow: posting.openNow,
   };
