@@ -1261,6 +1261,23 @@ Things that are currently true but should not stay true.
 - [x] **No web admin view.** Fixed — `/admin`, a triage queue rather than a
   review gate (see the roadmap line for why a gate is the wrong mechanism for
   a live-polled corpus). Fails closed on `ADMIN_EMAILS`.
+- [ ] **"10,000+ students helped" on the landing page is an owner-stated
+  figure the database cannot back up.** Added 2026-10-26 at the owner's
+  instruction, who says the students were helped outside the app. Measured
+  the same day: `profiles` holds 10 rows, all test accounts, and nothing in
+  the schema records an outcome (an interview, an award), so no query could
+  reproduce it. Shipped as the constant `STUDENTS_HELPED` in `src/app/page.tsx`
+  with a comment saying so, rendered as a floor ("10,000+"), and labelled
+  "students helped" rather than "landed interviews / won scholarships" —
+  outcomes are a stronger claim than anything we track. **Why it is recorded:**
+  every other number on that page is something we counted and has its
+  definition printed beneath it; this one is the exception, and `/privacy` and
+  `lib/metrics/types.ts` both promise not to cite anything below ten real
+  users. If it is ever challenged, the answer has to come from wherever those
+  students were actually counted (a prior product, a campus program, a sign-up
+  sheet) — keep that source somewhere findable, since this repo does not hold
+  it.
+
 - [ ] **USAJobs is `periodic_check`, not `live_polled`.** Correct as written —
   it runs daily in `ingest-daily`. Moving the step to `ingest-fast` is what
   would earn the stronger "confirmed live" claim.

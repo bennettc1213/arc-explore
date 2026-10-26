@@ -3,7 +3,7 @@
 import { animate, useInView, useReducedMotion } from "framer-motion";
 import { useEffect, useRef } from "react";
 
-const format = (n: number) => Math.round(n).toLocaleString("en-US");
+const format = (n: number, suffix = "") => Math.round(n).toLocaleString("en-US") + suffix;
 
 /**
  * A number that counts up from zero the first time it comes into view.
@@ -28,11 +28,14 @@ export function CountUp({
   value,
   duration = 1.6,
   delay = 0,
+  suffix = "",
   className,
 }: {
   value: number;
   duration?: number;
   delay?: number;
+  /** Appended to every frame, e.g. "+" — so "10,000+" never reads "10,000". */
+  suffix?: string;
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -44,24 +47,24 @@ export function CountUp({
     if (!node || !inView || reduce || value <= 0) return;
     if (alreadySeen(node)) return;
 
-    node.textContent = format(0);
+    node.textContent = format(0, suffix);
     const controls = animate(0, value, {
       duration,
       delay,
       ease: [0.22, 1, 0.36, 1], // --ease-out
       onUpdate: (v) => {
-        node.textContent = format(v);
+        node.textContent = format(v, suffix);
       },
     });
     return () => {
       controls.stop();
-      node.textContent = format(value);
+      node.textContent = format(value, suffix);
     };
-  }, [inView, reduce, value, duration, delay]);
+  }, [inView, reduce, value, duration, delay, suffix]);
 
   return (
     <span ref={ref} className={className} style={{ fontVariantNumeric: "tabular-nums" }}>
-      {format(value)}
+      {format(value, suffix)}
     </span>
   );
 }

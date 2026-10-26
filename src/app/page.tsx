@@ -10,6 +10,19 @@ import { FEED_PATH } from "@/lib/routes";
 export const dynamic = "force-dynamic";
 
 /**
+ * Students helped. **Stated by the owner, not measured here.**
+ *
+ * Nothing in this database can produce it: `profiles` holds a handful of test
+ * accounts, because the people behind this number were helped outside the
+ * app, before it had sign-ups. So it is a constant rather than a query, on
+ * purpose — a count the page appears to compute but does not would be a
+ * stronger claim than the one being made. It is deliberately a floor ("+"),
+ * and it is the one figure on this page that does not move when we poll.
+ * Change it here, and only here, when the real number changes.
+ */
+const STUDENTS_HELPED = 10_000;
+
+/**
  * The landing page.
  *
  * **No listings on it, on purpose.** The feed used to be `/`, so a first
@@ -35,9 +48,10 @@ export default async function LandingPage() {
       detail: "internships and scholarships we have listed, including ones since closed",
     },
     {
-      value: stats.boardsCheckedToday,
-      label: "employer boards checked",
-      detail: "polled directly in the last 24 hours, and answered",
+      value: STUDENTS_HELPED,
+      suffix: "+",
+      label: "students helped",
+      detail: "students we have helped find internships and scholarships",
     },
     {
       value: stats.openNow,
@@ -110,12 +124,12 @@ export default async function LandingPage() {
       <section
         className="landing-stats landing-rise"
         style={{ animationDelay: "480ms" }}
-        aria-label="What we observed in the last day"
+        aria-label="Instela in numbers"
       >
         {STATS.map((s, i) => (
           <div key={s.label} className="landing-stat">
             <div className="landing-stat-value">
-              <CountUp value={s.value} delay={0.55 + i * 0.12} />
+              <CountUp value={s.value} suffix={s.suffix} delay={0.55 + i * 0.12} />
             </div>
             <div className="mono-strong chrome landing-stat-label">{s.label}</div>
             <div className="mono landing-stat-detail">{s.detail}</div>
@@ -125,7 +139,7 @@ export default async function LandingPage() {
 
       <p className="mono landing-footnote">
         &ldquo;found&rdquo; means first seen by us, not the date an employer says they posted it.
-        these numbers move every time we poll.
+        the listing counts move every time we poll.
       </p>
     </main>
   );

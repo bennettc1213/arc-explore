@@ -898,9 +898,6 @@ export async function getFeedStats(kind?: PostingKind | null): Promise<FeedStats
  *    us at some point, not how many are open. It still excludes rows a person
  *    hid as wrong — a hidden row was withdrawn as a mistake, and a mistake is
  *    not something we found. Cumulative, so it only grows.
- *  - `boardsCheckedToday` — employer boards whose most recent poll landed in the
- *    last 24 hours **and succeeded**. A failed poll observed nothing, so it is
- *    not a check; `last_poll_ok` is what keeps this from counting attempts.
  *  - `openNow` — what the feed would actually show on a bare visit.
  *
  * Every posting count uses the feed's own visibility rule — not hidden, not
@@ -916,7 +913,6 @@ export async function getFeedStats(kind?: PostingKind | null): Promise<FeedStats
  */
 export interface LandingStats {
   foundAllTime: number;
-  boardsCheckedToday: number;
   openNow: number;
 }
 
@@ -932,31 +928,16 @@ let landingMemo: { at: number; value: LandingStats } | null = null;
 export async function getLandingStats(): Promise<LandingStats> {
   if (landingMemo && Date.now() - landingMemo.at < LANDING_TTL_MS) return landingMemo.value;
 
-  // Serialized explicitly — see `timestamptz` in db/fragments.ts.
-  const dayAgo = new Date(Date.now() - 24 * 3_600_000).toISOString();
-
-  const [[posting], [boards]] = await Promise.all([
-    db
-      .select({
-        foundAllTime: sql<number>`count(*) filter (where ${postings.hiddenAt} is null)::int`,
-        // The feed's own visibility rule: not hidden, not term-ended, not closed.
-        openNow: sql<number>`count(*) filter (where ${postings.hiddenAt} is null and ${postings.termEndedFlagAt} is null and ${postings.closedAt} is null)::int`,
-      })
-      .from(postings),
-    db
-      .select({ boardsCheckedToday: sql<number>`count(*)::int` })
-      .from(organizations)
-      .where(
-        and(
-          sql`${organizations.lastPolledAt} > ${dayAgo}::timestamptz`,
-          eq(organizations.lastPollOk, true),
-        ),
-      ),
-  ]);
+  const [posting] = await db
+    .select({
+      foundAllTime: sql<number>`count(*) filter (where ${postings.hiddenAt} is null)::int`,
+      // The feed's own visibility rule: not hidden, not term-ended, not closed.
+      openNow: sql<number>`count(*) filter (where ${postings.hiddenAt} is null and ${postings.termEndedFlagAt} is null and ${postings.closedAt} is null)::int`,
+    })
+    .from(postings);
 
   const value: LandingStats = {
     foundAllTime: posting.foundAllTime,
-    boardsCheckedToday: boards.boardsCheckedToday,
     openNow: posting.openNow,
   };
   landingMemo = { at: Date.now(), value };
