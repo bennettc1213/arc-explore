@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { getLatestResume, saveParsedResume } from "@/lib/profile/store";
 import { decodeResumeEdit } from "@/lib/resume/edit";
+import { FEED_PATH } from "@/lib/routes";
 
 export interface ResumeEditState {
   status: "idle" | "saved" | "error";
@@ -56,7 +57,7 @@ export async function saveResumeAction(
   revalidatePath("/profile");
   // The feed's internship Fit Score derives skills from the parse on read, so
   // an edit changes every score on it.
-  revalidatePath("/");
+  revalidatePath(FEED_PATH);
 
   return { status: "saved" };
 }

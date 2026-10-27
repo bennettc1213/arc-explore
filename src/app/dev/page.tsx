@@ -9,6 +9,7 @@ import { TIER_IDS, TIER_LABELS, TIER_TAGLINES } from "@/lib/pricing/tiers";
 
 import { lockAction, switchTierAction } from "./actions";
 import { DevUnlockForm } from "./DevUnlockForm";
+import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +42,7 @@ export default async function DevPage() {
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 760 }}>
-      <BackLink href="/" label="back to the feed" />
+      <BackLink href={FEED_PATH} label="back to the feed" />
 
       <header style={{ marginBottom: 28 }}>
         <div className="eyebrow chrome">dev mode</div>

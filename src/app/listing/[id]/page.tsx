@@ -22,6 +22,7 @@ import { hasReported } from "@/lib/reports/store";
 import { isProfileReadyForFit, toScoreProfile } from "@/lib/profile/types";
 import { coerceParsedResume } from "@/lib/resume/types";
 import { skillsFromParsedResume } from "@/lib/score/skills";
+import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
 
@@ -123,7 +124,7 @@ export default async function ListingPage({
 
   return (
     <main className="wrap" style={{ paddingBlock: "40px 96px" }}>
-      <BackLink href="/" label="back to feed" />
+      <BackLink href={FEED_PATH} label="back to feed" />
 
       <header className="print-hide" style={{ marginBottom: 24 }}>
           <div className="eyebrow chrome">04 — opportunity</div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FEED_PATH } from "@/lib/routes";
 
 export const metadata = {
   title: "How we verify — Instela",
@@ -9,7 +10,7 @@ export const metadata = {
 export default function HowWeVerifyPage() {
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: "68ch" }}>
-      <Link href="/" className="mono press" style={{ color: "var(--faint-readable)", textDecoration: "none" }}>
+      <Link href={FEED_PATH} className="mono press" style={{ color: "var(--faint-readable)", textDecoration: "none" }}>
         ← back to feed
       </Link>
 

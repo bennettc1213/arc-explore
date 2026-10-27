@@ -12,6 +12,7 @@ import { topDemandedSkills } from "@/lib/score/competitiveness";
 
 import { LinkedInBuilder } from "./LinkedInBuilder";
 import { LinkedInChecker } from "./LinkedInChecker";
+import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ export default async function LinkedInPage() {
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
-      <BackLink href="/" label="back to the feed" />
+      <BackLink href={FEED_PATH} label="back to the feed" />
       <header style={{ marginBottom: 28 }}>
         <div className="eyebrow chrome">07 — linkedin</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>

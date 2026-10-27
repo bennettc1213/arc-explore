@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { INTEREST_OPTIONS, WORK_AUTH_OPTIONS } from "@/lib/profile/types";
+import { FEED_PATH } from "@/lib/routes";
 
 /** A small sub-label for clustering related controls — quieter than `.eyebrow`,
     which is already spent at the page level. */
@@ -53,6 +54,8 @@ export interface FilterPanelProps {
   hideBlocked: boolean;
   excludeMarketing: boolean;
   activeCount: number;
+  /** The scholarship view (plan | list), kept across a filter submit. */
+  view?: string | null;
 }
 
 export function FilterPanel(props: FilterPanelProps) {
@@ -76,6 +79,7 @@ export function FilterPanel(props: FilterPanelProps) {
     hideBlocked,
     excludeMarketing,
     activeCount,
+    view,
   } = props;
 
   const [open, setOpen] = useState(false);
@@ -102,10 +106,12 @@ export function FilterPanel(props: FilterPanelProps) {
     <form
       ref={rootRef}
       method="GET"
-      action="/"
+      action={FEED_PATH}
       className="relative border"
       style={{ borderColor: "var(--line)", padding: 20, marginBottom: 32 }}
     >
+      {/* Without this, filtering from the list view would drop back to plan. */}
+      {view && <input type="hidden" name="view" value={view} />}
       {!user && (
         <>
           <div className="eyebrow chrome" style={{ marginBottom: 16 }}>

@@ -17,6 +17,7 @@ import {
 import { parseResume, ResumeParseError } from "@/lib/resume/parse";
 import { checkUpload, resumeToProfileSuggestions, type ProfileSuggestions } from "@/lib/resume/types";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { FEED_PATH, feedHref } from "@/lib/routes";
 
 export interface ProfileFormState {
   status: "idle" | "saved" | "error";
@@ -64,7 +65,7 @@ export async function saveProfileAction(
 
   // The feed ranks against this profile, so it must not serve a cached page
   // scored on the previous answers.
-  revalidatePath("/");
+  revalidatePath(FEED_PATH);
   revalidatePath("/profile");
   // Both read the profile: /github pre-fills the username, /linkedin builds its
   // draft from the rest of it.
@@ -225,9 +226,9 @@ export async function deleteAccountAction(
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
 
-  revalidatePath("/");
+  revalidatePath(FEED_PATH);
   // `authDeleted: false` means SUPABASE_SERVICE_ROLE_KEY is unset: every row we
   // hold is gone but the login record survives. The landing page says which
   // happened rather than claiming a clean sweep either way.
-  redirect(authDeleted ? "/?deleted=1" : "/?deleted=partial");
+  redirect(feedHref(authDeleted ? "deleted=1" : "deleted=partial"));
 }

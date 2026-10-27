@@ -889,6 +889,62 @@ export async function getFeedStats(kind?: PostingKind | null): Promise<FeedStats
 }
 
 /**
+ * The three numbers on the landing page.
+ *
+ * Each one counts something we observed, and the label on the page says what:
+ *  - `foundAllTime` — every internship and scholarship we have ever listed,
+ *    **including ones since closed**. That is what "found" means: distinct
+ *    opportunities (the dedup key makes a re-posted req one row) that reached
+ *    us at some point, not how many are open. It still excludes rows a person
+ *    hid as wrong — a hidden row was withdrawn as a mistake, and a mistake is
+ *    not something we found. Cumulative, so it only grows.
+ *  - `openNow` — what the feed would actually show on a bare visit.
+ *
+ * Every posting count uses the feed's own visibility rule — not hidden, not
+ * term-ended, not closed — so the landing page can never advertise rows the
+ * feed one click away refuses to show. `getFeedStats` above predates the
+ * hidden/term-ended rules and counts the raw table, which is why this is a
+ * separate query rather than a reuse.
+ *
+ * A total of scholarship *dollars* was measured and rejected: the largest
+ * "awards" in the corpus are program totals ($450,000, $175,000) stated beside
+ * per-student amounts in the same column, so a sum would be a large, confident
+ * and wrong number on the first page anyone sees.
+ */
+export interface LandingStats {
+  foundAllTime: number;
+  openNow: number;
+}
+
+/**
+ * Same in-process memo as `getCompletionCorpus`, shorter: this is the most
+ * visited page and the same answer for everyone, and a count that is a minute
+ * old is not wrong in any way a visitor could detect — ingest lands every few
+ * hours, not every few seconds.
+ */
+const LANDING_TTL_MS = 60_000;
+let landingMemo: { at: number; value: LandingStats } | null = null;
+
+export async function getLandingStats(): Promise<LandingStats> {
+  if (landingMemo && Date.now() - landingMemo.at < LANDING_TTL_MS) return landingMemo.value;
+
+  const [posting] = await db
+    .select({
+      foundAllTime: sql<number>`count(*) filter (where ${postings.hiddenAt} is null)::int`,
+      // The feed's own visibility rule: not hidden, not term-ended, not closed.
+      openNow: sql<number>`count(*) filter (where ${postings.hiddenAt} is null and ${postings.termEndedFlagAt} is null and ${postings.closedAt} is null)::int`,
+    })
+    .from(postings);
+
+  const value: LandingStats = {
+    foundAllTime: posting.foundAllTime,
+    openNow: posting.openNow,
+  };
+  landingMemo = { at: Date.now(), value };
+  return value;
+}
+
+/**
  * Separate shelf for lottery / sweepstakes scholarships.
  *
  * These are intentionally not mixed into the ranked feed. They are real awards,

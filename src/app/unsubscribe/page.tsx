@@ -3,6 +3,7 @@ import Link from "next/link";
 import { unsubscribeDigest } from "@/lib/digest/store";
 import { unsubscribeByToken } from "@/lib/reminders/store";
 import { unsubscribeAllSearches, unsubscribeSearch } from "@/lib/searches/store";
+import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
 
@@ -148,7 +149,7 @@ export default async function UnsubscribePage({
       </p>
 
       <Link
-        href="/"
+        href={FEED_PATH}
         className="btn press"
         style={{ textDecoration: "none", display: "inline-block", marginTop: 28 }}
       >

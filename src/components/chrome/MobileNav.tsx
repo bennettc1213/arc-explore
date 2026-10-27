@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { FEED_PATH } from "@/lib/routes";
 import { TOOLS } from "@/lib/tools";
 
 interface MobileNavProps {
@@ -107,6 +108,13 @@ export function MobileNav({ signedIn, isAdmin, pricingLabel, pricingTitle, dev }
 
       {open && (
         <div id="mobile-nav-panel" role="dialog" aria-label="Menu" className="mobile-nav-panel">
+          <Link href={FEED_PATH} className="mobile-navlink" onClick={() => setOpen(false)}>
+            <span className="mono chrome">explore</span>
+            <span className="t-xs" style={{ color: "var(--faint-readable)" }}>
+              every open internship and scholarship, ranked
+            </span>
+          </Link>
+
           {TOOLS.map((tool, i) => (
             <Link
               key={tool.href}

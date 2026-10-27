@@ -157,6 +157,31 @@ test("the subject states the count and the search name", () => {
   assert.equal(email.to, "a@b.com");
 });
 
+test("the alert links to the feed with the search's filters, not to the landing page", () => {
+  // `/` became a landing page with no listings on it. A link that still wrote
+  // `${site}/?kind=internship` would land the student on marketing copy with
+  // their filters silently dropped.
+  const withQuery = composeAlert({
+    email: "a@b.com",
+    searchId: "s1",
+    searchName: "data internships",
+    feedQuery: "kind=internship",
+    matches: MATCHES,
+    unsubscribeToken: "tok",
+  });
+  assert.match(withQuery.text, /See them in the feed: \S+\/explore\?kind=internship\n/);
+
+  const bare = composeAlert({
+    email: "a@b.com",
+    searchId: "s1",
+    searchName: "x",
+    feedQuery: "",
+    matches: MATCHES,
+    unsubscribeToken: "tok",
+  });
+  assert.match(bare.text, /See them in the feed: \S+\/explore\n/);
+});
+
 test("one match is singular", () => {
   const email = composeAlert({
     email: "a@b.com",

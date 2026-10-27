@@ -9,6 +9,7 @@ import {
   toggleNotifyAction,
   type SaveSearchState,
 } from "@/app/searches-actions";
+import { feedHref } from "@/lib/routes";
 import { describeFilters, filtersToQuery, type SavedFilters } from "@/lib/searches/types";
 
 import { PendingButton } from "./PendingButton";
@@ -127,7 +128,7 @@ export function SavedSearches({
             <li key={s.id} className="flex flex-wrap items-baseline justify-between gap-3">
               <div style={{ minWidth: 0 }}>
                 <Link
-                  href={`/?${filtersToQuery(s.filters)}`}
+                  href={feedHref(filtersToQuery(s.filters))}
                   className="t-sm press"
                   style={{ color: "var(--accent)" }}
                 >

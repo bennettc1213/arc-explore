@@ -61,7 +61,7 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-inout: cubic-bezier(0.76, 0, 0.24, 1);
 
-  --nav-h: 72px;
+  --nav-h: 84px;
   --gutter: clamp(20px, 4vw, 64px);
 }
 
@@ -373,6 +373,20 @@ body {
   background: var(--accent-dim);
   border-color: var(--accent);
   color: var(--accent-hot);
+}
+
+/* The top bar's links are the site's primary navigation and were the same
+   11px as the footer's, which read as fine print. Scoped to `body > header` so
+   the footer's `.navlink`s keep their size — the footer is fine print. The
+   nav height token grows with it (see --nav-h) so the bar is not cramped. */
+body > header .navlink {
+  font-size: 0.9375rem;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+body > header .brand-word {
+  font-size: 1.125rem;
 }
 
 /* The admin link keeps its softer hue at rest — it is the one nav item most
@@ -1117,4 +1131,466 @@ html {
   .resume-section-title {
     break-after: avoid;
   }
+}
+
+/* ==========================================================================
+   landing — `/`, the page in front of the feed
+
+   Centered, and the only centered page in the product. Everything else is a
+   left-aligned working surface; this one has a single job — say what this is
+   and hand over two doors — and a centered column is how that reads at a
+   glance. Built from the same tokens, so it looks like the front of the same
+   product rather than a marketing site bolted onto it.
+   ========================================================================== */
+
+.landing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-block: clamp(36px, 6vh, 88px) clamp(64px, 10vh, 112px);
+}
+
+.landing-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1180px;
+}
+
+/* The eyebrow's tick is a left-hand ::before. Centered, one tick reads as a
+   misalignment, so it gets a matching one on the right. */
+.landing-eyebrow {
+  justify-content: center;
+  margin-top: 22px;
+}
+.landing-eyebrow::after {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
+  flex: none;
+}
+
+/* Sized so the highlighted phrase — which never wraps, it is one inline block —
+   still fits a 390px phone with the 20px gutter. Measured, not guessed: see
+   FIXES.md §2's mobile entry for why this site checks 390px specifically. */
+.landing-title {
+  margin-top: 22px;
+  max-width: 15.5em;
+  font-size: clamp(1.75rem, 6.6vw, 4.9rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.landing-sub {
+  margin-top: 26px;
+  max-width: 58ch;
+  color: var(--muted);
+  font-size: clamp(0.9375rem, 1.25vw, 1.0625rem);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.landing-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  margin-top: 38px;
+}
+
+/* Two-line buttons: the action, then the fact that makes it safe to click.
+   "no signup required" is the reason the primary one gets pressed, so it rides
+   inside the button rather than as a caption a thumb has to read separately. */
+.landing-cta {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 272px;
+  padding: 16px 24px 15px;
+  border: 1px solid var(--line-strong);
+  background: rgba(15, 15, 17, 0.72); /* --bg-2, so the grid shows through faintly */
+  color: var(--text);
+  font-family: var(--font-mono);
+  text-align: left;
+  text-transform: lowercase;
+  text-decoration: none;
+  transition:
+    background 160ms var(--ease-out),
+    border-color 160ms var(--ease-out);
+}
+.landing-cta:hover {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+.landing-cta-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.landing-cta-label [aria-hidden] {
+  display: inline-block;
+  transition: transform 160ms var(--ease-out);
+}
+.landing-cta:hover .landing-cta-label [aria-hidden] {
+  transform: translateX(4px);
+}
+.landing-cta-note {
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--faint-readable);
+}
+
+/* Text on the accent is near-black at full strength, notes included — a
+   dimmed near-black on orange measured ~4.2:1, under AA for text this small. */
+.landing-cta-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 18px 48px -22px var(--accent-glow);
+}
+.landing-cta-primary:hover {
+  background: var(--accent-hot);
+  border-color: var(--accent-hot);
+}
+.landing-cta-primary .landing-cta-note {
+  color: var(--on-accent);
+}
+
+.landing-verify {
+  margin-top: 24px;
+  color: var(--faint-readable);
+  text-decoration: none;
+  transition: color 160ms var(--ease-out);
+}
+.landing-verify:hover {
+  color: var(--accent);
+}
+
+.landing-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  max-width: 1080px;
+  margin-top: clamp(48px, 7vh, 88px);
+  gap: 16px;
+}
+/* Solid cards, not rules on the page. These used to be transparent cells
+   divided by hairlines, so the background grid ran straight through the
+   numbers and they read as part of the wallpaper. An opaque surface fill hides
+   the grid behind each card, and the stronger border plus a dark drop shadow
+   lift it off the page — the shadow is black rather than orange because the
+   accent glow is spent on the primary button above. */
+.landing-stat {
+  padding: 32px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 22px 44px -26px rgba(0, 0, 0, 0.9);
+  transition:
+    border-color 160ms var(--ease-out),
+    translate 160ms var(--ease-out);
+}
+.landing-stat:hover {
+  border-color: var(--accent);
+  translate: 0 -3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-stat:hover { translate: none; }
+}
+.landing-stat-value {
+  color: var(--text);
+  font-size: clamp(2.6rem, 5vw, 4rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+/* The one the page is built around gets the accent; the other two are its
+   evidence. One accent use per row, per the design system. */
+.landing-stat:first-child .landing-stat-value {
+  color: var(--accent);
+}
+.landing-stat-label {
+  margin-top: 14px;
+}
+.landing-stat-detail {
+  max-width: 34ch;
+  margin: 6px auto 0;
+  text-wrap: balance;
+}
+
+.landing-footnote {
+  max-width: 62ch;
+  margin-top: 20px;
+  text-wrap: balance;
+}
+
+@media (max-width: 767px) {
+  /* The eyebrow wraps to two lines at phone width, and a tick on each side of
+     a two-line block points at nothing. */
+  .landing-eyebrow::before,
+  .landing-eyebrow::after {
+    display: none;
+  }
+  .landing-cta {
+    width: 100%;
+    min-width: 0;
+  }
+  .landing-stats {
+    grid-template-columns: 1fr;
+  }
+  .landing-stat {
+    padding: 26px 16px;
+  }
+}
+
+/* Entrance: a short staggered rise, the same ease as everything else here.
+   `both` so each piece waits invisibly for its delay instead of flashing in
+   and then animating. */
+.landing-rise {
+  animation: landing-rise 700ms var(--ease-out) both;
+}
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-rise {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   landing — three-step explainer, under the stats
+   ========================================================================== */
+
+.landing-how {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1080px;
+  margin-top: clamp(72px, 12vh, 128px);
+}
+.landing-how .landing-eyebrow {
+  margin-top: 0;
+}
+.landing-how-title {
+  margin-top: 18px;
+  font-size: clamp(1.75rem, 4.2vw, 3rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.landing-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  margin-top: 44px;
+  padding: 0;
+  list-style: none;
+  counter-reset: none;
+}
+.landing-step-item {
+  display: flex;
+}
+
+/* The same solid-card language as the stats above it, so the page reads as one
+   system. The whole card is the link — a 40px "learn more" label would be a
+   small target for the thing a visitor is meant to do next. */
+.landing-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 28px 26px 24px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 22px 44px -26px rgba(0, 0, 0, 0.9);
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+  transition:
+    border-color 160ms var(--ease-out),
+    background 160ms var(--ease-out);
+}
+.landing-step:hover,
+.landing-step:focus-visible {
+  border-color: var(--accent);
+  background: var(--surface-2);
+}
+.landing-step-num {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+.landing-step-title {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+.landing-step-body {
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+.landing-step-note {
+  padding-top: 2px;
+}
+/* Pinned to the bottom so the three links line up across cards of different
+   body length. */
+.landing-step-go {
+  margin-top: auto;
+  padding-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  text-transform: lowercase;
+  color: var(--accent);
+}
+.landing-step-go [aria-hidden] {
+  display: inline-block;
+  transition: transform 160ms var(--ease-out);
+}
+.landing-step:hover .landing-step-go [aria-hidden] {
+  transform: translateX(4px);
+}
+
+@media (max-width: 899px) {
+  .landing-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   scholarship plan view — cards, reason rows, goal meter, sign-up modal
+   Square corners, hairlines and the one accent, like every other surface.
+   Nothing here animates beyond the shared 1px .press offset, so there is no
+   reduced-motion branch to forget.
+   ========================================================================== */
+
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--line-strong);
+}
+.segmented-item {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0 16px;
+  min-height: 44px; /* tap target */
+  display: inline-flex;
+  align-items: center;
+}
+.segmented-item + .segmented-item { border-left: 1px solid var(--line-strong); }
+.segmented-item:hover { color: var(--text); background: var(--accent-dim); }
+.segmented-item[aria-current="page"] { color: var(--bg); background: var(--accent); }
+
+.sch-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 16px 18px;
+  height: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+.sch-card-facts {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+.sch-card-facts > div { display: flex; gap: 10px; align-items: baseline; }
+.sch-card-facts dt { min-width: 7.5em; color: var(--faint-readable); }
+.sch-card-facts dd { color: var(--text); }
+
+/* A locked card has no content to blur — the payload holds none — so it draws
+   blurred bars where a card's lines would be. */
+.sch-card-locked {
+  position: relative;
+  min-height: 260px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--muted);
+  font: inherit;
+}
+.sch-card-locked:hover { border-color: var(--accent); }
+.sch-card-ghost {
+  position: absolute;
+  inset: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  filter: blur(3px);
+  opacity: 0.5;
+}
+.sch-card-ghost > span { display: block; height: 10px; background: var(--surface-2); }
+
+/* Mobile-first: one column of next moves, then three from tablet up. */
+.plan-grid { display: grid; gap: 12px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .plan-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Reason rows scroll sideways; the page itself never does. */
+.plan-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(300px, 84vw);
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: 10px;
+  overscroll-behavior-x: contain;
+}
+.plan-row > * { scroll-snap-align: start; }
+
+.goal-bar {
+  display: flex;
+  height: 10px;
+  margin-top: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.goal-bar-submitted { background: var(--accent); }
+/* Saved is the dim accent rather than a second hue — one accent, no exceptions. */
+.goal-bar-saved { background: var(--accent-dim); box-shadow: inset 0 0 0 1px var(--accent); }
+
+.email-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500; /* same layer as the apply wizard */
+  background: rgba(10, 10, 11, 0.72);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 96px var(--gutter) 40px;
+  overflow-y: auto;
+}
+.email-modal {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  padding: 22px;
 }

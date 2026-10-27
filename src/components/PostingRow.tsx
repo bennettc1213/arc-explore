@@ -116,7 +116,10 @@ export function PostingRow({
             <span className="mono">{dates.verified}</span>
             {/* The employer's. Omitted entirely when we have no believable
                 date rather than falling back to one we would not defend. */}
-            {dates.posted && (
+            {/* Never on a scholarship: its freshness is when we last checked
+                the listing, labelled on its own, and a "posted" date beside
+                it would blend the two into one claim. */}
+            {dates.posted && item.kind !== "scholarship" && (
               <span className="mono" style={{ color: "var(--faint-readable)" }}>
                 · {dates.posted}
               </span>

@@ -15,6 +15,7 @@ import {
   type FeatureKey,
   type TierId,
 } from "@/lib/pricing/tiers";
+import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
 
@@ -93,7 +94,7 @@ export default async function PricingPage() {
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
-      <BackLink href="/" label="back to the feed" />
+      <BackLink href={FEED_PATH} label="back to the feed" />
       <header style={{ marginBottom: 32 }}>
         <div className="eyebrow chrome">pricing</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>
@@ -231,7 +232,7 @@ export default async function PricingPage() {
           what we hold about you
         </Link>
         {"  ·  "}
-        <Link href="/" style={{ color: "var(--accent)" }}>
+        <Link href={FEED_PATH} style={{ color: "var(--accent)" }}>
           back to the feed →
         </Link>
       </footer>

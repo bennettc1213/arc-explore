@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/admin/auth";
 import { markReviewed, resolveReport, setHidden } from "@/lib/reports/store";
+import { FEED_PATH } from "@/lib/routes";
 
 /**
  * Curation actions.
@@ -25,7 +26,7 @@ function refresh(postingId?: string) {
   revalidatePath("/admin");
   // The feed and the listing both read `hidden_at`, so a takedown that does not
   // invalidate them stays visible until the cache expires.
-  revalidatePath("/");
+  revalidatePath(FEED_PATH);
   if (postingId) revalidatePath(`/listing/${postingId}`);
 }
 

@@ -8,6 +8,7 @@ import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature } from "@/lib/pricing/tiers";
 import { deleteSearch, saveSearch, setNotify } from "@/lib/searches/store";
 import { MAX_SAVED_SEARCHES, isEmptyFilters, saveSearchSchema } from "@/lib/searches/types";
+import { FEED_PATH } from "@/lib/routes";
 
 /** The single paid plan's display name — never hardcoded. */
 const PAID = TIER_LABELS.apply;
@@ -28,7 +29,7 @@ export async function saveSearchAction(
   _prev: SaveSearchState,
   formData: FormData,
 ): Promise<SaveSearchState> {
-  const user = await requireUser("/");
+  const user = await requireUser(FEED_PATH);
 
   // A saved search only exists to be alerted on, and alerts are Edge+ (see
   // "saved_search_alerts" in src/lib/pricing/tiers.ts and the plan filter in
@@ -70,20 +71,20 @@ export async function saveSearchAction(
     };
   }
 
-  revalidatePath("/");
+  revalidatePath(FEED_PATH);
   return { status: "saved" };
 }
 
 export async function deleteSearchAction(formData: FormData): Promise<void> {
-  const user = await requireUser("/");
+  const user = await requireUser(FEED_PATH);
   const id = String(formData.get("id") ?? "");
   if (id) await deleteSearch(user.id, id);
-  revalidatePath("/");
+  revalidatePath(FEED_PATH);
 }
 
 export async function toggleNotifyAction(formData: FormData): Promise<void> {
-  const user = await requireUser("/");
+  const user = await requireUser(FEED_PATH);
   const id = String(formData.get("id") ?? "");
   if (id) await setNotify(user.id, id, formData.get("notify") === "1");
-  revalidatePath("/");
+  revalidatePath(FEED_PATH);
 }

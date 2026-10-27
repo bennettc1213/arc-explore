@@ -9,6 +9,7 @@ import { URGENT_REASONS, reasonLabel, type ReportReason } from "@/lib/reports/ty
 
 import { HideForm, MarkReviewedButton, ResolveForm, UnhideButton } from "./AdminActionButtons";
 import { Metrics } from "./Metrics";
+import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +59,7 @@ export default async function AdminPage() {
 
   return (
     <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
-      <BackLink href="/" label="back to the feed" />
+      <BackLink href={FEED_PATH} label="back to the feed" />
       <header style={{ marginBottom: 28 }}>
         <div className="eyebrow chrome">admin</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>
