@@ -30,6 +30,7 @@ import { KindSwitcher, ViewToggle } from "@/components/scholarships/ExploreSwitc
 import { PlanView, type FundingState } from "@/components/scholarships/PlanView";
 import { getFundingGoal } from "@/lib/profile/funding-goal";
 import { FEED_PATH } from "@/lib/routes";
+import { ActiveFilters } from "@/components/ActiveFilters";
 import { getFundingTotals, getScholarshipPlan } from "@/lib/scholarships/explore";
 import { parseExploreView, type ExploreView } from "@/lib/scholarships/plan";
 
@@ -402,7 +403,7 @@ export default async function FeedPage({
     : new Map();
 
   return (
-    <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
+    <main className="wrap explore-page" style={{ paddingBlock: "48px 96px" }}>
       {deleted && (
         <div
           className="border"
@@ -420,7 +421,7 @@ export default async function FeedPage({
         </div>
       )}
 
-      <header style={{ marginBottom: 40 }}>
+      <header className="workspace-page-heading" style={{ marginBottom: 40 }}>
         <div className="eyebrow chrome">01 — internships + scholarships</div>
         <h1 className="section-title" style={{ marginTop: 12 }}>
           Everything open right now,{" "}
@@ -435,7 +436,7 @@ export default async function FeedPage({
       </header>
 
       <section
-        className="border-y"
+        className="border-y overview-stats"
         style={{ borderColor: "var(--line)", padding: "22px 0", marginBottom: 32 }}
       >
         <div className="flex flex-wrap gap-x-12 gap-y-6">
@@ -452,12 +453,11 @@ export default async function FeedPage({
           which is only any good if you already know the word. Tease them here,
           before the profile form, so a first visitor has something to try with
           no account. */}
-      {!user && <ToolsTease />}
 
       {/* What the feed is scoped to. Was reachable only through a select
           inside the collapsed filter panel, which is why scholarships felt
           missing. Writes the same `kind` param that select does. */}
-      <div className="flex flex-wrap items-start gap-x-4">
+      <div className="flex flex-wrap items-start gap-x-4 explore-toolbar">
         <KindSwitcher
           current={kind === "scholarship" ? "scholarship" : kind === "internship" ? "internship" : "all"}
           hrefs={kindHrefs}
@@ -471,7 +471,8 @@ export default async function FeedPage({
           surface is now a dropdown behind the "filters" trigger; its inputs
           still serialize on submit even while collapsed. Signed out, the
           profile answers ride along inside the same form. */}
-      <FilterPanel
+      <div className="explore-layout">
+      <aside aria-label="Search and filter opportunities"><FilterPanel
         user={Boolean(user)}
         profile={{
           major: profile.major ?? null,
@@ -498,7 +499,10 @@ export default async function FeedPage({
         excludeMarketing={excludeMarketing}
         activeCount={activeCount}
         view={scholarshipViews ? view : null}
-      />
+      /></aside>
+
+      <div className="explore-results" id="opportunity-results">
+      <ActiveFilters params={sp} />
 
       {user && !profileReady && (
         <div className="slot" style={{ marginBottom: 24, padding: "14px 16px" }}>
@@ -522,7 +526,7 @@ export default async function FeedPage({
       {!user && !hasProfile && (
         <div className="slot" style={{ marginBottom: 24, padding: "14px 16px" }}>
           <span>
-            add your details above to score these — or{" "}
+            personalize your matches to score these — or{" "}
             <Link href="/login" style={{ color: "var(--accent)" }}>sign in</Link> to save them
           </span>
         </div>
@@ -689,6 +693,9 @@ export default async function FeedPage({
         fit and timing are explainable heuristics, not win probabilities. we do not have
         outcome data yet, so we do not pretend to predict odds.
       </footer>
+      </div>
+      </div>
+      {!user && <details className="explore-toolkit-disclosure"><summary>Explore your application toolkit</summary><ToolsTease /></details>}
     </main>
   );
 }

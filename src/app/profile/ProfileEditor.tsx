@@ -110,7 +110,7 @@ export function ProfileEditor({
   return (
     <>
       {/* ---------------------------------------------------------- resume */}
-      <section style={{ border: "1px solid var(--line-strong)", padding: 22, marginBottom: 28 }}>
+      <section id="profile-resume" className="settings-section" style={{ border: "1px solid var(--line-strong)", padding: 22, marginBottom: 28 }}>
         <div className="eyebrow chrome" style={{ marginBottom: 6 }}>
           resume — optional
         </div>

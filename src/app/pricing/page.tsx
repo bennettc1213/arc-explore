@@ -93,7 +93,7 @@ export default async function PricingPage() {
   const unverified = FEATURE_KEYS.filter((k) => FEATURES[k].status === "unverified");
 
   return (
-    <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
+    <main className="wrap pricing-page" style={{ paddingBlock: "48px 96px" }}>
       <BackLink href={FEED_PATH} label="back to the feed" />
       <header style={{ marginBottom: 32 }}>
         <div className="eyebrow chrome">pricing</div>
@@ -159,7 +159,7 @@ export default async function PricingPage() {
         </section>
       )}
 
-      <div className="grid gap-6 md:grid-cols-3" style={{ marginBottom: 40 }}>
+      <div className="grid gap-6 md:grid-cols-3 pricing-plans" style={{ marginBottom: 40 }}>
         {TIER_IDS.map((t) => {
           const included = FEATURE_KEYS.filter((k) => FEATURES[k].limits[t] !== 0);
           return (
@@ -176,10 +176,10 @@ export default async function PricingPage() {
             >
               <div>
                 <div className="eyebrow chrome">{TIER_TAGLINES[t]}</div>
-                <div className="mono-strong" style={{ fontSize: "1.4rem", marginTop: 6 }}>
+                <div className="mono-strong plan-name" style={{ fontSize: "1.4rem", marginTop: 6 }}>
                   {TIER_LABELS[t]}
                 </div>
-                <div className="mono" style={{ color: "var(--faint-readable)", marginTop: 2 }}>
+                <div className="mono plan-price" style={{ color: "var(--faint-readable)", marginTop: 2 }}>
                   {priceLabel(t)}
                 </div>
               </div>

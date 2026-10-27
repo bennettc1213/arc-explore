@@ -72,7 +72,7 @@ export default async function ProfilePage({
   const completion = profileCompletion(profile, resumeSkills, corpus);
 
   return (
-    <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 880 }}>
+    <main className="wrap settings-page" style={{ paddingBlock: "48px 96px", maxWidth: 1000 }}>
       <BackLink href={FEED_PATH} label="back to the feed" />
       <div className="flex flex-wrap items-start justify-between gap-4" style={{ marginBottom: 32 }}>
         <div>
@@ -97,7 +97,8 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      <Completion completion={completion} />
+      <nav className="settings-section-nav" aria-label="Profile sections"><a href="#profile-overview">Overview</a><a href="#profile-resume">Resume upload</a><a href="#intake">Your details</a><a href="#email-preferences">Email preferences</a><a href="#account-settings">Account</a></nav>
+      <div id="profile-overview" className="settings-section"><Completion completion={completion} /></div>
 
       {competitiveness && competitiveness.scoreablePostings > 0 && (
         <section
@@ -204,9 +205,9 @@ export default async function ProfilePage({
         }
       />
 
-      <EmailPrefs prefs={emailPrefs} />
+      <div id="email-preferences" className="settings-section"><EmailPrefs prefs={emailPrefs} /></div>
 
-      <DeleteAccount />
+      <div id="account-settings" className="settings-section"><DeleteAccount /></div>
 
       <p className="mono" style={{ marginTop: 28 }}>
         <Link href={FEED_PATH} className="press" style={{ color: "var(--accent)" }}>

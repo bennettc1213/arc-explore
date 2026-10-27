@@ -123,7 +123,7 @@ export default async function ListingPage({
   const amount = item.kind === "scholarship" ? formatAward(item) : null;
 
   return (
-    <main className="wrap" style={{ paddingBlock: "40px 96px" }}>
+    <main className="wrap listing-page" style={{ paddingBlock: "40px 96px" }}>
       <BackLink href={FEED_PATH} label="back to feed" />
 
       <header className="print-hide" style={{ marginBottom: 24 }}>
@@ -202,7 +202,7 @@ export default async function ListingPage({
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn press"
+              className="btn btn-primary press"
               style={{ textDecoration: "none" }}
             >
               apply on {item.kind === "scholarship" ? "the sponsor's site" : "the employer's site"} ↗
@@ -236,6 +236,8 @@ export default async function ListingPage({
             {user && <TrackButton postingId={item.id} current={null} />}
           </div>
         </header>
+
+        <nav className="settings-section-nav print-hide" aria-label="Opportunity sections"><a href="#opportunity-overview">Overview</a><a href="#opportunity-fit">Your fit</a>{item.kind === "scholarship" && item.eligibility.length > 0 && <a href="#opportunity-eligibility">Eligibility</a>}<a href="#cover-letter">Cover letter</a></nav>
 
         {item.applyLinkDead && (
           <section
@@ -276,6 +278,7 @@ export default async function ListingPage({
         )}
 
         <section
+          id="opportunity-overview"
           className="print-hide border-y grid gap-x-8 gap-y-3 md:grid-cols-2"
           style={{ borderColor: "var(--line)", padding: "20px 0", marginBottom: 32 }}
         >
@@ -366,7 +369,8 @@ export default async function ListingPage({
           </section>
         )}
 
-        <section className="print-hide" style={{ marginBottom: 32 }}>
+        <section id="opportunity-fit" className="print-hide" style={{ marginBottom: 32 }}>
+          {!profileReady && <p className="t-sm" style={{ color: "var(--muted)" }}><Link href={user ? "/profile" : FEED_PATH} style={{ color: "var(--accent-lite)" }}>Add your profile details</Link> to see how this opportunity fits you.</p>}
           <ScoreReasons
             reasons={presented.reasons}
             skills={presented.skills}
@@ -382,7 +386,7 @@ export default async function ListingPage({
         </section>
 
         {item.kind === "scholarship" && item.eligibility.length > 0 && (
-          <section className="print-hide" style={{ marginBottom: 32 }}>
+          <section id="opportunity-eligibility" className="print-hide" style={{ marginBottom: 32 }}>
             <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
               eligibility
             </div>

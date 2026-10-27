@@ -1,6 +1,8 @@
 import Link from "next/link";
 
-import { Mascot } from "@/components/chrome/Mascot";
+import { OpportunityPreview } from "@/components/OpportunityPreview";
+import { Icon, type IconName } from "@/components/ui/Icon";
+import { TOOLS } from "@/lib/tools";
 import { CountUp } from "@/components/ui/count-up";
 import { TactileHighlight } from "@/components/ui/tactile-highlight";
 import { getSessionUser } from "@/lib/auth";
@@ -25,16 +27,12 @@ const STUDENTS_HELPED = 10_000;
 /**
  * The landing page.
  *
- * **No listings on it, on purpose.** The feed used to be `/`, so a first
- * visitor met a filter form and fifty rows before they had been told what this
- * is. This page says what it is and hands them two doors; the feed lives at
- * `FEED_PATH` and is one click away with no account.
+ * The feed lives at `FEED_PATH`, one click away with no account. A small
+ * product preview now shows three real public listings without profile scores
+ * or invented activity; the full feed and its controls remain on Explore.
  *
- * The three numbers are the only data here, and each is something we observed
- * rather than something we were told — see `getLandingStats` for what each
- * counts, and the definition printed under each figure says the same thing in
- * plain words. A landing page is where a product is most tempted to round up;
- * this one prints the count and what it means.
+ * Listing counts come from `getLandingStats`; students helped remains the
+ * owner-stated constant above. Each figure retains its definition.
  */
 export default async function LandingPage() {
   // An old `/?kind=…` feed link never reaches this component: `proxy.ts`
@@ -97,11 +95,8 @@ export default async function LandingPage() {
 
   return (
     <main className="wrap landing">
+      <div className="landing-hero-grid">
       <section className="landing-hero" aria-labelledby="landing-title">
-        <div className="landing-rise" style={{ animationDelay: "0ms" }}>
-          <Mascot size={44} />
-        </div>
-
         <div className="eyebrow chrome landing-eyebrow landing-rise" style={{ animationDelay: "60ms" }}>
           internships + scholarships · checked at the source
         </div>
@@ -155,6 +150,8 @@ export default async function LandingPage() {
           how we verify a listing →
         </Link>
       </section>
+      <OpportunityPreview openNow={stats.openNow} />
+      </div>
 
       <section
         className="landing-stats landing-rise"
@@ -201,6 +198,14 @@ export default async function LandingPage() {
           ))}
         </ol>
       </section>
+
+      <section className="landing-toolkit" aria-labelledby="toolkit-title">
+        <div className="landing-section-heading"><div><div className="eyebrow">Your application toolkit</div><h2 id="toolkit-title">More than a place to search.</h2></div><p>Prepare your profile, refine your application, and take your next step with the tools already in Instela.</p></div>
+        <div className="landing-tool-grid">{TOOLS.map(t => <Link key={t.href} href={t.href} className="landing-tool"><span className="tool-icon"><Icon name={t.href.slice(1) as IconName} size={23} /></span><h3>{t.label === "github" ? "GitHub audit" : t.label === "linkedin" ? "LinkedIn tools" : t.label === "essay" ? "Essay review" : "Autofill extension"}</h3><p>{t.blurb}</p><span className="tool-open">Explore tool <Icon name="arrow" size={16} /></span></Link>)}</div>
+      </section>
+
+      <section className="landing-trust"><div className="trust-symbol"><Icon name="shield" size={30} /></div><div><h2>Know where your next opportunity comes from.</h2><p>Every listing checked at the source. Your data is never sold.</p></div><Link href="/how-we-verify" className="btn">How we verify<Icon name="arrow" size={16} /></Link></section>
+      <section className="landing-final"><div className="eyebrow">Your next chapter starts here</div><h2>Find the opportunity.<br /><span>Make it yours.</span></h2><Link href={FEED_PATH} className="btn btn-primary">Explore opportunities now<Icon name="arrow" size={18} /></Link><p>No signup required.</p></section>
     </main>
   );
 }

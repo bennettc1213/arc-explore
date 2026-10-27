@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { INTEREST_OPTIONS, WORK_AUTH_OPTIONS } from "@/lib/profile/types";
 import { FEED_PATH } from "@/lib/routes";
+import { Icon } from "@/components/ui/Icon";
 
 /** A small sub-label for clustering related controls — quieter than `.eyebrow`,
     which is already spent at the page level. */
@@ -88,13 +89,27 @@ export function FilterPanel(props: FilterPanelProps) {
 
   useEffect(() => {
     if (!open) return;
+    const mobile = window.matchMedia("(max-width: 1100px)").matches;
+    const panel = document.getElementById("filter-panel");
+    const previousOverflow = document.body.style.overflow;
+    if (mobile) { document.body.style.overflow = "hidden"; panel?.querySelector<HTMLButtonElement>("button")?.focus(); }
     function onPointerDown(e: PointerEvent) {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") { setOpen(false); triggerRef.current?.focus(); }
+      if (mobile && e.key === "Tab" && panel) {
+        const focusable = Array.from(panel.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([type="hidden"]), select, a[href]')).filter(el => el.getClientRects().length > 0);
+        const first = focusable[0], last = focusable.at(-1);
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
+    }
     document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("pointerdown", onPointerDown); document.removeEventListener("keydown", onKeyDown); };
   }, [open]);
 
   function closeAndRefocus() {
@@ -107,13 +122,19 @@ export function FilterPanel(props: FilterPanelProps) {
       ref={rootRef}
       method="GET"
       action={FEED_PATH}
-      className="relative border"
+      className={`relative border explore-filters ${open ? "filters-open" : ""}`}
       style={{ borderColor: "var(--line)", padding: 20, marginBottom: 32 }}
     >
       {/* Without this, filtering from the list view would drop back to plan. */}
       {view && <input type="hidden" name="view" value={view} />}
+      <div className="filter-search">
+        <label className="field-row"><span className="filter-section-title">Search opportunities</span><span className="filter-search-input"><Icon name="search" size={17} /><input className="field" name="q" defaultValue={q ?? ""} placeholder="Role, organization, eligibility" /></span></label>
+        <button type="submit" className="btn btn-primary filter-search-submit">Search<Icon name="arrow" size={15} /></button>
+        <p className="mono">Matches the title, the sponsor, or who is eligible — every word must appear.</p>
+      </div>
       {!user && (
-        <>
+        <details className="guest-profile-fields">
+          <summary>Personalize your matches</summary>
           <div className="eyebrow chrome" style={{ marginBottom: 16 }}>
             02 — your profile
           </div>
@@ -180,13 +201,14 @@ export function FilterPanel(props: FilterPanelProps) {
               ))}
             </div>
           </div>
-        </>
+        </details>
       )}
 
       <div
         className="flex items-center justify-between"
         style={{ marginTop: user ? 0 : 20 }}
       >
+        <span className="filter-static-heading"><Icon name="filter" size={16} />Filters{activeCount > 0 && <span>{activeCount}</span>}</span>
         <button
           ref={triggerRef}
           type="button"
@@ -194,7 +216,7 @@ export function FilterPanel(props: FilterPanelProps) {
           aria-expanded={open}
           aria-controls="filter-panel"
           onClick={() => setOpen((v) => !v)}
-          className="mono chrome press flex items-center gap-2"
+          className="mono chrome press flex items-center gap-2 filter-toggle"
           style={{
             color: "var(--accent)",
             background: "none",
@@ -204,7 +226,7 @@ export function FilterPanel(props: FilterPanelProps) {
             cursor: "pointer",
           }}
         >
-          filters
+          <Icon name="filter" size={16} /> filters
           {activeCount > 0 && (
             <span
               aria-label={`${activeCount} active`}
@@ -237,7 +259,7 @@ export function FilterPanel(props: FilterPanelProps) {
           <button
             type="button"
             onClick={closeAndRefocus}
-            className="mono chrome press"
+            className="mono chrome press filter-close"
             style={{
               color: "var(--faint-readable)",
               background: "none",
@@ -254,8 +276,10 @@ export function FilterPanel(props: FilterPanelProps) {
 
       <div
         id="filter-panel"
-        hidden={!open}
-        className="absolute left-0 top-full w-full"
+        data-open={open}
+        className="filter-controls"
+        role="region"
+        aria-label="Refine opportunities"
         style={{
           marginTop: 12,
           zIndex: 50,
@@ -265,20 +289,8 @@ export function FilterPanel(props: FilterPanelProps) {
           padding: 20,
         }}
       >
+        <div className="filter-drawer-header"><strong>Refine opportunities</strong><button type="button" onClick={closeAndRefocus} aria-label="Close filters"><Icon name="close" size={20} /></button></div>
         <GroupLabel>narrow by</GroupLabel>
-        <label className="field-row">
-          <span className="mono chrome">search</span>
-          <input
-            className="field"
-            name="q"
-            defaultValue={q ?? ""}
-            placeholder="nursing · Stripe · first-generation · machine learning"
-          />
-          <span className="mono" style={{ color: "var(--faint-readable)", marginTop: 4 }}>
-            matches the title, the sponsor, or who is eligible — every word must appear
-          </span>
-        </label>
-
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <label className="field-row">
             <span className="mono chrome">kind</span>

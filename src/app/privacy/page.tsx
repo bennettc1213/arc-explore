@@ -48,7 +48,7 @@ function Row({ what, why }: { what: string; why: string }) {
 
 export default function PrivacyPage() {
   return (
-    <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 820 }}>
+    <main className="wrap reference-page" style={{ paddingBlock: "48px 96px", maxWidth: 820 }}>
       <BackLink href={FEED_PATH} label="back to the feed" />
       <header style={{ marginBottom: 36 }}>
         <div className="eyebrow chrome">privacy</div>
