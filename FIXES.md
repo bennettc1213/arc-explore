@@ -21,6 +21,25 @@ pick up first.
 
 ## 1. Blocked on you — nothing to build until these land
 
+- [ ] **Student university SSO needs institutional connections.** The separate-session
+  Supabase SAML flow, signed account-bound callback, trusted current-student affiliation
+  check, 90-day verification expiry, and unique email/identity claims are implemented.
+  No university provider is configured yet. Needs university approval/metadata,
+  Supabase SAML enabled, mapped current-student attributes, and student/alumni/staff
+  tests. Setup is in `docs/student-verification.md`. Inbox-code fallback also needs
+  `STUDENT_VERIFICATION_FROM_EMAIL` from a verified Instela Resend sender; the only
+  verified Resend domain observed belonged to a different project and was not reused.
+- [ ] **The configured Anthropic credential returned 401 invalid x-api-key.**
+  Confirmed 2026-10-26 with the models endpoint, without logging the credential.
+  Resume imports now work independently using document extraction/OCR and conservative
+  editable suggestions; optional enrichment falls back safely. Other Anthropic tools
+  still need a valid key. No credential was replaced or exposed.
+- [ ] **The configured staging database is unreachable.** Its pooler returned
+  `ENOTFOUND tenant/user ... not found` on 2026-10-26. Student discount uniqueness,
+  enrollment prerequisites, one-time redemption, deletion/reuse prevention and RLS
+  were exercised against the available database in a rolled-back transaction.
+  Restore staging access before the next full staging rollout.
+
 These are not code problems. Each one is a key, a credit balance, or a decision
 only you can make, and the feature on the other side of it is already written.
 
@@ -222,13 +241,16 @@ only you can make, and the feature on the other side of it is already written.
   so it must not close anything on its own. Retiring the board and marking its
   rows `periodic_check` would be the honest move; closing them would not.
 
-- [ ] **Field taxonomy decision — does this serve non-tech students?** `FIELDS`
+- [x] **Field taxonomy decision — does this serve non-tech students?** `FIELDS`
   has six keys, all tech/business. Of 1,632 unclassifiable scholarship rows,
   **182 name a subject the taxonomy has no key for** — education (42),
   nursing/health (36), engineering (29), arts/media (28), law (19), science
   (18), trades (16) — and 1,450 state no subject anywhere. Adding keys widens
   `INTEREST_OPTIONS`, the profile intake and both Fit Scores. It is a product
-  decision about who this is for, not a parser change.
+  decision about who this is for, not a parser change. _2026-10-26: owner explicitly
+  requested broad college/medical coverage. Added 30 non-tech fields, searchable
+  multi-selects in onboarding/profile, custom interests, and corresponding explicit
+  field-matching patterns. Unknown custom subjects remain unscored rather than guessed._
 - [~] **Gamification: the completion meter is built; applying points and
   referrals are not — say if you disagree.** The Phase 06 line says "points for
   profile completion, applying, and referrals". The recommendation here was
@@ -1151,6 +1173,8 @@ only you can make, and the feature on the other side of it is already written.
 
 ## 3. Never verified with a real signed-in session
 
+- [~] **Guided onboarding: real email verification, authenticated resume parsing, and final account persistence still need a real signed-in walkthrough.** Added 2026-10-26. _Updated: authenticated browser tests created isolated synthetic Supabase users without sending mail, uploaded actual HTML/DOCX/PDF bytes, verified stored resume rows and autofilled school/major/GPA, saved medical/custom interests and the final profile, and cleaned up test accounts. Image and scanned-PDF OCR also passed. Real delivered email-code verification and university SSO still need configured senders/institution connections and real institutional test accounts._
+
 Auth is **magic-link only**, so every signed-in page below has been verified by
 unit test, by accessibility snapshot, or through a temporary preview route —
 never driven end to end with a real session. This is one login away from being
@@ -1594,6 +1618,7 @@ refused, not merely hidden):
   and say so. **All 10 live profiles are on `free`**, so every paid path above is
   currently unreachable in production and was verified by temporarily flipping
   one profile's plan and restoring it.
+- [~] **Student pricing is a 50% Pro preview until billing and student verification are connected.** Added 2026-10-26. _Updated: replaced domain/cookie eligibility with server-owned Supabase claims, salted expiring email codes, and university SSO current-student checks. School emails and university identities are unique across accounts and retained as hashes after deletion. Pricing reads verified, unexpired enrollment; a working school inbox alone is pending. Two onboarding plan cards show the regular and discounted price with a prominent Free button. Live university connections, sender setup, and discount-aware checkout/redemption integration remain. New goal cards for merit aid, hidden aid, research/summer programs, the almost-eligible unlocker, and AI reply monitoring remain labeled coming soon._
 - [ ] **Six features are `status: "coming_soon"` — gated *and* disabled on
   every tier including the one that pays for them.** The five named as reserved
   (scholarship autofill, answer bank, one-click reapply, submission
@@ -2304,6 +2329,13 @@ reason, not an omission.
 
 ## 7. Housekeeping
 
+- [ ] **Dependency advisories surfaced during resume-parser installation.**
+  `npm audit` reported 10 advisories, including a critical advisory on the existing
+  Next 16.3.0 dependency (a fix is listed in 16.4.3), plus existing high-severity
+  transitive/tooling advisories. The added parser packages were not named in the
+  audit findings. No broad framework upgrade was mixed into the onboarding change;
+  review and patch the dependency set before a production release.
+
 - [x] **`npm run check` could not pass, and nothing in `src/` was the reason.**
   The untracked scratch directory `party game/` sits inside the repo with its
   own committed-to-disk `.next/` build output, and both halves of the check
@@ -2403,7 +2435,7 @@ reason, not an omission.
   can get in — but anyone can inflate those six counts by calling it. Fine for
   counts nobody cites yet; worth a rate limit before any of them is quoted.
 
-- [ ] **Production gets `DATABASE_URL` from a `.env` file the Vercel CLI uploads, not from Vercel's environment.**
+- [x] **Production gets `DATABASE_URL` from a `.env` file the Vercel CLI uploads, not from Vercel's environment.**
   Found 2026-10-26 deploying the nav change from a clean checkout of
   `origin/master`: the build failed with `DATABASE_URL is not set`, because
   `vercel env ls` holds no `DATABASE_URL` at all (nor any `ADMIN_EMAILS`,
@@ -2417,6 +2449,12 @@ reason, not an omission.
   tree's unreleased code *and* its `.env`. Worked around by deploying a
   worktree of `origin/master` with `.env` copied in. **To close:** set the
   real variables in Vercel and add `.env*` to `.vercelignore`.
+  _Fixed during the authorized 2026-10-26 onboarding release: DATABASE_URL is now
+  a production Vercel secret, NEXT_PUBLIC_SITE_URL is set to the live origin,
+  and `.vercelignore` excludes `.env*` and local test/tool artifacts. Vercel built
+  successfully without an uploaded .env; authenticated live resume uploads and
+  profile saves passed. Student SSO providers are empty, optional resume AI is off,
+  and the billing rollout flag remains off._
 
 - [ ] **React error #441 logged twice on instela.org/explore (signed out).**
   Seen 2026-10-26 right after the nav-size deploy: "Minified React error #441"

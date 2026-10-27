@@ -43,7 +43,7 @@ export async function saveProfileAction(
     gpa: String(formData.get("gpa") ?? ""),
     workAuth: String(formData.get("workAuth") ?? ""),
     targetVerticals: picked.filter((v): v is InterestValue =>
-      (INTEREST_VALUES as readonly string[]).includes(v),
+      (INTEREST_VALUES as readonly string[]).includes(v) || /^custom:\S.{0,92}$/.test(v),
     ),
     targetLocations: parseLocations(String(formData.get("targetLocations") ?? "")),
     openToRemote: formData.get("openToRemote") === "1",
@@ -121,9 +121,7 @@ export async function uploadResumeAction(
   // FK target is guaranteed here too rather than assumed.
   await ensureProfile(user.id);
 
-  // The file itself is not retained — only the structured extraction and, for
-  // text uploads, the text we were given. There is no reason to hold a PDF of
-  // someone's address and phone number to rank job postings.
+  // Retain extracted text and structured details, never the original file bytes.
   await db.insert(resumes).values({
     userId: user.id,
     fileName: file.name,

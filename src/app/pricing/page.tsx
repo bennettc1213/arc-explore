@@ -16,6 +16,9 @@ import {
   type TierId,
 } from "@/lib/pricing/tiers";
 import { FEED_PATH } from "@/lib/routes";
+import { getStudentClaim } from "@/lib/student-discount";
+import { marketReadyFlags } from "@/lib/market-ready/flags";
+import { BillingButton } from "./BillingButton";
 
 export const dynamic = "force-dynamic";
 
@@ -37,8 +40,9 @@ export const dynamic = "force-dynamic";
  * same failure as collapsing "confirmed live" into "checked as of".
  */
 
-function priceLabel(t: TierId): string {
-  return TIER_PRICE_USD[t] === 0 ? "free" : `$${TIER_PRICE_USD[t].toFixed(2)}/mo`;
+function priceLabel(t: TierId, student = false): string {
+  const price = TIER_PRICE_USD[t] * (student && t === "apply" ? 0.5 : 1);
+  return price === 0 ? "free" : `$${price.toFixed(2)}/mo`;
 }
 
 /** What this tier gives you for this feature, in words. */
@@ -88,6 +92,10 @@ export default async function PricingPage() {
   const user = await getSessionUser();
   const tier = await getUserTier(user?.id);
   const devTier = await devTierInForce();
+  const claim = user ? await getStudentClaim(user.id).catch(() => null) : null;
+  const verifiedStudent = Boolean(claim?.current);
+  const studentPricing = verifiedStudent || claim?.enrollmentStatus === "pending";
+  const billingEnabled = marketReadyFlags.billing();
 
   const unbuilt = FEATURE_KEYS.filter((k) => FEATURES[k].status === "coming_soon");
   const unverified = FEATURE_KEYS.filter((k) => FEATURES[k].status === "unverified");
@@ -126,6 +134,19 @@ export default async function PricingPage() {
           )
         )}
       </header>
+
+      {studentPricing && (
+        <section style={{ border: "1px solid var(--accent)", background: "var(--accent-dim)", padding: "24px 26px", marginBottom: 28 }}>
+          <div className="eyebrow chrome" style={{ color: "var(--accent-lite)" }}>THE STUDENT ADVANTAGE · 50% OFF PRO</div>
+          <h2 style={{ fontSize: "1.65rem", letterSpacing: "-0.04em", marginTop: 12 }}>Big potential. Student pricing.</h2>
+          <p className="t-sm" style={{ color: "var(--muted)", marginTop: 10, maxWidth: "65ch" }}>
+            {verifiedStudent ? "Your university has verified your student status." : "Your school inbox is verified. Confirm current enrollment through your university to activate student pricing."}{" "}
+            Pro is shown at 50% off the regular monthly price. Student checkout stays unavailable until its Stripe discount is configured.
+          </p>
+          {!verifiedStudent && !user && <Link href="/login?next=%2Fonboarding" className="navlink" style={{ display: "inline-block", marginTop: 16 }}>Sign in with your school email →</Link>}
+          <Link href="/onboarding" className="navlink" style={{ display: "inline-block", marginTop: 16, marginLeft: !verifiedStudent && !user ? 20 : 0 }}>Return to your profile setup →</Link>
+        </section>
+      )}
 
       {/* Said before the plans, not after them. Someone deciding whether to pay
           should meet the caveats while they are still deciding. */}
@@ -180,7 +201,9 @@ export default async function PricingPage() {
                   {TIER_LABELS[t]}
                 </div>
                 <div className="mono" style={{ color: "var(--faint-readable)", marginTop: 2 }}>
-                  {priceLabel(t)}
+                  {studentPricing && t === "apply" && <><s>{priceLabel(t)}</s>{" → "}</>}
+                  {priceLabel(t, studentPricing)}
+                  {studentPricing && t === "apply" && <span style={{ display: "block", color: "var(--accent-lite)", marginTop: 8 }}>50% student discount{!verifiedStudent ? " · preview" : ""}</span>}
                 </div>
               </div>
 
@@ -191,9 +214,11 @@ export default async function PricingPage() {
               </ul>
 
               {t === tier ? (
-                <span className="mono" style={{ color: "var(--accent)", marginTop: "auto" }}>
-                  current plan
-                </span>
+                t === "apply" && billingEnabled && user ? <BillingButton portal /> : (
+                  <span className="mono" style={{ color: "var(--accent)", marginTop: "auto" }}>current plan</span>
+                )
+              ) : billingEnabled && t === "apply" && !studentPricing ? (
+                user ? <BillingButton /> : <Link href="/login?next=%2Fpricing" className="btn" style={{ marginTop: "auto", textAlign: "center" }}>sign in to upgrade</Link>
               ) : (
                 <span
                   className="btn"
@@ -217,13 +242,15 @@ export default async function PricingPage() {
         className="border"
         style={{ borderColor: "var(--line)", padding: "16px 18px", marginBottom: 28 }}
       >
-        <div className="mono chrome">no payment is collected anywhere on this site</div>
+        <div className="mono chrome">{billingEnabled ? "secure payments via Stripe" : "no payment is collected anywhere on this site"}</div>
         <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "66ch" }}>
+          {billingEnabled ? <>Payments are handled by Stripe. Card details never enter Instela, and an Apply member can manage or cancel their subscription from this page.</> : <>
           There is no billing provider connected, no checkout, and no card form — the buttons
           above are deliberately inert rather than leading somewhere that fails. Every account is
           currently on {TIER_LABELS.free}. When billing does land, the only thing that changes is
           which plan your account is set to; the limits on this page are the same ones the code
           already enforces.
+          </>}
         </p>
       </section>
 

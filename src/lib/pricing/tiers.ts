@@ -38,7 +38,7 @@ export type TierId = PlanId;
 
 export const TIER_LABELS: Record<TierId, string> = {
   free: "See it",
-  apply: "Apply",
+  apply: "Pro",
 };
 
 /**

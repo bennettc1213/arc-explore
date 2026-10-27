@@ -61,10 +61,9 @@ export default async function LandingPage() {
   ];
 
   /*
-   * Each step links to where it actually happens. Step one goes to the feed
-   * signed out, because that is where a signed-out visitor's profile lives (it
-   * rides in the URL — the whole product works without an account), and to the
-   * profile page once there is an account to hold it. Step three goes to the
+   * Each step links to where it actually happens. Step one starts the guided
+   * setup for a new visitor, and opens the profile editor for a signed-in
+   * visitor. Step three goes to the
    * extension's own page, the one tool teaser that is the apply step.
    *
    * The copy claims only what exists today. Autofill is on the paid plan and
@@ -76,7 +75,7 @@ export default async function LandingPage() {
       title: "Tell us about you",
       body: "Your major, graduation year, location and work authorization. Add a resume and we read your skills from it.",
       cta: user ? "open your profile" : "start with your profile",
-      href: user ? "/profile" : FEED_PATH,
+      href: user ? "/profile" : "/onboarding",
       note: null,
     },
     {
@@ -120,11 +119,11 @@ export default async function LandingPage() {
         </p>
 
         <div className="landing-ctas landing-rise" style={{ animationDelay: "320ms" }}>
-          <Link href={FEED_PATH} className="landing-cta landing-cta-primary press">
+          <Link href="/onboarding" className="landing-cta landing-cta-primary press">
             <span className="landing-cta-label">
               explore opportunities now <span aria-hidden>→</span>
             </span>
-            <span className="landing-cta-note">no signup required</span>
+            <span className="landing-cta-note">your goals · your profile · your opportunities</span>
           </Link>
 
           {/* The second door depends on who is knocking. Signed out, the

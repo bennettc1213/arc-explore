@@ -52,9 +52,13 @@
     "drizzle-orm": "^0.45.2",
     "framer-motion": "^14.6.0",
     "next": "16.3.0",
+    "officeparser": "^8.2.0",
     "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "stripe": "^23.0.1",
+    "tesseract.js": "^7.0.0",
+    "word-extractor": "^1.0.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -63,10 +67,12 @@
     "@types/pg": "^8.21.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/word-extractor": "^1.0.6",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
+    "pdf-lib": "^1.17.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.12",
     "typescript": "^5"

@@ -28,6 +28,30 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
+export const studentEmailChallenges = pgTable("student_email_challenges", {
+  userId: uuid("user_id").primaryKey().references(() => profiles.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
+  codeHash: text("code_hash").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  lastSentAt: timestamp("last_sent_at", { withTimezone: true }).notNull().defaultNow(),
+  windowStartedAt: timestamp("window_started_at", { withTimezone: true }).notNull().defaultNow(),
+  sendCount: integer("send_count").notNull().default(1),
+});
+
+export const studentDiscountClaims = pgTable("student_discount_claims", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").unique().references(() => profiles.id, { onDelete: "set null" }),
+  schoolEmailHash: text("school_email_hash").notNull().unique(),
+  schoolDomain: text("school_domain").notNull(),
+  studentSubjectHash: text("student_subject_hash").unique(),
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }).notNull().defaultNow(),
+  enrollmentStatus: text("enrollment_status").notNull().default("pending"),
+  enrollmentVerifiedAt: timestamp("enrollment_verified_at", { withTimezone: true }),
+  enrollmentValidUntil: timestamp("enrollment_valid_until", { withTimezone: true }),
+  redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
+});
+
 /* ------------------------------------------------------------------ *
  * Company registry — the heart of Tier A polling
  * ------------------------------------------------------------------ */
@@ -981,6 +1005,11 @@ export const profiles = pgTable("profiles", {
    *  when" without a billing provider's own dashboard. Null until it moves
    *  once — a profile created on "free" was never actually "changed" to it. */
   planUpdatedAt: timestamp("plan_updated_at", { withTimezone: true }),
+  /** Stripe customer ID. Kept server-side and used only for the billing portal
+   * and to reconcile subscription webhooks to an Instela account. */
+  stripeCustomerId: text("stripe_customer_id").unique(),
+  /** The current Apply subscription, if one exists. */
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
   /**
    * The first moment the profile was complete (major, graduation year, state,
    * work authorization) and the user saved at least one posting. Set once and
@@ -990,6 +1019,16 @@ export const profiles = pgTable("profiles", {
   activatedAt: timestamp("activated_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * Stripe can retry a webhook for hours. Recording its immutable event ID makes
+ * entitlement changes exactly-once even when the endpoint is retried.
+ */
+export const billingWebhookEvents = pgTable("billing_webhook_events", {
+  id: text("id").primaryKey(),
+  type: text("type").notNull(),
+  receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const resumes = pgTable(

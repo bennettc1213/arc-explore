@@ -77,8 +77,8 @@ export default function PrivacyPage() {
             why="the internship score reads your skills, and both generators may assert only what is in here"
           />
           <Row
-            what="The file name, and for .txt or .md uploads the text itself"
-            why="a PDF is never stored — see the note below, because this is the one place our earlier wording was too flattering"
+            what="The resume file name and extracted text"
+            why="we retain the text and structured details for your profile; the original PDF, Word document, HTML, or image is not retained"
           />
           <Row
             what="Cover letter drafts, one per listing"
@@ -139,16 +139,18 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
-      <Section title="the one place our wording was too generous">
+      <Section title="resume imports and student verification">
         <p>
-          The upload form used to say we keep &ldquo;only the structured result — not the file&rdquo;.
-          That is true for PDFs, which is what nearly everyone uploads: the bytes go straight to the
-          parser and are never written down. It was <em>not</em> true for plain-text and markdown
-          uploads, where we store the text you gave us so a re-parse does not need you to upload it
-          again. The form now says so. We would rather correct a sentence than let a small
-          convenient inaccuracy sit in the one product area where being trusted is the entire
-          point.
+          Resume files are read on our server. Extracted text and structured details are stored;
+          the original uploaded file is not. Optional AI enrichment sends extracted text to Anthropic
+          only when that feature is enabled. Review imported details before saving your profile.
+          Your onboarding draft stays in this browser for up to seven days.
         </p>
+        <p style={{ marginTop: 12 }}>Student verification stores school-inbox verification,
+          current-enrollment status, its expiry, and discount redemption. University sign-in uses
+          the university’s identity provider; Instela never receives your university password.
+          We retain hashes of the verified school email and university identity after account deletion
+          to prevent the same student discount being claimed on another account.</p>
       </Section>
 
       <Section title="what leaves our systems, and to whom">
@@ -159,11 +161,11 @@ export default function PrivacyPage() {
         <ul style={{ paddingLeft: 18 }}>
           <Row
             what="Anthropic — your resume content"
-            why="a PDF resume is sent to Claude to be read into structure, because a plain text extractor turns a two-column resume into nonsense. Cover letter generation sends the facts we already hold. This is the most sensitive thing that leaves, and it is worth knowing before you upload"
+            why="resume text is sent only if optional AI enrichment is enabled. Cover letter generation sends the profile and resume facts used to generate that letter"
           />
           <Row
             what="Resend — your email address and the listing titles in that message"
-            why="only for the three things you can switch off — deadline reminders for postings you saved, alerts for searches you saved, and the weekly digest. Each is a separate subscription with its own unsubscribe link, none of which needs a login, and turning one off never silently turns off the others"
+            why="for requested student-email verification codes and optional deadline reminders, saved-search alerts, and weekly digests"
           />
           <Row
             what="Supabase — everything above"

@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["officeparser", "word-extractor", "tesseract.js"],
   experimental: {
     serverActions: {
       // Resume uploads go through a Server Action. The 1MB default rejects a

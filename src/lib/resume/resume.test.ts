@@ -37,10 +37,10 @@ describe("checkUpload", () => {
     assert.equal(checkUpload(file({ name: "cv.md", type: "" })).kind, "text");
   });
 
-  it("says plainly that Word is not supported instead of failing oddly", () => {
+  it("accepts Word documents", () => {
     const res = checkUpload(file({ name: "resume.docx", type: "application/vnd.openxmlformats" }));
-    assert.equal(res.ok, false);
-    assert.match(res.error!, /Word/);
+    assert.equal(res.ok, true);
+    assert.equal(res.kind, "docx");
   });
 
   it("rejects empty and oversized files", () => {
@@ -50,7 +50,7 @@ describe("checkUpload", () => {
   });
 
   it("rejects an unrelated file type", () => {
-    assert.equal(checkUpload(file({ name: "photo.png", type: "image/png" })).ok, false);
+    assert.equal(checkUpload(file({ name: "program.exe", type: "application/octet-stream" })).ok, false);
   });
 });
 

@@ -7,6 +7,7 @@
  */
 
 import { z } from "zod";
+import { ADDITIONAL_INTERESTS } from "./interest-options";
 
 import type { ScoreProfile } from "../score/fit";
 
@@ -38,8 +39,9 @@ export const INTEREST_VALUES = [
   "quant_finance",
   "product",
   "business",
+  ...ADDITIONAL_INTERESTS.map((o) => o.value),
 ] as const;
-export type InterestValue = (typeof INTEREST_VALUES)[number];
+export type InterestValue = (typeof INTEREST_VALUES)[number] | `custom:${string}`;
 
 export const INTEREST_OPTIONS: ReadonlyArray<{ value: InterestValue; label: string }> = [
   { value: "software", label: "software engineering" },
@@ -48,6 +50,7 @@ export const INTEREST_OPTIONS: ReadonlyArray<{ value: InterestValue; label: stri
   { value: "quant_finance", label: "quant / finance" },
   { value: "product", label: "product / design" },
   { value: "business", label: "business / consulting" },
+  ...ADDITIONAL_INTERESTS,
 ];
 
 /* ------------------------------------------------------------------ *
@@ -96,7 +99,7 @@ export const profileInputSchema = z.object({
     })
     .transform((s) => (s === "" ? null : (s as WorkAuthValue)))
     .nullable(),
-  targetVerticals: z.array(z.enum(INTEREST_VALUES)).max(6),
+  targetVerticals: z.array(z.union([z.enum(INTEREST_VALUES), z.string().trim().regex(/^custom:\S.{0,92}$/).transform((v) => v as `custom:${string}`)])).max(50),
   targetLocations: z.array(z.string().trim().min(1).max(80)).max(12),
   openToRemote: z.boolean(),
   portfolioUrl: optionalText(300).refine(

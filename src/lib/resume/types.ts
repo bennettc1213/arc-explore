@@ -28,12 +28,10 @@ import { z } from "zod";
 
 export const MAX_RESUME_BYTES = 5 * 1024 * 1024;
 
-/** What we can actually read. PDF goes to the model as a document block; the
- *  text types are read directly. Word documents are a zip of XML we cannot
- *  extract without another dependency, so we say so instead of failing oddly. */
-export const ACCEPTED_RESUME_TYPES = ["application/pdf", "text/plain", "text/markdown"] as const;
-
-export type UploadKind = "pdf" | "text";
+/** Shared upload formats for the UI and server-side document/OCR extractors. */
+export const RESUME_EXTENSIONS = ".pdf,.doc,.docx,.odt,.rtf,.html,.htm,.txt,.md,.csv,.json,.tex,.png,.jpg,.jpeg,.webp";
+export const ACCEPTED_RESUME_TYPES = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/html", "text/plain", "text/markdown", "application/rtf", "application/vnd.oasis.opendocument.text", "image/png", "image/jpeg", "image/webp"] as const;
+export type UploadKind = "pdf" | "text" | "doc" | "docx" | "odt" | "rtf" | "html" | "tex" | "image";
 
 export interface UploadCheck {
   ok: boolean;
@@ -57,19 +55,15 @@ export function checkUpload(file: { name: string; type: string; size: number }):
     };
   }
 
-  const name = file.name.toLowerCase();
-  const isPdf = file.type === "application/pdf" || name.endsWith(".pdf");
-  if (isPdf) return { ok: true, kind: "pdf" };
-
-  const isText =
-    file.type.startsWith("text/") || name.endsWith(".txt") || name.endsWith(".md");
-  if (isText) return { ok: true, kind: "text" };
-
-  if (name.endsWith(".doc") || name.endsWith(".docx")) {
-    return { ok: false, error: "we cannot read Word files yet — export to PDF and try again" };
-  }
-
-  return { ok: false, error: "upload a PDF, .txt or .md file" };
+  const extension = file.name.toLowerCase().split(".").pop();
+  const extensions: Record<string, UploadKind> = {
+    pdf: "pdf", doc: "doc", docx: "docx", odt: "odt", rtf: "rtf", html: "html", htm: "html", tex: "tex",
+    txt: "text", md: "text", csv: "text", json: "text", png: "image", jpg: "image", jpeg: "image", webp: "image",
+  };
+  if (extension && extensions[extension]) return { ok: true, kind: extensions[extension] };
+  const mime: Record<string, UploadKind> = { "application/pdf": "pdf", "application/msword": "doc", "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx", "application/vnd.oasis.opendocument.text": "odt", "text/html": "html", "application/rtf": "rtf", "text/rtf": "rtf", "text/plain": "text", "text/markdown": "text", "text/csv": "text", "application/json": "text", "image/png": "image", "image/jpeg": "image", "image/webp": "image" };
+  if (mime[file.type]) return { ok: true, kind: mime[file.type] };
+  return { ok: false, error: "Choose a PDF, Word document, HTML, OpenDocument, RTF, text file, or resume image." };
 }
 
 /* ------------------------------------------------------------------ *

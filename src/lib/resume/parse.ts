@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { extractResumeText, resumeFromText } from "./extract";
 
 import {
   EMPTY_PARSED_RESUME,
@@ -10,10 +11,9 @@ import {
 /**
  * Turns an uploaded resume into structured data.
  *
- * PDFs go to the model as a document block rather than through a text
- * extractor: resumes are two-column layouts full of tables, and naive
- * extraction interleaves the columns into nonsense that then gets parsed as
- * fact. Plain text is passed straight through.
+ * Document/OCR extractors read the source before conservative local transcription.
+ * Optional AI enrichment can improve structure, but uploads never depend on an
+ * external model credential. Provider failures keep the local result usable.
  *
  * The extraction is deliberately dumb. It transcribes; it does not interpret.
  * Everything it produces is a fact this app may later assert on the user's
@@ -143,7 +143,22 @@ export interface ParseResumeResult {
   rawText: string | null;
 }
 
-export async function parseResume({
+export async function parseResume(input: ParseResumeInput): Promise<ParseResumeResult> {
+  let rawText: string;
+  try { rawText = await extractResumeText(input.bytes, input.kind); }
+  catch { throw new ResumeParseError("We couldn’t read this file. Check that it opens correctly, or try a PDF, Word document, or clearer image."); }
+  const local = resumeFromText(rawText);
+  // Imports remain usable without a model credential. AI enrichment is opt-in.
+  if (process.env.RESUME_AI_ENABLED !== "1" || !process.env.ANTHROPIC_API_KEY) return { parsed: local, rawText };
+  try {
+    return await parseResumeWithAI({ ...input, bytes: new TextEncoder().encode(rawText), kind: "text" });
+  } catch {
+    // Never expose provider credentials, request IDs or internal errors to students.
+    return { parsed: local, rawText };
+  }
+}
+
+async function parseResumeWithAI({
   bytes,
   kind,
   fileName,

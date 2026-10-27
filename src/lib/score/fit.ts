@@ -1,3 +1,5 @@
+import { ADDITIONAL_FIELDS } from "./additional-fields";
+
 /**
  * Fit scoring — deterministic rules, no LLM, no fabrication.
  *
@@ -103,6 +105,7 @@ export interface FitResult {
  * ------------------------------------------------------------------ */
 
 const FIELDS = {
+  ...ADDITIONAL_FIELDS,
   software: /\b(software|swe|backend|back-end|frontend|front-end|full[- ]?stack|developer|programming|platform|infrastructure|devops|systems?|security|mobile|ios|android|web)\b/i,
   data_ai: /\b(data|machine learning|ml|a\.?i\.?|artificial intelligence|analytics|research scientist|nlp|computer vision|deep learning|statistics)\b/i,
   hardware: /\b(hardware|electrical|mechanical|embedded|firmware|circuit|pcb|avionics|robotics|manufacturing|aerospace|thermal|structural|test engineer|integration|assembly|harness|environmental test|quality engineer|reliability)\b/i,
@@ -156,31 +159,8 @@ const MAJOR_TO_FIELDS: Array<{ re: RegExp; fields: FieldKey[] }> = [
   { re: /finance|accounting|economics/i, fields: ["quant_finance", "business"] },
   { re: /business|marketing|management|supply chain/i, fields: ["business", "product"] },
   { re: /\bdesign\b|human[- ]computer/i, fields: ["product"] },
-  /*
-   * DELIBERATELY MAPPED TO NOTHING, not to `business`.
-   *
-   * This line used to read `fields: ["business"]` for law, sociology,
-   * psychology, political science and public policy — not because any of them
-   * IS business, but because the six-key taxonomy has nowhere else to put
-   * them. That is an invented match, and it was measured doing real harm: a
-   * student whose stated interests were software / data-ai / product /
-   * **business** had their whole feed taken over by law-school awards — "RMD
-   * Law Scholarship", "HMW Law Against All Odds", "Burress Injury Law
-   * Underdog" — each scoring fit 90-95 at a confident 3-of-3, burying 902
-   * newly-ingested internships beneath them. The best internship in a corpus
-   * of 4,690 sat at rank 38.
-   *
-   * Dropping the mapping is the doctrine, not a regression: an unknown field
-   * is dropped from the average and labelled, so these rows now score on award
-   * and competition alone at 2-of-3 and shrink toward the prior — whereas a
-   * wrong match is indistinguishable from a right one and silently promotes.
-   *
-   * The real fix is a taxonomy with keys for law, health, education, the
-   * sciences, arts and trades — 182 unclassifiable scholarships name exactly
-   * those subjects. That is the open product decision in FIXES.md §1: a
-   * question about who this serves, not a parser change. Until it is answered,
-   * saying nothing beats saying something wrong.
-   */
+  ...Object.entries(ADDITIONAL_FIELDS).map(([key, re]) => ({ re, fields: [key as FieldKey] })),
+
 ];
 
 /**

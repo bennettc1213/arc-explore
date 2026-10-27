@@ -4,8 +4,8 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 
 import { Mascot } from "@/components/chrome/Mascot";
+import { InterestSelect } from "@/components/InterestSelect";
 import {
-  INTEREST_OPTIONS,
   WORK_AUTH_OPTIONS,
   type UserProfile,
 } from "@/lib/profile/types";
@@ -97,13 +97,6 @@ export function ProfileEditor({
   const set = <K extends keyof FormValues>(key: K, value: FormValues[K]) =>
     setValues((v) => ({ ...v, [key]: value }));
 
-  const toggleVertical = (value: string) =>
-    setValues((v) => ({
-      ...v,
-      targetVerticals: v.targetVerticals.includes(value)
-        ? v.targetVerticals.filter((x) => x !== value)
-        : [...v.targetVerticals, value],
-    }));
 
   const err = (field: string) => saveState.fieldErrors?.[field];
 
@@ -115,9 +108,8 @@ export function ProfileEditor({
           resume — optional
         </div>
         <p className="t-sm" style={{ color: "var(--muted)", marginBottom: 16, maxWidth: "62ch" }}>
-          We read it once to fill in the fields below. A PDF is never stored — only the
-          structure we read out of it. A .txt or .md upload is kept as text, so a re-parse
-          does not need it again. Nothing is saved to your profile until you press save.{" "}
+          Upload a PDF, Word document, HTML, text file, or resume image. We keep extracted
+          text and structured details, not the original file. Review the suggestions before saving.{" "}
           <Link href="/privacy" style={{ color: "var(--accent)" }}>
             what we hold
           </Link>
@@ -128,7 +120,7 @@ export function ProfileEditor({
             className="field"
             type="file"
             name="resume"
-            accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown"
+            accept=".pdf,.doc,.docx,.odt,.rtf,.html,.htm,.txt,.md,.csv,.json,.tex,.png,.jpg,.jpeg,.webp"
             style={{ width: "auto", maxWidth: "100%" }}
           />
           <button type="submit" className="btn press" disabled={uploading}>
@@ -312,20 +304,8 @@ export function ProfileEditor({
           <div className="mono chrome" style={{ marginBottom: 8 }}>
             what you are looking for
           </div>
-          <div className="flex flex-wrap gap-x-5 gap-y-2">
-            {INTEREST_OPTIONS.map((o) => (
-              <label key={o.value} className="mono chrome flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="targetVerticals"
-                  value={o.value}
-                  checked={values.targetVerticals.includes(o.value)}
-                  onChange={() => toggleVertical(o.value)}
-                />
-                {o.label}
-              </label>
-            ))}
-          </div>
+          <InterestSelect value={values.targetVerticals} onChange={(next) => set("targetVerticals", next)} />
+          {values.targetVerticals.map((value) => <input key={value} type="hidden" name="targetVerticals" value={value} />)}
           <p className="mono" style={{ marginTop: 8 }}>
             pick these if your major does not imply the roles you want
           </p>

@@ -1,3 +1,10 @@
 # A self-contained sibling project, not part of this app.
 # Its .next/ alone is 168MB and there is no reason to upload it.
 party game
+
+# Use Vercel environment variables; never upload local credentials or test artifacts.
+.env*
+.playwright-mcp
+.claude
+.opencode
+.mcp*.json
