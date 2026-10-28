@@ -28,6 +28,7 @@
 .site-shell :is(a,button,input,select,textarea,summary):focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 .skip-link { position: fixed; left: 16px; top: -100px; padding: 12px 18px; color: var(--on-accent); background: var(--accent); z-index: 10000; }
 .skip-link:focus { top: 12px; }
+.skip-link:not(:focus) { width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .site-shell .brand { gap: 9px; color: var(--text); }
 .site-shell .brand-word { font-family: var(--font-sans); font-size: 1.5rem; font-weight: 600; letter-spacing: -.075em; }
 .brand-period { color: var(--accent); }

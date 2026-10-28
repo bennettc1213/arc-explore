@@ -10,6 +10,7 @@ import { RowLink } from "./RowLink";
 import { ScoreBadge } from "./ScoreBadge";
 import { ScoreReasons } from "./ScoreReasons";
 import { TrackButton } from "./TrackButton";
+import { ScoringDetails } from "./discovery/ScoringDetails";
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
@@ -64,6 +65,7 @@ export function PostingRow({
   hasResume,
   tier = "free",
   profileReady = false,
+  scoringQuery = "",
 }: {
   item: FeedItem;
   /** This user's application status for the posting, if they have one. */
@@ -80,6 +82,7 @@ export function PostingRow({
    * leak a label against an empty profile.
    */
   profileReady?: boolean;
+  scoringQuery?: string;
 }) {
   const closed = Boolean(item.closedAt);
   const blocked = item.fit.blocked;
@@ -160,7 +163,7 @@ export function PostingRow({
                 hover, and a 1px nudge on the title inside a row that is already
                 moving reads as a wobble rather than as a press. */}
             <RowLink
-              href={`/listing/${item.id}`}
+              href={`/listing/${item.id}${scoringQuery ? `?${scoringQuery}` : ""}`}
               className="row-target"
               style={{ color: "var(--text)", textDecoration: "none" }}
             >
@@ -318,7 +321,7 @@ export function PostingRow({
           ScoreReasons naturally renders null rather than needing its own
           tier check — the gate lives once, in presentFit. */}
       <div className="row-raise mt-3">
-        <ScoreReasons reasons={presented.reasons} skills={presented.skills} hasResume={hasResume} />
+        {presented.assessment ? <ScoringDetails assessment={presented.assessment} /> : <ScoreReasons reasons={presented.reasons} skills={presented.skills} hasResume={hasResume} />}
       </div>
     </article>
   );

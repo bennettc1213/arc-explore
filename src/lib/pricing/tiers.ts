@@ -32,6 +32,7 @@
 
 import { PLAN_IDS, type PlanId } from "@/db/schema";
 import type { FitResult, ScoreReason } from "../score/fit";
+import { presentAssessment } from "../score/v2/presentation";
 
 export const TIER_IDS = PLAN_IDS;
 export type TierId = PlanId;
@@ -523,6 +524,7 @@ export function bucketFitScore(score: number | null): FitBucket {
 }
 
 export interface PresentedFit {
+  assessment?: import("@/lib/score/v2/types").PresentedAssessment;
   /** Null on free tier (bucketed instead) or when genuinely unscored. */
   score: number | null;
   known?: number;
@@ -569,6 +571,22 @@ export function presentFit(
   options: PresentFitOptions,
 ): PresentedFit {
   const { profileReady } = options;
+  if (fit.assessment) {
+    const assessment = fit.assessment;
+    const full = evaluateFeature(tier, "fit_score_full").usable;
+    const gap = evaluateFeature(tier, "fit_score_gap_closer").usable;
+    const failed = assessment.eligibility.state === "fail";
+    // Never serialize rawFit, priority.rank, or hidden factor values on a bucketed plan.
+    return {
+      score: !failed && full ? fit.score : null,
+      known: fit.knownDimensions, total: fit.totalDimensions,
+      bucketLabel: failed ? "Check eligibility" : !full && fit.score !== null ? FIT_BUCKET_LABELS[bucketFitScore(fit.score)] : null,
+      reasons: full ? fit.reasons : [],
+      skills: { matched: full ? fit.skills.matched : [], missing: gap ? fit.skills.missing : [] },
+      locked: !full && fit.score !== null,
+      assessment: presentAssessment(assessment, full),
+    };
+  }
 
   // A fit label or percentage-like output may only be shown against an actual
   // student profile. When the profile is incomplete, the score is treated as

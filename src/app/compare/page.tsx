@@ -6,7 +6,8 @@ import { MIN_COMPARE, buildComparison, parseCompareIds } from "@/lib/compare";
 import { getPosting } from "@/lib/feed";
 import { getUserTier } from "@/lib/pricing/entitlements";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
-import { isProfileReadyForFit, toScoreProfile } from "@/lib/profile/types";
+import { isProfileReadyForFit } from "@/lib/profile/types";
+import { toScoringProfile as toScoreProfile } from "@/lib/score/v2/profile";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 
 import type { CompareRow } from "@/lib/compare";
@@ -91,7 +92,7 @@ export default async function ComparePage({
     ? await Promise.all([getProfile(user.id), getLatestResume(user.id)])
     : [null, null];
   const resumeSkills = resume ? skillsFromParsedResume(resume.parsed) : [];
-  const profile = toScoreProfile(stored, resumeSkills);
+  const profile = toScoreProfile(stored, resumeSkills, resume?.parsed);
   const profileReady = user
     ? isProfileReadyForFit(stored)
     : isProfileReadyForFit({

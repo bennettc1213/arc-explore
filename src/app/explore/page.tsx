@@ -22,7 +22,6 @@ import {
   WORK_AUTH_OPTIONS,
   isProfileUsable,
   missingFitFields,
-  toScoreProfile,
   type UserProfile,
 } from "@/lib/profile/types";
 import { EmailModalProvider } from "@/components/scholarships/EmailModal";
@@ -31,6 +30,11 @@ import { PlanView, type FundingState } from "@/components/scholarships/PlanView"
 import { getFundingGoal } from "@/lib/profile/funding-goal";
 import { FEED_PATH } from "@/lib/routes";
 import { ActiveFilters } from "@/components/ActiveFilters";
+import { OpportunityDeck } from "@/components/discovery/OpportunityDeck";
+import { DiscoveryPreferences } from "@/components/discovery/DiscoveryPreferences";
+import { toDiscoveryCard } from "@/lib/discovery/cards";
+import { toScoringProfile, withScoringPreferences, scoringQueryFrom } from "@/lib/score/v2/profile";
+import { Icon } from "@/components/ui/Icon";
 import { getFundingTotals, getScholarshipPlan } from "@/lib/scholarships/explore";
 import { parseExploreView, type ExploreView } from "@/lib/scholarships/plan";
 
@@ -169,7 +173,7 @@ export default async function FeedPage({
 
   // Signed in, the saved profile is the source of truth — otherwise a stale
   // link would silently score someone against answers they had since changed.
-  const profile = user ? toScoreProfile(stored, resumeSkills) : profileFromParams(sp);
+  const profile = user ? withScoringPreferences(toScoringProfile(stored, resumeSkills, resume?.parsed), sp) : profileFromParams(sp);
   const hasProfile = user
     ? isProfileUsable(stored)
     : Boolean(
@@ -213,8 +217,9 @@ export default async function FeedPage({
    * the default there, List is the existing ranked feed below.
    */
   const scholarshipViews = kind === "scholarship";
+  const deckView = sp.view !== "list" && sp.view !== "plan";
   const view: ExploreView = parseExploreView(sp.view);
-  const planView = scholarshipViews && view === "plan";
+  const planView = !deckView && scholarshipViews && view === "plan";
   const newDaysRaw = Number(Array.isArray(sp.new) ? sp.new[0] : sp.new);
   const newSinceDays = Number.isFinite(newDaysRaw) && newDaysRaw > 0 ? Math.round(newDaysRaw) : null;
 
@@ -337,9 +342,9 @@ export default async function FeedPage({
     return qs ? `${FEED_PATH}?${qs}` : FEED_PATH;
   };
   const kindHrefs = {
-    all: hrefWith({ kind: null, view: null }),
-    scholarship: hrefWith({ kind: "scholarship" }),
-    internship: hrefWith({ kind: "internship", view: null }),
+    all: hrefWith({ kind: null, view: null, focus: null, college: null }),
+    scholarship: hrefWith({ kind: "scholarship", focus: null, college: null }),
+    internship: hrefWith({ kind: "internship", view: null, focus: null, college: null }),
   };
   const viewHrefs = {
     plan: hrefWith({ view: "plan" }),
@@ -362,6 +367,8 @@ export default async function FeedPage({
     new: newSinceDays ? "1" : null,
     hideBlocked: hideBlocked ? "1" : null,
     excludeMarketing: excludeMarketing ? "1" : null,
+    focus: currentFilters.meritOnly ? "merit" : null,
+    college: currentFilters.college,
   })
     .filter(([, v]) => v !== null)
     .map(([k]) => k);
@@ -380,7 +387,7 @@ export default async function FeedPage({
     (term ? 1 : 0) +
     (newSinceDays ? 1 : 0) +
     (hideBlocked ? 1 : 0) +
-    (excludeMarketing ? 1 : 0);
+    (excludeMarketing ? 1 : 0) + (currentFilters.meritOnly ? 1 : 0) + (currentFilters.college ? 1 : 0);
 
   if (activeFilters.length > 0) {
     // In the Plan view the matched set is the plan's listings, not a list page.
@@ -401,9 +408,11 @@ export default async function FeedPage({
   const tracked = user
     ? await statusesForPostings(user.id, [...items, ...lotteryAwards].map((i) => i.id))
     : new Map();
+  const discoveryKey = new URLSearchParams(Object.entries(sp).flatMap(([key, value]) => value === undefined ? [] : (Array.isArray(value) ? value : [value]).map(v => [key, v]))).toString();
+  const moreHref = !dailyCapped && total > items.length && items.length < 500 ? hrefWith({ show: String(Math.min(items.length + FEED_PAGE_SIZE * 2, 500)), view: "deck" }) : null;
 
   return (
-    <main className="wrap explore-page" style={{ paddingBlock: "48px 96px" }}>
+    <main className={`wrap explore-page ${deckView ? "discovery-page" : ""}`} style={{ paddingBlock: "48px 96px" }}>
       {deleted && (
         <div
           className="border"
@@ -422,13 +431,13 @@ export default async function FeedPage({
       )}
 
       <header className="workspace-page-heading" style={{ marginBottom: 40 }}>
-        <div className="eyebrow chrome">01 — internships + scholarships</div>
+        <div className="eyebrow chrome">{deckView ? "A world of possibilities. A place to start." : "01 — internships + scholarships"}</div>
         <h1 className="section-title" style={{ marginTop: 12 }}>
-          Everything open right now,{" "}
-          <span style={{ color: "var(--accent)" }}>ranked for you.</span>
+          {deckView ? "Less searching." : "Everything open right now,"}{" "}
+          <span style={{ color: "var(--accent)" }}>{deckView ? "More possibility." : "ranked for you."}</span>
         </h1>
         <p className="t-base" style={{ color: "var(--muted)", maxWidth: "58ch", marginTop: 14 }}>
-          Every listing is checked at the source. Your data is never sold.{" "}
+          {deckView ? "One opportunity at a time. Skip what isn't you. Save what could be. Take your next step." : "Every listing is checked at the source. Your data is never sold."}{" "}
           <Link href="/how-we-verify" style={{ color: "var(--accent)" }}>
             How we verify
           </Link>
@@ -457,12 +466,15 @@ export default async function FeedPage({
       {/* What the feed is scoped to. Was reachable only through a select
           inside the collapsed filter panel, which is why scholarships felt
           missing. Writes the same `kind` param that select does. */}
-      <div className="flex flex-wrap items-start gap-x-4 explore-toolbar">
-        <KindSwitcher
+      <div className="explore-page-toolbar">
+        {deckView && <div id="discovery-top-tabs" />}
+        <div className="explore-view-options">
+        {!deckView && <KindSwitcher
           current={kind === "scholarship" ? "scholarship" : kind === "internship" ? "internship" : "all"}
           hrefs={kindHrefs}
-        />
-        {scholarshipViews && (
+        />}
+        <nav className="discovery-mode-switch" aria-label="Explore experience"><Link href={hrefWith({ view: "deck" })} aria-current={deckView ? "page" : undefined} prefetch={false}><Icon name="explore" size={15} />Cards</Link><Link href={hrefWith({ view: "list" })} aria-current={!deckView && !planView ? "page" : undefined} prefetch={false}><Icon name="menu" size={15} />List</Link>{scholarshipViews && <Link href={viewHrefs.plan} aria-current={planView ? "page" : undefined} prefetch={false}>Funding plan</Link>}</nav>
+        {!deckView && scholarshipViews && (
           <ViewToggle current={view} explicit={sp.view !== undefined} hrefs={viewHrefs} />
         )}
       </div>
@@ -471,8 +483,13 @@ export default async function FeedPage({
           surface is now a dropdown behind the "filters" trigger; its inputs
           still serialize on submit even while collapsed. Signed out, the
           profile answers ride along inside the same form. */}
-      <div className="explore-layout">
-      <aside aria-label="Search and filter opportunities"><FilterPanel
+      <DiscoveryPreferences key={`preferences:${discoveryKey}`} activeCount={activeCount}><FilterPanel
+        key={discoveryKey}
+        compact
+        scoring={{ school: profile.school, gpa: profile.gpa, gpaScale: profile.gpaScale, enrollmentStatus: profile.enrollmentStatus, educationLevel: profile.educationLevel, residency: profile.residency, priority: profile.priority }}
+        discovery={deckView}
+        meritOnly={currentFilters.meritOnly}
+        college={currentFilters.college}
         user={Boolean(user)}
         profile={{
           major: profile.major ?? null,
@@ -498,13 +515,15 @@ export default async function FeedPage({
         hideBlocked={hideBlocked}
         excludeMarketing={excludeMarketing}
         activeCount={activeCount}
-        view={scholarshipViews ? view : null}
-      /></aside>
+        view={deckView ? "deck" : scholarshipViews ? view : "list"}
+      /></DiscoveryPreferences>
+      </div>
 
+      <div className="explore-layout explore-single-column">
       <div className="explore-results" id="opportunity-results">
       <ActiveFilters params={sp} />
 
-      {user && !profileReady && (
+      {!deckView && user && !profileReady && (
         <div className="slot" style={{ marginBottom: 24, padding: "14px 16px" }}>
           <Mascot size={26} />
           <span className="flex-1">
@@ -523,7 +542,7 @@ export default async function FeedPage({
         </div>
       )}
 
-      {!user && !hasProfile && (
+      {!deckView && !user && !hasProfile && (
         <div className="slot" style={{ marginBottom: 24, padding: "14px 16px" }}>
           <span>
             personalize your matches to score these — or{" "}
@@ -532,11 +551,11 @@ export default async function FeedPage({
         </div>
       )}
 
-      <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
+      {!deckView && <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
         {plan
           ? `03 — your plan, from ${plan.counts.listings.toLocaleString("en-US")} open scholarships`
           : `03 — ${items.length} results`}
-      </div>
+      </div>}
 
       {/* A category can only be read off what the source actually wrote. Most
           scholarships name no field at all, so without this line picking a
@@ -565,7 +584,7 @@ export default async function FeedPage({
         />
       )}
 
-      {plan ? (
+      {deckView ? <OpportunityDeck key={discoveryKey} cards={items.map(item => toDiscoveryCard(item, tier, profileReady, scoringQueryFrom(sp)))} signedIn={Boolean(user)} statuses={Object.fromEntries(tracked)} kindLabel={currentFilters.meritOnly ? "college merit scholarships" : kind === "scholarship" ? "scholarships" : kind === "internship" ? "internships" : "opportunities"} total={total} dailyCapped={dailyCapped} moreHref={moreHref} /> : plan ? (
         <EmailModalProvider>
           <PlanView
             plan={plan}
@@ -592,6 +611,7 @@ export default async function FeedPage({
               hasResume={resumeSkills.length > 0}
               tier={tier}
               profileReady={profileReady}
+              scoringQuery={scoringQueryFrom(sp)}
             />
           ))}
 
@@ -666,8 +686,8 @@ export default async function FeedPage({
         </div>
       )}
 
-      {kind !== "internship" && lotteryAwards.length > 0 && (
-        <section style={{ marginTop: 56 }}>
+      {kind !== "internship" && !currentFilters.meritOnly && !currentFilters.college && lotteryAwards.length > 0 && (
+        <details className="discovery-lottery" style={{ marginTop: 56 }}><summary>Lottery-style awards · separate from judged scholarships</summary><section>
           <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
             lottery-style awards
           </div>
@@ -686,7 +706,7 @@ export default async function FeedPage({
               profileReady={profileReady}
             />
           ))}
-        </section>
+        </section></details>
       )}
 
       <footer className="mono" style={{ marginTop: 48, color: "var(--faint-readable)" }}>

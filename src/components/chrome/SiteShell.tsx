@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Mascot } from "./Mascot";
 import { ToolsMenu } from "./ToolsMenu";
+import { ExploreMenu } from "@/components/discovery/ExploreMenu";
 
 type ShellProps = { children: ReactNode; footer: ReactNode; signedIn: boolean; email: string | null; isAdmin: boolean; plan: string; dev: { forced: boolean; label: string | null } | null };
 const workspaceLinks: { href: string; label: string; icon: IconName }[] = [
@@ -55,6 +56,7 @@ function WorkspaceNavigation({ pathname, signedIn, email, isAdmin, plan, dev }: 
   }, [open]);
   const current = [...workspaceLinks, ...toolLinks, { href: "/profile", label: "Profile & settings" }, { href: "/compare", label: "Compare opportunities" }, { href: "/admin", label: "Administration" }].find(l => l.href === pathname)?.label ?? "Opportunity details";
   function navLink(l: { href: string; label: string; icon: IconName }) {
+    if (l.href === "/explore") return <Suspense key={l.href} fallback={<Link href="/explore" className="sidebar-link"><Icon name="explore" size={18} />Explore</Link>}><ExploreMenu onNavigate={() => setOpen(false)} /></Suspense>;
     const active = pathname === l.href || (l.href === "/explore" && pathname.startsWith("/listing/"));
     return <Link key={l.href} href={l.href} className={`sidebar-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}><Icon name={l.icon} size={18} /><span>{l.label}</span>{active && <span className="sidebar-active-dot" />}</Link>;
   }

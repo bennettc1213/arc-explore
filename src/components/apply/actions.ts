@@ -8,7 +8,8 @@ import { composeConfirmation, type ConfirmationDraft } from "@/lib/apply/wizard"
 import { setStatus } from "@/lib/applications/store";
 import { getPosting } from "@/lib/feed";
 import { ensureProfile, getLatestResume, getProfile, saveProfile } from "@/lib/profile/store";
-import { parseLocations, toScoreProfile, WORK_AUTH_VALUES, type WorkAuthValue } from "@/lib/profile/types";
+import { parseLocations, WORK_AUTH_VALUES, type WorkAuthValue } from "@/lib/profile/types";
+import { toScoringProfile as toScoreProfile } from "@/lib/score/v2/profile";
 import { coerceParsedResume } from "@/lib/resume/types";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 
@@ -133,7 +134,7 @@ export async function markAppliedAction(
 
   const [stored, resume] = await Promise.all([getProfile(user.id), getLatestResume(user.id)]);
   const resumeSkills = resume ? skillsFromParsedResume(resume.parsed) : [];
-  const posting = await getPosting(postingId, toScoreProfile(stored, resumeSkills));
+  const posting = await getPosting(postingId, toScoreProfile(stored, resumeSkills, resume?.parsed));
   if (!posting) return { status: "error", message: "that posting is no longer tracked" };
 
   const packet = buildApplicationPacket({

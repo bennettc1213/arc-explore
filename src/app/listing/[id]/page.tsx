@@ -10,18 +10,16 @@ import { ScoreReasons } from "@/components/ScoreReasons";
 import { TrackButton } from "@/components/TrackButton";
 import { recordEvent } from "@/lib/analytics/record";
 import { buildApplicationPacket } from "@/lib/apply/packet";
-import { getSessionUser } from "@/lib/auth";
 import { getCoverLetter } from "@/lib/cover-letter/store";
 import { getPosting } from "@/lib/feed";
 import { formatAward } from "@/lib/scholarships/display";
 import { formatTerm } from "@/lib/terms/display";
-import { getUserTier, presentFit } from "@/lib/pricing/entitlements";
+import { presentFit } from "@/lib/pricing/entitlements";
 import { TIER_LABELS, evaluateFeature } from "@/lib/pricing/tiers";
-import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { hasReported } from "@/lib/reports/store";
-import { isProfileReadyForFit, toScoreProfile } from "@/lib/profile/types";
 import { coerceParsedResume } from "@/lib/resume/types";
-import { skillsFromParsedResume } from "@/lib/score/skills";
+import { resolveViewer, type SearchParams } from "@/app/explore/viewer";
+import { ScoringDetails } from "@/components/discovery/ScoringDetails";
 import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
@@ -44,30 +42,17 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 
 export default async function ListingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const { id } = await params;
 
-  const user = await getSessionUser();
-  const [stored, resume] = user
-    ? await Promise.all([getProfile(user.id), getLatestResume(user.id)])
-    : [null, null];
-
-  const resumeSkills = resume ? skillsFromParsedResume(resume.parsed) : [];
-  const profile = user ? toScoreProfile(stored, resumeSkills) : toScoreProfile(null, []);
+  const { user, stored, resume, tier, profile, profileReady } = await resolveViewer(await searchParams);
   const item = await getPosting(id, profile);
   if (!item) notFound();
 
-  const tier = await getUserTier(user?.id);
-  const profileReady = user
-    ? isProfileReadyForFit(stored)
-    : isProfileReadyForFit({
-        major: profile.major ?? null,
-        gradYear: profile.gradYear ?? null,
-        workAuth: profile.workAuth ?? null,
-        targetLocations: profile.targetLocations ?? [],
-      });
   const presented = presentFit(item.fit, tier, { profileReady });
 
   // After the 404 check, so a bad or hidden id is not counted as a view. The
@@ -370,14 +355,15 @@ export default async function ListingPage({
         )}
 
         <section id="opportunity-fit" className="print-hide" style={{ marginBottom: 32 }}>
+          {presented.assessment && <ScoringDetails assessment={presented.assessment} />}
           {!profileReady && <p className="t-sm" style={{ color: "var(--muted)" }}><Link href={user ? "/profile" : FEED_PATH} style={{ color: "var(--accent-lite)" }}>Add your profile details</Link> to see how this opportunity fits you.</p>}
-          <ScoreReasons
+          {!presented.assessment && <ScoreReasons
             reasons={presented.reasons}
             skills={presented.skills}
             hasResume={Boolean(resume)}
             roleSkills={presented.locked ? [] : item.skills}
-          />
-          {presented.locked && (
+          />}
+          {presented.locked && !presented.assessment && (
             <p className="mono" style={{ marginTop: 8, color: "var(--faint-readable)" }}>
               upgrade to {TIER_LABELS.apply} to see the full score, the factor breakdown, and what this role
               names that your resume does not

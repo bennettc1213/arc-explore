@@ -34,6 +34,9 @@ import {
 import { jitter, resolution } from "./score/evidence";
 import { relevanceScore, type RelevanceTerm } from "./score/relevance";
 import { dayIndex, rotationRank } from "./score/rotation";
+import { scoreOpportunity, eligibilityOrder } from "./score/v2/engine";
+import { extractOpportunityFacts } from "./score/v2/requirements";
+import { diversifyWithinGroups } from "./score/v2/diversity";
 import { scholarshipFields, scoreScholarshipFit } from "./score/scholarship-fit";
 import {
   describeTiming,
@@ -132,6 +135,10 @@ export interface FeedItem {
 export { DEADLINE_FILTERS, type DeadlineFilter } from "./feed-search";
 
 export interface FeedFilters {
+  /** Source text explicitly mentions merit; not a guessed award classification. */
+  meritOnly?: boolean;
+  /** Institution named in the title, sponsor, or eligibility requirements. */
+  college?: string | null;
   /** Include postings that have closed. Off by default. */
   includeClosed?: boolean;
   /** Include postings whose term was inferred rather than stated. On by default. */
@@ -257,6 +264,12 @@ function resolutionsFor(items: FeedItem[]): Resolutions {
 
 /** One posting's position on the ranking scale — see `makeRank` below. */
 function sortKey(item: FeedItem, timingPoints: number, res: Resolutions, day: number): number {
+  if (item.fit.assessment) {
+    const priority = item.fit.assessment.priority.rank;
+    const caution = item.kind === "scholarship" && item.trustScore < 50 ? Math.min(10, (50 - item.trustScore) / 5) : 0;
+    const timing = timingPoints ? timingPoints * (rankingTiming(item.timing) - NEUTRAL_PRIOR) / NEUTRAL_PRIOR : 0;
+    return priority - caution + timing;
+  }
   // Confidence-weighted, not the raw score — see rankingScore. Sorting on the
   // displayed number puts the postings we understand *least* at the top.
   let fit = rankingScore(item.fit);
@@ -385,6 +398,8 @@ function makeRank(
   };
 
   return function rank(a: FeedItem, b: FeedItem): number {
+    const eligibility = eligibilityOrder(a.fit.assessment) - eligibilityOrder(b.fit.assessment);
+    if (eligibility) return eligibility;
     if (a.fit.blocked !== b.fit.blocked) return a.fit.blocked ? 1 : -1;
 
     /*
@@ -546,6 +561,14 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
     termSeason: r.termSeason,
     termYear: r.termYear,
   });
+  const fieldKeys = r.kind === "scholarship" ? scholarshipFields({ title: r.title, sponsorName: r.sponsorName, eligibility: criteria }) : fieldsForPosting({ title: r.title });
+  const rubric = r.eligibility && typeof r.eligibility === "object" ? (r.eligibility as { meritRubric?: unknown }).meritRubric : undefined;
+  const assessmentFit = process.env.INSTELA_SCORING_VERSION === "legacy" ? null : scoreOpportunity(profile, {
+    kind: r.kind, title: r.title, fieldKeys, skills: r.skills, locations: r.locations, isRemote: r.isRemote,
+    facts: extractOpportunityFacts({ title: r.title, criteria, url: r.url, observedAt: r.lastSeenAt.toISOString(), workAuth: r.workAuth, structuredRubric: rubric }),
+    url: r.url, observedAt: r.lastSeenAt.toISOString(), deadlineAt: r.deadlineAt,
+    amountMin: r.amountMin, amountMax: r.amountMax, amountStatus: r.amountStatus, closed: Boolean(r.closedAt),
+  }, now);
 
   return {
     id: r.id,
@@ -585,11 +608,8 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
     closedAt: r.closedAt,
     // Same call the scorer makes, so the category filter and the "matches
     // software" chip can never disagree.
-    fields:
-      r.kind === "scholarship"
-        ? scholarshipFields({ title: r.title, sponsorName: r.sponsorName, eligibility: criteria })
-        : fieldsForPosting({ title: r.title }),
-    fit:
+    fields: fieldKeys,
+    fit: assessmentFit ?? (
       r.kind === "scholarship"
         ? scoreScholarshipFit(profile, {
             title: r.title,
@@ -612,7 +632,7 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
             // Precomputed at ingest — see postings.skills. Re-extracting here would
             // run ~70 patterns over every description for every visitor.
             skills: r.skills,
-          }),
+          })),
     timing: scoreTiming({
       firstSeenAt: r.firstSeenAt,
       lastSeenAt: r.lastSeenAt,
@@ -708,6 +728,18 @@ export async function getFeed(
   if (filters.remoteOnly || query.remoteOnly) conditions.push(eq(postings.isRemote, true));
   const kind = filters.kind ?? query.kind;
   if (kind) conditions.push(eq(postings.kind, kind));
+  if (filters.meritOnly || filters.college) conditions.push(eq(postings.kind, "scholarship"));
+  if (filters.meritOnly) {
+    conditions.push(sql`concat_ws(' ', ${postings.title}, ${postings.eligibility}::text, ${postings.descriptionText}) ~* '\\mmerit\\M'`);
+  }
+  if (filters.college) {
+    const collegePattern = `%${escapeLike(filters.college)}%`;
+    conditions.push(sql`(
+      ${postings.title} ilike ${collegePattern}
+      or coalesce(${organizations.name}, ${postings.sponsorName}, '') ilike ${collegePattern}
+      or coalesce(${postings.eligibility}::text, '') ilike ${collegePattern}
+    )`);
+  }
   if (filters.excludeMarketing) conditions.push(eq(postings.isContentMarketing, false));
 
   if (filters.deadline) {
@@ -837,6 +869,12 @@ export async function getFeed(
   const res = resolutionsFor(filtered);
   const day = filters.day ?? dayIndex();
   filtered.sort(makeRank(filters.timingPoints ?? 0, day, query.terms, res));
+  if (process.env.INSTELA_SCORING_VERSION !== "legacy") {
+    filtered = diversifyWithinGroups(filtered, item => {
+      const relevance = query.terms.length ? relevanceScore(item, query.terms).toFixed(4) : "browse";
+      return `${eligibilityOrder(item.fit.assessment)}:${relevance}:${Math.floor(sortKey(item, filters.timingPoints ?? 0, res, day) / 3)}`;
+    }, item => item.company?.trim().toLowerCase() || item.id);
+  }
   // Rank first, then trim — never a SQL LIMIT. See the comment on the query
   // above: trimming before ranking lets whichever kind was ingested last crowd
   // the other out of the top N entirely.

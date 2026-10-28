@@ -1,6 +1,7 @@
 import { getFeed } from "../feed";
 import { getLatestResume, getProfile } from "../profile/store";
-import { isProfileUsable, toScoreProfile } from "../profile/types";
+import { isProfileUsable } from "../profile/types";
+import { toScoringProfile as toScoreProfile } from "../score/v2/profile";
 import { TIMING_PRIORITY_POINTS } from "../pricing/tiers";
 import { skillsFromParsedResume } from "../score/skills";
 import { listSearches } from "../searches/store";
@@ -149,6 +150,7 @@ export async function planDigests(
     const scoreProfile = toScoreProfile(
       profile,
       resume ? skillsFromParsedResume(resume.parsed) : [],
+      resume?.parsed,
     );
 
     const { items } = await getFeed(scoreProfile, {

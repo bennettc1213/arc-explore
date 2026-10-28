@@ -1,5 +1,8 @@
 # Fixes & Open Items
 
+- [ ] **Scoring v2 supplemental academic context is per search (2026-10-27).** GPA scale, enrollment status, education level, and residence are validated search inputs, not persisted profile columns. Background digests and saved searches only score from available saved context. Persist these fields and their verification state if cross-session academic matching is expanded.
+- [ ] **Scoring v2 requirement coverage is deliberately conservative (2026-10-27).** It parses existing eligibility passages at read time; unsupported clauses remain unknown/manual review. Published merit rubrics can be validated when supplied, but this build does not populate an institution rubric catalog or backfill structured source criteria. Expand ingestion and rubric coverage before promising comprehensive academic eligibility matching.
+
 Everything known to be broken, missing, or waiting on a decision. Kept separate
 from `scholarship-platform-roadmap.md`: the roadmap is *what to build*, this is
 *what is wrong with what exists* plus what is blocked on someone.

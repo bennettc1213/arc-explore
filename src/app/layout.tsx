@@ -4,6 +4,8 @@ import type { Metadata } from "next";
 // network call, per the design system's stack notes.
 import "./globals.css";
 import "./remodel.css";
+import "./discovery.css";
+import "./scoring.css";
 
 import { Chrome } from "@/components/chrome/Chrome";
 import { Frame } from "@/components/chrome/Frame";

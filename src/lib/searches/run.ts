@@ -1,6 +1,6 @@
 import { getFeed } from "../feed";
 import { TIMING_PRIORITY_POINTS } from "../pricing/tiers";
-import { toScoreProfile } from "../profile/types";
+import { toScoringProfile as toScoreProfile } from "../score/v2/profile";
 import { getProfile, getLatestResume } from "../profile/store";
 import { skillsFromParsedResume } from "../score/skills";
 
@@ -58,6 +58,7 @@ export async function planAlerts(
     const scoreProfile = toScoreProfile(
       profile,
       resume ? skillsFromParsedResume(resume.parsed) : [],
+      resume?.parsed,
     );
 
     const { items } = await getFeed(scoreProfile, {

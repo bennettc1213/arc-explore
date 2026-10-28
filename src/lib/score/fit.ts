@@ -20,8 +20,19 @@
 
 import type { WorkAuth } from "../ingest/normalize";
 import { extractSkills, matchSkills } from "./skills";
+import type { ScoringAssessment } from "./v2/types";
 
 export interface ScoreProfile {
+  /** V2-only evidence. The legacy bridge/scorer remains available for rollback. */
+  school?: string | null;
+  gpa?: number | null;
+  gpaScale?: number | null;
+  enrollmentStatus?: "enrolled" | "admitted" | "incoming" | "transfer" | null;
+  educationLevel?: "high_school" | "undergraduate" | "graduate" | null;
+  residency?: string | null;
+  experienceSkills?: string[];
+  priority?: "fit" | "deadline" | "award" | "effort";
+  collegeMerit?: boolean;
   major?: string | null;
   gradYear?: number | null;
   /** "us_citizen" | "permanent_resident" | "needs_sponsorship" */
@@ -69,6 +80,8 @@ export interface ScoreReason {
 }
 
 export interface FitResult {
+  /** Server-side assessment; presentFit must sanitize it before client serialization. */
+  assessment?: ScoringAssessment;
   /** 0–100, or null when we know too little to score honestly. */
   score: number | null;
   reasons: ScoreReason[];
@@ -668,6 +681,7 @@ export const NEUTRAL_PRIOR = 50;
  * `knownDimensions` marker already tells the user how much it rests on.
  */
 export function rankingScore(fit: FitResult): number {
+  if (fit.assessment) return fit.assessment.rawFit === null ? -1 : 50 + fit.assessment.confidence.coverage / 100 * (fit.assessment.rawFit - 50);
   if (fit.score === null) return -1;
   if (fit.totalDimensions === 0) return fit.score;
 

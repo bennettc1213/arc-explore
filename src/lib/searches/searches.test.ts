@@ -17,6 +17,14 @@ function filters(over: Partial<SavedFilters> = {}): SavedFilters {
   return { ...EMPTY_FILTERS, ...over };
 }
 
+test("college merit preferences survive saved-search and URL round trips", () => {
+  const current = filtersFromParams({ focus: "merit", college: "Example University", kind: "internship" });
+  assert.equal(current.kind, "scholarship"); assert.equal(current.meritOnly, true); assert.equal(current.college, "Example University");
+  assert.deepEqual(filtersFromParams(Object.fromEntries(new URLSearchParams(filtersToQuery(current)))), current);
+  assert.match(describeFilters(current), /mentioning merit/); assert.match(describeFilters(current), /Example University/);
+  assert.equal(isEmptyFilters(filters({ meritOnly: true })), false);
+});
+
 /* ------------------------------------------------------------------ *
  * Validation — the boundary where untrusted input stops
  * ------------------------------------------------------------------ */

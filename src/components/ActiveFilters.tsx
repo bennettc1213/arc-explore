@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FEED_PATH } from "@/lib/routes";
 
-const labels: Record<string, string> = { q: "Search", kind: "Type", deadline: "Deadline", minAmount: "Min award", location: "Location", category: "Category", remote: "Remote only", includeClosed: "Include closed", includeInferred: "Inferred terms", includeUnknownAmounts: "Unknown amounts", term: "Term", new: "Added in last", hideBlocked: "Hide ineligible", excludeMarketing: "Exclude marketing" };
+const labels: Record<string, string> = { focus: "Award focus", college: "College", q: "Search", kind: "Type", deadline: "Deadline", minAmount: "Min award", location: "Location", category: "Category", remote: "Remote only", includeClosed: "Include closed", includeInferred: "Inferred terms", includeUnknownAmounts: "Unknown amounts", term: "Term", new: "Added in last", hideBlocked: "Hide ineligible", excludeMarketing: "Exclude marketing" };
 const flags = new Set(["remote", "includeClosed", "includeInferred", "includeUnknownAmounts", "hideBlocked", "excludeMarketing"]);
 export function ActiveFilters({ params }: { params: Record<string, string | string[] | undefined> }) {
   const pairs = Object.entries(params).flatMap(([k, v]) => v === undefined ? [] : (Array.isArray(v) ? v : [v]).map(value => [k, value] as [string, string]));

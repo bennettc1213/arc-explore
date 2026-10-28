@@ -41,6 +41,8 @@ export const savedFiltersSchema = z.object({
   term: z.string().trim().max(80).nullable().catch(null),
   category: z.enum(FIELD_KEYS).nullable().catch(null),
   remoteOnly: z.boolean().catch(false),
+  meritOnly: z.boolean().catch(false),
+  college: z.string().trim().max(160).nullable().catch(null),
 });
 
 export type SavedFilters = z.infer<typeof savedFiltersSchema>;
@@ -54,6 +56,8 @@ export const EMPTY_FILTERS: SavedFilters = {
   term: null,
   category: null,
   remoteOnly: false,
+  meritOnly: false,
+  college: null,
 };
 
 /** Read a stored `filters` value back into the current shape. Total. */
@@ -66,7 +70,7 @@ export function coerceFilters(value: unknown): SavedFilters {
 export function isEmptyFilters(f: SavedFilters): boolean {
   return (
     !f.q && !f.kind && !f.deadline && f.minAmount === null && !f.location && !f.term &&
-    !f.category && !f.remoteOnly
+    !f.category && !f.remoteOnly && !f.meritOnly && !f.college
   );
 }
 
@@ -92,13 +96,15 @@ export function filtersFromParams(sp: Record<string, string | string[] | undefin
 
   return coerceFilters({
     q: one("q"),
-    kind: one("kind"),
+    kind: one("focus") === "merit" || one("college") ? "scholarship" : one("kind"),
     deadline: one("deadline"),
     minAmount: Number.isFinite(amount) && amount > 0 ? Math.round(amount) : null,
     location: one("location"),
     term: one("term"),
     category: one("category"),
     remoteOnly: one("remote") === "1",
+    meritOnly: one("focus") === "merit",
+    college: one("college"),
   });
 }
 
@@ -113,6 +119,8 @@ export function filtersToQuery(f: SavedFilters): string {
   if (f.term) p.set("term", f.term);
   if (f.category) p.set("category", f.category);
   if (f.remoteOnly) p.set("remote", "1");
+  if (f.meritOnly) p.set("focus", "merit");
+  if (f.college) p.set("college", f.college);
   return p.toString();
 }
 
@@ -129,6 +137,8 @@ export function describeFilters(f: SavedFilters): string {
   if (f.category) bits.push(`in ${f.category.replace(/_/g, " ")}`);
   if (f.location) bits.push(`near ${f.location}`);
   if (f.remoteOnly) bits.push("remote only");
+  if (f.meritOnly) bits.push("mentioning merit");
+  if (f.college) bits.push(`at ${f.college}`);
   if (f.term) bits.push(f.term);
   if (f.minAmount !== null) bits.push(`$${f.minAmount.toLocaleString("en-US")}+`);
   if (f.deadline === "set") bits.push("with a stated deadline");
