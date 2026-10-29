@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 // network call, per the design system's stack notes.
 import "./globals.css";
 import "./remodel.css";
+import "./landing.css";
 import "./discovery.css";
 import "./scoring.css";
 
