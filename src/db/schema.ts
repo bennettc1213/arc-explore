@@ -300,6 +300,12 @@ export const postings = pgTable(
 
     locations: text("locations").array().notNull().default([]),
     isRemote: boolean("is_remote").notNull().default(false),
+    /** Employer-stated setup. Null is deliberately distinct from in-person. */
+    workArrangement: text("work_arrangement").$type<"remote" | "hybrid" | "in_person">(),
+    /** Employer-stated pay range in cents plus its rate unit; separate from scholarship awards. */
+    compensationMinCents: integer("compensation_min_cents"),
+    compensationMaxCents: integer("compensation_max_cents"),
+    compensationInterval: text("compensation_interval").$type<"hour" | "year">(),
     /** e.g. "Summer 2027" for internships, an academic year for scholarships. */
     term: text("term"),
     /** Whether the term was stated in the source, inferred from first_seen, or is unknown. */

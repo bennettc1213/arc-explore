@@ -164,6 +164,10 @@ export interface PreparedPosting {
   url: string;
   locations: string[];
   isRemote: boolean;
+  workArrangement: SourcePosting["workArrangement"];
+  compensationMinCents: number | null;
+  compensationMaxCents: number | null;
+  compensationInterval: SourcePosting["compensationInterval"];
   term: string | null;
   termSource: "explicit" | "inferred" | "unknown";
   termSeason: "summer" | "fall" | "spring" | "winter" | "co-op" | null;
@@ -257,6 +261,10 @@ export function preparePosting(sp: SourcePosting, now?: Date): PreparedPosting {
     url: canonicalUrl(sp.url),
     locations,
     isRemote: sp.isRemote || isRemoteLocation(locations),
+    workArrangement: sp.workArrangement ?? (sp.isRemote ? "remote" : null),
+    compensationMinCents: sp.compensationMinCents,
+    compensationMaxCents: sp.compensationMaxCents,
+    compensationInterval: sp.compensationInterval,
     term: termInfo.term,
     termSource: termInfo.termSource,
     termSeason: termInfo.termSeason,

@@ -77,6 +77,10 @@ export const lever: BoardAdapter = {
         isRemote:
           /remote/i.test(p.workplaceType ?? "") ||
           locations.some((l) => /\bremote\b/i.test(l)),
+        workArrangement: /hybrid/i.test(p.workplaceType ?? "") ? "hybrid" : /remote/i.test(p.workplaceType ?? "") ? "remote" : /on.?site|in.?person/i.test(p.workplaceType ?? "") ? "in_person" : null,
+        compensationMinCents: null,
+        compensationMaxCents: null,
+        compensationInterval: null,
         postedAt:
           typeof p.createdAt === "number" && Number.isFinite(p.createdAt)
             ? new Date(p.createdAt)

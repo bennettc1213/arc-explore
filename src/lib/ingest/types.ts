@@ -13,6 +13,11 @@ export type SourceName =
   | "simplify"
   | "usajobs";
 
+/** A source-stated work setup. `null` means the source did not say. */
+export type WorkArrangement = "remote" | "hybrid" | "in_person";
+/** The rate unit attached to a source-stated compensation range. */
+export type CompensationInterval = "hour" | "year";
+
 /**
  * One posting as reported by a source, before normalization/dedup.
  *
@@ -31,6 +36,11 @@ export interface SourcePosting {
   url: string;
   locations: string[];
   isRemote: boolean;
+  workArrangement: WorkArrangement | null;
+  /** Whole cents. These are never inferred from a description. */
+  compensationMinCents: number | null;
+  compensationMaxCents: number | null;
+  compensationInterval: CompensationInterval | null;
   /** True posting date when the feed exposes one, else null. */
   postedAt: Date | null;
   /** Employer-stated deadline. Almost always null; never fabricated. */

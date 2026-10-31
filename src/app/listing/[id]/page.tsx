@@ -14,6 +14,7 @@ import { getCoverLetter } from "@/lib/cover-letter/store";
 import { getPosting } from "@/lib/feed";
 import { formatAward } from "@/lib/scholarships/display";
 import { formatTerm } from "@/lib/terms/display";
+import { formatCompensation, formatWorkArrangement } from "@/lib/opportunity-details";
 import { presentFit } from "@/lib/pricing/entitlements";
 import { TIER_LABELS, evaluateFeature } from "@/lib/pricing/tiers";
 import { hasReported } from "@/lib/reports/store";
@@ -295,6 +296,8 @@ export default async function ListingPage({
               ) : (
                 <MetaRow label="term" value="not stated" />
               )}
+              <MetaRow label="work arrangement" value={`${formatWorkArrangement(item.workArrangement)}${item.locations.length ? ` · ${item.locations.join(" / ")}` : ""}`} />
+              <MetaRow label="compensation" value={formatCompensation(item.compensationMinCents, item.compensationMaxCents, item.compensationInterval)} />
               {item.workAuth === "citizenship_required" && (
                 <MetaRow label="work auth" value="U.S. citizenship required" />
               )}

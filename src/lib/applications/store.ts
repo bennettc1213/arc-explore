@@ -27,6 +27,10 @@ export interface TrackedApplication {
   url: string;
   locations: string[];
   term: string | null;
+  workArrangement: "remote" | "hybrid" | "in_person" | null;
+  compensationMinCents: number | null;
+  compensationMaxCents: number | null;
+  compensationInterval: "hour" | "year" | null;
   closedAt: Date | null;
   lastSeenAt: Date;
 }
@@ -46,6 +50,10 @@ export async function listApplications(userId: string): Promise<TrackedApplicati
       url: postings.url,
       locations: postings.locations,
       term: postings.term,
+      workArrangement: postings.workArrangement,
+      compensationMinCents: postings.compensationMinCents,
+      compensationMaxCents: postings.compensationMaxCents,
+      compensationInterval: postings.compensationInterval,
       closedAt: postings.closedAt,
       lastSeenAt: postings.lastSeenAt,
     })

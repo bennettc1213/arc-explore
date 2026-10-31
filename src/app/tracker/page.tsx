@@ -75,6 +75,10 @@ export default async function TrackerPage() {
       url: r.url,
       locations: r.locations,
       term: r.term,
+      workArrangement: r.workArrangement,
+      compensationMinCents: r.compensationMinCents,
+      compensationMaxCents: r.compensationMaxCents,
+      compensationInterval: r.compensationInterval,
       closed: r.closedAt !== null,
     }));
 

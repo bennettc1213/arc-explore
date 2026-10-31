@@ -2,6 +2,7 @@ import type { ApplicationStatus } from "@/db/schema";
 import type { FeedItem } from "@/lib/feed";
 import { formatAward } from "@/lib/scholarships/display";
 import { formatTerm } from "@/lib/terms/display";
+import { formatCompensation, formatWorkArrangement } from "@/lib/opportunity-details";
 // From the pure module, not `entitlements` — a row needs the presentation
 // rule, not a database connection.
 import { presentFit, type TierId } from "@/lib/pricing/tiers";
@@ -204,6 +205,16 @@ export function PostingRow({
           )}
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            {item.kind === "internship" && (
+              <span className="mono" style={{ color: "var(--text)" }}>
+                pay: {formatCompensation(item.compensationMinCents, item.compensationMaxCents, item.compensationInterval)}
+              </span>
+            )}
+            {item.kind === "internship" && (
+              <span className="mono" style={{ color: "var(--faint-readable)" }}>
+                {formatWorkArrangement(item.workArrangement)}{item.locations.length ? ` · ${item.locations.slice(0, 2).join(" / ")}` : ""}
+              </span>
+            )}
             {item.term ? (
               <span className="mono" style={{ color: "var(--faint-readable)" }}>
                 {formatTerm(item)}

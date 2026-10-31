@@ -54,6 +54,10 @@ export interface FeedItem {
   url: string;
   locations: string[];
   isRemote: boolean;
+  workArrangement: "remote" | "hybrid" | "in_person" | null;
+  compensationMinCents: number | null;
+  compensationMaxCents: number | null;
+  compensationInterval: "hour" | "year" | null;
   term: string | null;
   termSource: "explicit" | "inferred" | "unknown";
   termSeason: "summer" | "fall" | "spring" | "winter" | "co-op" | null;
@@ -473,6 +477,10 @@ const FEED_SELECT = {
   sponsorName: postings.sponsorName,
   locations: postings.locations,
   isRemote: postings.isRemote,
+  workArrangement: postings.workArrangement,
+  compensationMinCents: postings.compensationMinCents,
+  compensationMaxCents: postings.compensationMaxCents,
+  compensationInterval: postings.compensationInterval,
   term: postings.term,
   termSource: postings.termSource,
   termSeason: postings.termSeason,
@@ -520,6 +528,10 @@ interface FeedRow {
   sponsorName: string | null;
   locations: string[];
   isRemote: boolean;
+  workArrangement: "remote" | "hybrid" | "in_person" | null;
+  compensationMinCents: number | null;
+  compensationMaxCents: number | null;
+  compensationInterval: "hour" | "year" | null;
   term: string | null;
   termSource: "explicit" | "inferred" | "unknown";
   termSeason: "summer" | "fall" | "spring" | "winter" | "co-op" | null;
@@ -578,6 +590,10 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
     url: r.url,
     locations: r.locations,
     isRemote: r.isRemote,
+    workArrangement: r.workArrangement,
+    compensationMinCents: r.compensationMinCents,
+    compensationMaxCents: r.compensationMaxCents,
+    compensationInterval: r.compensationInterval,
     term: term.term,
     termSource: term.termSource,
     termSeason: r.termSeason,

@@ -32,14 +32,9 @@
  * the same reason, with the federal naming convention added to the vocabulary
  * it matches (see INTERNSHIP_RE in ../normalize.ts).
  *
- * ON PAY. USAJobs publishes a real salary range, which almost no ATS does, and
- * it is deliberately dropped here rather than written to `amountMin`/
- * `amountMax`. Those columns currently hold scholarship award dollars, a
- * one-off figure, while `PositionRemuneration` carries a rate whose unit lives
- * in a separate `RateIntervalCode` ("PA" per year, "PH" per hour). Writing 17
- * (dollars/hour) into the same column as 5000 (a scholarship award) would make
- * the feed's "min award" filter quietly wrong in both directions. Pay needs a
- * rate-interval column before it can share that space.
+ * ON PAY. USAJobs publishes a real salary range, which almost no ATS does.
+ * It is stored in dedicated cents + rate-unit fields, never in the scholarship
+ * award columns: $17/hour and a $5,000 scholarship are different facts.
  */
 
 import { htmlToText } from "../html";
@@ -69,6 +64,12 @@ interface UsaJobsDetails {
   RemoteIndicator?: boolean | null;
 }
 
+interface UsaJobsRemuneration {
+  MinimumRange?: string | null;
+  MaximumRange?: string | null;
+  RateIntervalCode?: string | null;
+}
+
 export interface UsaJobsDescriptor {
   PositionID?: string | null;
   PositionTitle?: string | null;
@@ -81,6 +82,7 @@ export interface UsaJobsDescriptor {
   PositionOfferingType?: Array<{ Name?: string | null }> | null;
   PublicationStartDate?: string | null;
   ApplicationCloseDate?: string | null;
+  PositionRemuneration?: UsaJobsRemuneration[] | null;
   UserArea?: { Details?: UsaJobsDetails | null } | null;
 }
 
@@ -154,6 +156,18 @@ function employmentHintOf(d: UsaJobsDescriptor): string | null {
   return name || null;
 }
 
+function compensationOf(d: UsaJobsDescriptor) {
+  const rate = d.PositionRemuneration?.[0];
+  const interval = rate?.RateIntervalCode === "PH" ? "hour" : rate?.RateIntervalCode === "PA" ? "year" : null;
+  const min = Number(rate?.MinimumRange);
+  const max = Number(rate?.MaximumRange);
+  if (rate?.RateIntervalCode === "WC") return { min: 0, max: 0, interval: null } as const;
+  if (!interval || !Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max < min) {
+    return { min: null, max: null, interval: null } as const;
+  }
+  return { min: Math.round(min * 100), max: Math.round(max * 100), interval } as const;
+}
+
 /**
  * One USAJobs announcement as a `SourcePosting`.
  *
@@ -171,6 +185,7 @@ export function mapUsaJobsPosting(d: UsaJobsDescriptor): SourcePosting | null {
 
   const details = d.UserArea?.Details ?? {};
   const summary = details.JobSummary ?? null;
+  const compensation = compensationOf(d);
 
   return {
     source: "usajobs",
@@ -184,6 +199,10 @@ export function mapUsaJobsPosting(d: UsaJobsDescriptor): SourcePosting | null {
     locations: locationsOf(d),
     // A published boolean, not inferred from location text.
     isRemote: details.RemoteIndicator === true,
+    workArrangement: details.RemoteIndicator === true ? "remote" : null,
+    compensationMinCents: compensation.min,
+    compensationMaxCents: compensation.max,
+    compensationInterval: compensation.interval,
     postedAt: toDate(d.PublicationStartDate),
     // A real, employer-stated deadline. Federal announcements nearly always
     // carry one, which is rare enough among our sources to be worth saying.

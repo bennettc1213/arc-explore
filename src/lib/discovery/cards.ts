@@ -4,12 +4,15 @@ import { presentFit, type TierId } from "@/lib/pricing/tiers";
 import { formatAward } from "@/lib/scholarships/display";
 import { formatTerm } from "@/lib/terms/display";
 import type { PresentedAssessment } from "@/lib/score/v2/types";
+import { formatCompensation, formatWorkArrangement } from "@/lib/opportunity-details";
 
 const reasonSchema = z.object({ label: z.string(), detail: z.string(), kind: z.enum(["good", "bad", "unknown"]) });
 export const discoveryCardSchema = z.object({
   id: z.string(), kind: z.enum(["internship", "scholarship"]), title: z.string(), company: z.string(),
   url: z.string().url().refine(v => /^https?:\/\//i.test(v)),
   locations: z.array(z.string()), remote: z.boolean(), term: z.string().nullable(),
+  // Defaults keep saved cards from the prior browser-storage shape usable.
+  workArrangement: z.string().default("Not stated"), compensation: z.string().default("Not stated"),
   award: z.string().nullable(), awardsCount: z.number().int().nonnegative().nullable(),
   deadline: z.string().nullable(), closes: z.string().nullable(), verified: z.string(), posted: z.string().nullable(),
   score: z.number().nullable(), bucketLabel: z.string().nullable(), scoreKnown: z.number(), scoreTotal: z.number(), scoreLocked: z.boolean(),
@@ -43,6 +46,8 @@ export function toDiscoveryCard(item: FeedItem, tier: TierId, profileReady: bool
   return {
     id: item.id, kind: item.kind, title: item.title, company: item.company, url: item.url,
     locations: item.locations, remote: item.isRemote, term: item.term ? formatTerm(item) : null,
+    workArrangement: formatWorkArrangement(item.workArrangement),
+    compensation: formatCompensation(item.compensationMinCents, item.compensationMaxCents, item.compensationInterval),
     award: formatAward(item), awardsCount: item.awardsCount,
     deadline: item.deadlineAt ? item.deadlineAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }) : null,
     closes: item.dates.closes, verified: item.dates.verified, posted: item.dates.posted ?? null,

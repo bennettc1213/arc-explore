@@ -6,7 +6,7 @@ import { discoveryCardSchema, readGuestSaves, savedSnapshot, toDiscoveryCard } f
 function posting(overrides: Partial<FeedItem> = {}): FeedItem {
   return {
     id: "scholarship-1", kind: "scholarship", title: "College Merit Award", company: "Example University", url: "https://example.edu/award",
-    locations: [], isRemote: false, term: null, termSource: "unknown", termSeason: null, termYear: null,
+    locations: [], isRemote: false, workArrangement: null, compensationMinCents: null, compensationMaxCents: null, compensationInterval: null, term: null, termSource: "unknown", termSeason: null, termYear: null,
     workAuth: null, skills: ["Python"], deadlineAt: null, postedAt: null,
     amountMin: null, amountMax: null, amountNeedsReview: false, amountStatus: "unparseable", programTotal: null, awardsCount: null, amountIsEstimated: false,
     applyLinkDead: false, frameAllowStrikes: 0, eligibility: ["Applicants must be enrolled."], isContentMarketing: false,
