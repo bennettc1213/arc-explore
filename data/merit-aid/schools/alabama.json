@@ -1,0 +1,368 @@
+{
+  "schema_version": 1,
+  "slug": "alabama",
+  "name": "The University of Alabama",
+  "state": "AL",
+  "control": "public",
+  "official_merit_url": "https://afford.ua.edu/scholarships/oos-international-freshman/",
+  "net_price_calculator_url": "https://ua.clearcostcalculator.com/student/default/netpricecalculator/survey",
+  "coa_in_state": null,
+  "coa_out_of_state": null,
+  "coa_academic_year": null,
+  "coa_source_url": null,
+  "coa_source_checked_at": null,
+  "notes": "Scope: six standard fixed-dollar nonresident freshman automatic tiers. Presidential Elite is a tuition-and-benefits package and omitted, not assigned an invented fixed value. Competitive awards excluded. COA unknown.",
+  "status": "draft",
+  "verified_at": null,
+  "source_checked_at": "2026-10-30",
+  "review_issues": [
+    "Confirm official GPA calculation basis and complete renewal conditions."
+  ],
+  "research": {
+    "robots_url": "https://afford.ua.edu/robots.txt",
+    "terms_urls": [
+      "https://www.ua.edu/disclaimer/",
+      "https://www.ua.edu/copyright/"
+    ],
+    "policy_note": "Bounded manual public-page review. Robots does not disallow this scholarship path. Only public facts and paraphrases retained; no logos, screenshots or copied page prose. General terms, where not located, remain an owner review item.",
+    "checked_at": "2026-10-30"
+  },
+  "tiers": [
+    {
+      "seed_key": "crimson-legends",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Crimson Legends",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores.",
+      "sat_min": 1200,
+      "act_min": 25,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 6000,
+      "amount_max": 6000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Confirm complete award-specific renewal conditions on the school's linked terms before verification.",
+      "requires_action": "For summer/fall 2027, submit the admission application and official score reports by December 4. No separate automatic-scholarship application.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 25,
+                "max": 26
+              },
+              {
+                "kind": "sat",
+                "min": 1200,
+                "max": 1250
+              }
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://afford.ua.edu/scholarships/oos-international-freshman/",
+      "source_excerpt": "Published Crimson Legends: GPA 3.5+; $6000 per year; ACT 25+ or SAT 1200+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "capstone",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Capstone",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores.",
+      "sat_min": 1260,
+      "act_min": 27,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 8000,
+      "amount_max": 8000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Confirm complete award-specific renewal conditions on the school's linked terms before verification.",
+      "requires_action": "For summer/fall 2027, submit the admission application and official score reports by December 4. No separate automatic-scholarship application.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 27,
+                "max": 27
+              },
+              {
+                "kind": "sat",
+                "min": 1260,
+                "max": 1290
+              }
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://afford.ua.edu/scholarships/oos-international-freshman/",
+      "source_excerpt": "Published Capstone: GPA 3.5+; $8000 per year; ACT 27+ or SAT 1260+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "collegiate",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Collegiate",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores.",
+      "sat_min": 1300,
+      "act_min": 28,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 10000,
+      "amount_max": 10000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Confirm complete award-specific renewal conditions on the school's linked terms before verification.",
+      "requires_action": "For summer/fall 2027, submit the admission application and official score reports by December 4. No separate automatic-scholarship application.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 28,
+                "max": 28
+              },
+              {
+                "kind": "sat",
+                "min": 1300,
+                "max": 1320
+              }
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://afford.ua.edu/scholarships/oos-international-freshman/",
+      "source_excerpt": "Published Collegiate: GPA 3.5+; $10000 per year; ACT 28+ or SAT 1300+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "foundation",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Foundation in Excellence",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores.",
+      "sat_min": 1330,
+      "act_min": 29,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 15000,
+      "amount_max": 15000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Confirm complete award-specific renewal conditions on the school's linked terms before verification.",
+      "requires_action": "For summer/fall 2027, submit the admission application and official score reports by December 4. No separate automatic-scholarship application.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 29,
+                "max": 29
+              },
+              {
+                "kind": "sat",
+                "min": 1330,
+                "max": 1350
+              }
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://afford.ua.edu/scholarships/oos-international-freshman/",
+      "source_excerpt": "Published Foundation in Excellence: GPA 3.5+; $15000 per year; ACT 29+ or SAT 1330+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "ua-scholar",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "UA Scholar",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores.",
+      "sat_min": 1360,
+      "act_min": 30,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 24000,
+      "amount_max": 24000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Confirm complete award-specific renewal conditions on the school's linked terms before verification.",
+      "requires_action": "For summer/fall 2027, submit the admission application and official score reports by December 4. No separate automatic-scholarship application.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 30,
+                "max": 31
+              },
+              {
+                "kind": "sat",
+                "min": 1360,
+                "max": 1410
+              }
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://afford.ua.edu/scholarships/oos-international-freshman/",
+      "source_excerpt": "Published UA Scholar: GPA 3.5+; $24000 per year; ACT 30+ or SAT 1360+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "presidential",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Presidential",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores.",
+      "sat_min": 1420,
+      "act_min": 32,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 28000,
+      "amount_max": 28000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Confirm complete award-specific renewal conditions on the school's linked terms before verification.",
+      "requires_action": "For summer/fall 2027, submit the admission application and official score reports by December 4. No separate automatic-scholarship application.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "GPA through the end of junior year; weighted/unweighted basis is not specified on this page. Official single-date ACT/SAT; no superscores."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 32,
+                "max": 36
+              },
+              {
+                "kind": "sat",
+                "min": 1420,
+                "max": 1600
+              }
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://afford.ua.edu/scholarships/oos-international-freshman/",
+      "source_excerpt": "Published Presidential: GPA 3.5+; $28000 per year; ACT 32+ or SAT 1420+.",
+      "source_checked_at": "2026-10-30"
+    }
+  ]
+}

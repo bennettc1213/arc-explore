@@ -20,7 +20,7 @@ async function main() {
       if (!existing.claims)
         await tx.unsafe(
           readFileSync(
-            "src/db/migrations/0028_student_discount_claims.sql",
+            "src/db/migrations/0030_student_discount_claims.sql",
             "utf8",
           ),
         );

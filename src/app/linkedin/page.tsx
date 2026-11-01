@@ -53,7 +53,7 @@ export default async function LinkedInPage() {
   const linkedInAccess = user ? await checkUsage(user.id, tier, "linkedin_tools") : null;
 
   return (
-    <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
+    <main className="wrap tool-page" style={{ paddingBlock: "48px 96px" }}>
       <BackLink href={FEED_PATH} label="back to the feed" />
       <header style={{ marginBottom: 28 }}>
         <div className="eyebrow chrome">07 — linkedin</div>

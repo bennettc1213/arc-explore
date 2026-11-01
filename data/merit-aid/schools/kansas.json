@@ -1,0 +1,440 @@
+{
+  "schema_version": 1,
+  "slug": "kansas",
+  "name": "The University of Kansas",
+  "state": "KS",
+  "control": "public",
+  "official_merit_url": "https://admissions.ku.edu/afford/scholarships",
+  "net_price_calculator_url": "https://tcc.ruffalonl.com/University-of-Kansas-Lawrence/Net-Price-Calculator",
+  "coa_in_state": null,
+  "coa_out_of_state": null,
+  "coa_academic_year": null,
+  "coa_source_url": null,
+  "coa_source_checked_at": null,
+  "notes": "Scope: both domestic freshman GPA-only tables. Award academic year is not labeled on the source and is left unknown. No transfer or international-specific table drafted. NPC identifies a historical cycle; no COA inferred.",
+  "status": "draft",
+  "verified_at": null,
+  "source_checked_at": "2026-10-30",
+  "review_issues": [
+    "Establish the award academic year from an official source.",
+    "General reuse terms were not located on the inspected admissions page; owner review needed."
+  ],
+  "research": {
+    "robots_url": "https://admissions.ku.edu/robots.txt",
+    "terms_urls": [],
+    "policy_note": "Bounded manual public-page review. Robots does not disallow this scholarship path. Only public facts and paraphrases retained; no logos, screenshots or copied page prose. General terms, where not located, remain an owner review item.",
+    "checked_at": "2026-10-30"
+  },
+  "tiers": [
+    {
+      "seed_key": "in-state-chancellor",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Chancellor",
+      "award_academic_year": null,
+      "gpa_min": 3.95,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 5000,
+      "amount_max": 5000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Maintain a 3.0 KU GPA and full-time enrollment; first bachelor's degree or eight continuous semesters, whichever comes first.",
+      "requires_action": "Complete the admission application and transcript submission by December 1. Domestic students must enroll full-time immediately following high school. Exclusively online programs excluded.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.95,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://admissions.ku.edu/afford/scholarships",
+      "source_excerpt": "Published Chancellor: GPA 3.95+; $5000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "in-state-traditions",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Traditions",
+      "award_academic_year": null,
+      "gpa_min": 3.85,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 4000,
+      "amount_max": 4000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Maintain a 3.0 KU GPA and full-time enrollment; first bachelor's degree or eight continuous semesters, whichever comes first.",
+      "requires_action": "Complete the admission application and transcript submission by December 1. Domestic students must enroll full-time immediately following high school. Exclusively online programs excluded.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.85,
+            "max": 3.94,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://admissions.ku.edu/afford/scholarships",
+      "source_excerpt": "Published Traditions: GPA 3.85+; $4000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "in-state-crimson-blue",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Crimson & Blue",
+      "award_academic_year": null,
+      "gpa_min": 3.7,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 3000,
+      "amount_max": 3000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Maintain a 3.0 KU GPA and full-time enrollment; first bachelor's degree or eight continuous semesters, whichever comes first.",
+      "requires_action": "Complete the admission application and transcript submission by December 1. Domestic students must enroll full-time immediately following high school. Exclusively online programs excluded.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.7,
+            "max": 3.84,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://admissions.ku.edu/afford/scholarships",
+      "source_excerpt": "Published Crimson & Blue: GPA 3.7+; $3000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "in-state-rock-chalk",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Rock Chalk",
+      "award_academic_year": null,
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 2000,
+      "amount_max": 2000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Maintain a 3.0 KU GPA and full-time enrollment; first bachelor's degree or eight continuous semesters, whichever comes first.",
+      "requires_action": "Complete the admission application and transcript submission by December 1. Domestic students must enroll full-time immediately following high school. Exclusively online programs excluded.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": 3.69,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://admissions.ku.edu/afford/scholarships",
+      "source_excerpt": "Published Rock Chalk: GPA 3.5+; $2000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "in-state-jayhawk",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Jayhawk",
+      "award_academic_year": null,
+      "gpa_min": 3.25,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 1000,
+      "amount_max": 1000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Maintain a 3.0 KU GPA and full-time enrollment; first bachelor's degree or eight continuous semesters, whichever comes first.",
+      "requires_action": "Complete the admission application and transcript submission by December 1. Domestic students must enroll full-time immediately following high school. Exclusively online programs excluded.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.25,
+            "max": 3.49,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://admissions.ku.edu/afford/scholarships",
+      "source_excerpt": "Published Jayhawk: GPA 3.25+; $1000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "out-of-state-excellence",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "KU Excellence",
+      "award_academic_year": null,
+      "gpa_min": 3.95,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 16000,
+      "amount_max": 16000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Maintain a 3.0 KU GPA and full-time enrollment; first bachelor's degree or eight continuous semesters, whichever comes first.",
+      "requires_action": "Complete the admission application and transcript submission by December 1. Domestic students must enroll full-time immediately following high school. Exclusively online programs excluded.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.95,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://admissions.ku.edu/afford/scholarships",
+      "source_excerpt": "Published KU Excellence: GPA 3.95+; $16000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "out-of-state-distinction",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "KU Distinction",
+      "award_academic_year": null,
+      "gpa_min": 3.85,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 14000,
+      "amount_max": 14000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Maintain a 3.0 KU GPA and full-time enrollment; first bachelor's degree or eight continuous semesters, whichever comes first.",
+      "requires_action": "Complete the admission application and transcript submission by December 1. Domestic students must enroll full-time immediately following high school. Exclusively online programs excluded.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.85,
+            "max": 3.94,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://admissions.ku.edu/afford/scholarships",
+      "source_excerpt": "Published KU Distinction: GPA 3.85+; $14000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "out-of-state-achievement",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "KU Achievement",
+      "award_academic_year": null,
+      "gpa_min": 3.7,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 12000,
+      "amount_max": 12000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Maintain a 3.0 KU GPA and full-time enrollment; first bachelor's degree or eight continuous semesters, whichever comes first.",
+      "requires_action": "Complete the admission application and transcript submission by December 1. Domestic students must enroll full-time immediately following high school. Exclusively online programs excluded.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.7,
+            "max": 3.84,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://admissions.ku.edu/afford/scholarships",
+      "source_excerpt": "Published KU Achievement: GPA 3.7+; $12000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "out-of-state-performance",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "KU Performance",
+      "award_academic_year": null,
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 10000,
+      "amount_max": 10000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Maintain a 3.0 KU GPA and full-time enrollment; first bachelor's degree or eight continuous semesters, whichever comes first.",
+      "requires_action": "Complete the admission application and transcript submission by December 1. Domestic students must enroll full-time immediately following high school. Exclusively online programs excluded.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": 3.69,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://admissions.ku.edu/afford/scholarships",
+      "source_excerpt": "Published KU Performance: GPA 3.5+; $10000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "out-of-state-access",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "KU Access",
+      "award_academic_year": null,
+      "gpa_min": 3.25,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 8000,
+      "amount_max": 8000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Maintain a 3.0 KU GPA and full-time enrollment; first bachelor's degree or eight continuous semesters, whichever comes first.",
+      "requires_action": "Complete the admission application and transcript submission by December 1. Domestic students must enroll full-time immediately following high school. Exclusively online programs excluded.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.25,
+            "max": 3.49,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "KU uses weighted or unweighted GPA on a 4.0 scale, whichever benefits the student most, after sixth high-school semester. Weighted-transcript conditions apply. No rounding to tenths."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligibility conditions not captured by student type, home state, GPA and test scores."
+          }
+        ]
+      },
+      "source_url": "https://admissions.ku.edu/afford/scholarships",
+      "source_excerpt": "Published KU Access: GPA 3.25+; $8000 per year.",
+      "source_checked_at": "2026-10-30"
+    }
+  ]
+}

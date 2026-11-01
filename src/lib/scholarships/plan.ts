@@ -43,6 +43,7 @@ export const ELIGIBILITY_LABELS: Record<EligibilityStatus, string> = {
  * is not emitted rather than approximated.
  */
 export function eligibilityFrom(fit: FitResult): EligibilityStatus {
+  if (fit.assessment) return fit.assessment.eligibility.state === "pass" ? "eligible" : fit.assessment.eligibility.state === "fail" ? "check" : "unknown";
   if (fit.blocked) return "check";
   const field = fit.reasons.find((r) => r.dimension === "field");
   if (field?.kind === "bad") return "check";

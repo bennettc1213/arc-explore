@@ -38,7 +38,7 @@ export default async function EssayPage() {
   const tier = await getUserTier(user?.id);
   const access = evaluateFeature(tier, "essay_reviewer");
   return (
-    <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 900 }}>
+    <main className="wrap tool-page" style={{ paddingBlock: "48px 96px", maxWidth: 1000 }}>
       <BackLink href={FEED_PATH} label="back to the feed" />
       <header style={{ marginBottom: 28 }}>
         <div className="eyebrow chrome">08 — essay</div>

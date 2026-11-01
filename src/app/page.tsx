@@ -1,11 +1,15 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
-import { Mascot } from "@/components/chrome/Mascot";
+import { OpportunityPreview } from "@/components/OpportunityPreview";
+import { Icon, type IconName } from "@/components/ui/Icon";
+import { TOOLS } from "@/lib/tools";
 import { CountUp } from "@/components/ui/count-up";
 import { TactileHighlight } from "@/components/ui/tactile-highlight";
 import { getSessionUser } from "@/lib/auth";
 import { getLandingStats } from "@/lib/feed";
 import { FEED_PATH } from "@/lib/routes";
+import { FreePlan, LandingFAQ, LiveMatchPreview, PreviewSkeleton, SourceProof } from "@/components/landing/LandingSections";
 
 export const dynamic = "force-dynamic";
 
@@ -25,16 +29,12 @@ const STUDENTS_HELPED = 10_000;
 /**
  * The landing page.
  *
- * **No listings on it, on purpose.** The feed used to be `/`, so a first
- * visitor met a filter form and fifty rows before they had been told what this
- * is. This page says what it is and hands them two doors; the feed lives at
- * `FEED_PATH` and is one click away with no account.
+ * The feed lives at `FEED_PATH`, one click away with no account. A small
+ * product preview now shows three real public listings without profile scores
+ * or invented activity; the full feed and its controls remain on Explore.
  *
- * The three numbers are the only data here, and each is something we observed
- * rather than something we were told — see `getLandingStats` for what each
- * counts, and the definition printed under each figure says the same thing in
- * plain words. A landing page is where a product is most tempted to round up;
- * this one prints the count and what it means.
+ * Listing counts come from `getLandingStats`; students helped remains the
+ * owner-stated constant above. Each figure retains its definition.
  */
 export default async function LandingPage() {
   // An old `/?kind=…` feed link never reaches this component: `proxy.ts`
@@ -61,61 +61,53 @@ export default async function LandingPage() {
   ];
 
   /*
-   * Each step links to where it actually happens. Step one starts the guided
-   * setup for a new visitor, and opens the profile editor for a signed-in
-   * visitor. Step three goes to the
-   * extension's own page, the one tool teaser that is the apply step.
-   *
-   * The copy claims only what exists today. Autofill is on the paid plan and
-   * has not been driven end to end in Chrome with a real session (FIXES.md §3),
-   * so the step says both rather than selling it as finished.
+   * The first-minute walkthrough leads to real actions. The preview lets a
+   * visitor choose a direction, guided setup makes recommendations personal,
+   * and an account keeps saved applications together.
    */
   const STEPS = [
     {
-      title: "Tell us about you",
-      body: "Your major, graduation year, location and work authorization. Add a resume and we read your skills from it.",
-      cta: user ? "open your profile" : "start with your profile",
+      title: "Pick a direction",
+      body: "An internship to build experience, or a scholarship to help pay for your next chapter. Start with what matters to you.",
+      cta: "try the preview below",
+      href: "#try-it",
+      note: null,
+    },
+    {
+      title: "Make it personal",
+      body: "Add your major, graduation year, location, and work authorization. Guided setup helps make your matches more relevant.",
+      cta: user ? "complete your profile" : "start with your profile",
       href: user ? "/profile" : "/onboarding",
       note: null,
     },
     {
-      title: "We score it honestly",
-      body: "Every listing gets a fit score and a plain list of why. What we can't tell is left out of the score, never counted against you, and the score says how many checks it rests on.",
-      cta: "see your matches",
-      href: FEED_PATH,
+      title: "Take your next step",
+      body: "Read the original listing, check the requirements, and apply on the source site. Create an account to keep your saved opportunities and applications together.",
+      cta: user ? "open your tracker" : "start your free tracker",
+      href: user ? "/tracker" : "/login",
       note: null,
-    },
-    {
-      title: "You apply",
-      body: "Autofill puts your details into the employer's own form; you read it and press submit. The tracker keeps every application and deadline in one place.",
-      cta: "see how autofill works",
-      href: "/extension",
-      note: "autofill is on the Apply plan · still being proven end to end",
     },
   ];
 
   return (
     <main className="wrap landing">
+      <div className="landing-hero-grid">
       <section className="landing-hero" aria-labelledby="landing-title">
-        <div className="landing-rise" style={{ animationDelay: "0ms" }}>
-          <Mascot size={44} />
-        </div>
-
         <div className="eyebrow chrome landing-eyebrow landing-rise" style={{ animationDelay: "60ms" }}>
           internships + scholarships · checked at the source
         </div>
 
         <h1 id="landing-title" className="landing-title landing-rise" style={{ animationDelay: "120ms" }}>
-          Internships and scholarships the day they open,{" "}
+          A clearer path to internships and scholarships,{" "}
           <TactileHighlight direction="left" delay={0.7}>
-            so you can actually win.
+            and what comes next.
           </TactileHighlight>
         </h1>
 
         <p className="landing-sub landing-rise" style={{ animationDelay: "220ms" }}>
           We read employers&rsquo; own job boards and sponsors&rsquo; own pages instead of
-          aggregators, so a listing reaches you while it is still worth applying to. Every listing
-          checked at the source. Your data is never sold.
+          aggregators, so you can trace an opportunity back to where it began. Find your direction,
+          check your fit, and take the next step. Your data is never sold.
         </p>
 
         <div className="landing-ctas landing-rise" style={{ animationDelay: "320ms" }}>
@@ -146,6 +138,8 @@ export default async function LandingPage() {
           )}
         </div>
 
+        <a href="#try-it" className="landing-try-link">Not sure where to start? Try a quick preview <Icon name="arrow" size={15} /></a>
+
         <Link
           href="/how-we-verify"
           className="mono press landing-rise landing-verify"
@@ -154,6 +148,8 @@ export default async function LandingPage() {
           how we verify a listing →
         </Link>
       </section>
+      <Suspense fallback={<div className="product-preview landing-hero-loading" aria-busy="true" aria-label="Loading current listings"><Icon name="explore" size={32} /><h2>A little direction.<br />A lot of possibility.</h2><p>Finding a few opportunities to explore…</p><div className="landing-loading-bars"><span /><span /><span /></div></div>}><OpportunityPreview openNow={stats.openNow} /></Suspense>
+      </div>
 
       <section
         className="landing-stats landing-rise"
@@ -177,7 +173,7 @@ export default async function LandingPage() {
       </p>
 
       <section className="landing-how" aria-labelledby="how-title">
-        <div className="eyebrow chrome landing-eyebrow">how it works</div>
+        <div className="eyebrow chrome landing-eyebrow">your first 60 seconds</div>
         <h2 id="how-title" className="landing-how-title">
           Three steps. <span style={{ color: "var(--accent)" }}>No guessing.</span>
         </h2>
@@ -200,6 +196,19 @@ export default async function LandingPage() {
           ))}
         </ol>
       </section>
+
+      <Suspense fallback={<PreviewSkeleton />}><LiveMatchPreview /></Suspense>
+
+      <FreePlan signedIn={Boolean(user)} />
+
+      <section className="landing-toolkit" aria-labelledby="toolkit-title">
+        <div className="landing-section-heading"><div><div className="eyebrow">Your application toolkit</div><h2 id="toolkit-title">More than a place to search.</h2></div><p>Prepare your profile, refine your application, and take your next step with the tools already in Instela.</p></div>
+        <div className="landing-tool-grid">{TOOLS.map(t => <Link key={t.href} href={t.href} className="landing-tool"><span className="tool-icon"><Icon name={t.href.slice(1) as IconName} size={23} /></span><h3>{t.label === "github" ? "GitHub audit" : t.label === "linkedin" ? "LinkedIn tools" : t.label === "essay" ? "Essay review" : "Autofill extension"}</h3><p>{t.blurb}</p><span className="tool-open">Explore tool <Icon name="arrow" size={16} /></span></Link>)}</div>
+      </section>
+
+      <Suspense fallback={<section className="landing-block landing-section-loading" aria-busy="true" aria-label="Loading source coverage"><div className="eyebrow">Follow the evidence</div><h2>Checking our source coverage…</h2></section>}><SourceProof /></Suspense>
+      <LandingFAQ />
+      <section className="landing-final"><div className="eyebrow">Your next chapter starts here</div><h2>Find the opportunity.<br /><span>Make it yours.</span></h2><Link href={FEED_PATH} className="btn btn-primary">Explore opportunities now<Icon name="arrow" size={18} /></Link><p>No signup required.</p></section>
     </main>
   );
 }

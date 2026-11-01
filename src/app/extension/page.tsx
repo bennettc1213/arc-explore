@@ -59,7 +59,7 @@ export default async function ExtensionPage() {
   const access = evaluateFeature(tier, "extension_autofill_internships");
 
   return (
-    <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 820 }}>
+    <main className="wrap tool-page reference-page" style={{ paddingBlock: "48px 96px", maxWidth: 820 }}>
       <BackLink href={FEED_PATH} label="back to the feed" />
 
       {/* Said up front, not discovered after installing. The extension is

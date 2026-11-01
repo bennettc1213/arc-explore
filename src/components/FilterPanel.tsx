@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 
 import { INTEREST_OPTIONS, WORK_AUTH_OPTIONS } from "@/lib/profile/types";
 import { FEED_PATH } from "@/lib/routes";
+import { Icon } from "@/components/ui/Icon";
+import { MatchingScreen } from "@/components/discovery/MatchingScreen";
+import type { ScoreProfile } from "@/lib/score/fit";
 
 /** A small sub-label for clustering related controls — quieter than `.eyebrow`,
     which is already spent at the page level. */
@@ -56,6 +61,11 @@ export interface FilterPanelProps {
   activeCount: number;
   /** The scholarship view (plan | list), kept across a filter submit. */
   view?: string | null;
+  discovery?: boolean;
+  meritOnly?: boolean;
+  college?: string | null;
+  compact?: boolean;
+  scoring?: Pick<ScoreProfile, "school" | "gpa" | "gpaScale" | "educationLevel" | "enrollmentStatus" | "residency" | "priority">;
 }
 
 export function FilterPanel(props: FilterPanelProps) {
@@ -80,21 +90,44 @@ export function FilterPanel(props: FilterPanelProps) {
     excludeMarketing,
     activeCount,
     view,
+    discovery = false,
+    meritOnly = false,
+    college = null,
+    compact = false,
+    scoring = {},
   } = props;
 
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [lane, setLane] = useState(meritOnly ? "merit" : kind ?? "all");
+  const [mobilePreferences, setMobilePreferences] = useState(false);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLFormElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
+    const mobile = window.matchMedia("(max-width: 1100px)").matches;
+    const panel = document.getElementById("filter-panel");
+    const previousOverflow = document.body.style.overflow;
+    if (mobile) { document.body.style.overflow = "hidden"; panel?.querySelector<HTMLButtonElement>("button")?.focus(); }
     function onPointerDown(e: PointerEvent) {
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") { setOpen(false); triggerRef.current?.focus(); }
+      if (mobile && e.key === "Tab" && panel) {
+        const focusable = Array.from(panel.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([type="hidden"]), select, a[href]')).filter(el => el.getClientRects().length > 0);
+        const first = focusable[0], last = focusable.at(-1);
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
+    }
     document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => { document.body.style.overflow = previousOverflow; document.removeEventListener("pointerdown", onPointerDown); document.removeEventListener("keydown", onKeyDown); };
   }, [open]);
 
   function closeAndRefocus() {
@@ -102,18 +135,59 @@ export function FilterPanel(props: FilterPanelProps) {
     triggerRef.current?.focus();
   }
 
+  function submitPreferences(event: FormEvent<HTMLFormElement>) {
+    if (!discovery) return;
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const params = new URLSearchParams();
+    for (const [key, value] of data) if (typeof value === "string" && value.trim()) params.append(key, value.trim());
+    params.set("view", "deck");
+    params.delete("discoveryLane");
+    params.set("includeInferred", data.has("includeInferred") ? "1" : "0");
+    setOpen(false);
+    setMobilePreferences(false);
+    startTransition(() => router.push(`${FEED_PATH}?${params}`, { scroll: false }));
+  }
+
   return (
     <form
       ref={rootRef}
       method="GET"
       action={FEED_PATH}
-      className="relative border"
+      onSubmit={submitPreferences}
+      className={`relative border explore-filters ${open ? "filters-open" : ""} ${discovery ? "discovery-filters" : ""} ${mobilePreferences ? "preferences-open" : ""} ${compact ? "toolbar-filters" : ""}`}
       style={{ borderColor: "var(--line)", padding: 20, marginBottom: 32 }}
     >
       {/* Without this, filtering from the list view would drop back to plan. */}
       {view && <input type="hidden" name="view" value={view} />}
+      {discovery && <button type="button" className="discovery-mobile-toggle" aria-expanded={mobilePreferences} onClick={() => setMobilePreferences(v => !v)}><Icon name="filter" size={18} /><span><strong>Your preferences</strong><small>{lane === "all" ? "All opportunities" : lane === "merit" ? "College merit awards" : lane === "internship" ? "Internships" : "Scholarships"}{activeCount > 0 ? ` · ${activeCount} filters` : " · Make it yours"}</small></span><span>{mobilePreferences ? "Close" : "Edit"}</span><Icon name="chevron" size={15} /></button>}
+      {!discovery && meritOnly && <input type="hidden" name="focus" value="merit" />}
+      {!discovery && college && <input type="hidden" name="college" value={college} />}
+      {pending && createPortal(<MatchingScreen overlay kind={lane === "internship" ? "internships" : lane === "all" ? "opportunities" : "scholarships"} />, document.body)}
+      {compact && discovery && <><input type="hidden" name="kind" value={kind ?? ""} />{meritOnly && <input type="hidden" name="focus" value="merit" />}{meritOnly && <label className="field-row discovery-college"><span>College or university</span><input className="field" name="college" defaultValue={college ?? ""} placeholder="e.g. University of Nevada" /><small>Matches merit mentioned by the source. College coverage varies.</small></label>}</>}
+      {discovery && !compact && <div className="discovery-lanes">
+        <div className="discovery-sidebar-title"><Icon name="filter" size={17} /><span>Make it yours</span></div>
+        <p>What are you looking for?</p>
+        <div className="discovery-lane-options">{([
+          ["all", "A little of everything", "Keep your options open", "explore"],
+          ["internship", "Internships", "Build your experience", "resume"],
+          ["scholarship", "Scholarships", "Fund your next chapter", "essay"],
+          ["merit", "College merit awards", "Explore awards by institution", "shield"],
+        ] as const).map(([value, title, subtitle, icon]) => <label key={value} className={lane === value ? "is-selected" : ""}>
+          <input type="radio" name="discoveryLane" value={value} checked={lane === value} onChange={() => setLane(value)} aria-label={title} />
+          <Icon name={icon} size={19} /><span><strong>{title}</strong><small>{subtitle}</small></span><i aria-hidden="true" />
+        </label>)}</div>
+        <input type="hidden" name="kind" value={lane === "all" ? "" : lane === "merit" ? "scholarship" : lane} />
+        {lane === "merit" && <><input type="hidden" name="focus" value="merit" /><label className="field-row discovery-college"><span>College or university</span><input className="field" name="college" defaultValue={college ?? ""} placeholder="e.g. University of Nevada" /><small>Matches merit mentioned by the source. College coverage varies.</small></label></>}
+      </div>}
+      <div className="filter-search">
+        <label className="field-row"><span className="filter-section-title">Search opportunities</span><span className="filter-search-input"><Icon name="search" size={17} /><input className="field" name="q" defaultValue={q ?? ""} placeholder="Role, organization, eligibility" /></span></label>
+        <button type="submit" className="btn btn-primary filter-search-submit" disabled={pending}>{discovery ? "Find my matches" : "Search"}<Icon name="arrow" size={15} /></button>
+        <p className="mono">Matches the title, the sponsor, or who is eligible — every word must appear.</p>
+      </div>
       {!user && (
-        <>
+        <details className="guest-profile-fields">
+          <summary>Personalize your matches</summary>
           <div className="eyebrow chrome" style={{ marginBottom: 16 }}>
             02 — your profile
           </div>
@@ -180,13 +254,25 @@ export function FilterPanel(props: FilterPanelProps) {
               ))}
             </div>
           </div>
-        </>
+        </details>
       )}
+
+      <details className="scoring-preferences">
+        <summary>Academic & scoring details</summary>
+        <p className="mono">Only facts relevant to a source requirement affect eligibility. Missing answers stay unknown.</p>
+        {!user ? <><label className="field-row"><span>Your college or university</span><input className="field" name="school" defaultValue={scoring.school ?? ""} placeholder="Full institution name" /></label><label className="field-row"><span>Your GPA</span><input className="field" type="number" min="0" max="5" step="0.01" name="gpa" defaultValue={scoring.gpa ?? ""} placeholder="e.g. 3.7" /></label></> : <p className="mono">School and GPA come from <a href="/profile">your profile</a>. The context below applies to this search.</p>}
+        <label className="field-row"><span>Your GPA scale</span><select className="field" name="gpaScale" defaultValue={scoring.gpaScale ?? ""}><option value="">Not specified</option><option value="4">4.0</option><option value="4.3">4.3</option><option value="4.5">4.5</option><option value="5">5.0</option></select></label>
+        <label className="field-row"><span>Education level</span><select className="field" name="educationLevel" defaultValue={scoring.educationLevel ?? ""}><option value="">Not specified</option><option value="high_school">High school</option><option value="undergraduate">Undergraduate</option><option value="graduate">Graduate</option></select></label>
+        <label className="field-row"><span>College enrollment / admission</span><select className="field" name="enrollmentStatus" defaultValue={scoring.enrollmentStatus ?? ""}><option value="">Not specified</option><option value="enrolled">Currently enrolled</option><option value="admitted">Admitted</option><option value="incoming">Incoming student</option><option value="transfer">Transfer applicant</option></select></label>
+        <label className="field-row"><span>Your state of residence</span><input className="field" name="residency" defaultValue={scoring.residency ?? ""} placeholder="Full state name, e.g. Nevada" /></label>
+      </details>
+      <label className="field-row scoring-priority"><span>Application priority</span><select className="field" name="priority" defaultValue={scoring.priority ?? "fit"}><option value="fit">Best supported fit</option><option value="deadline">Nearer deadlines</option><option value="award">Award value</option><option value="effort">Lower estimated workload</option></select><small>Changes ordering, not personal fit. Unknown workload is never assumed to be easy.</small></label>
 
       <div
         className="flex items-center justify-between"
         style={{ marginTop: user ? 0 : 20 }}
       >
+        <span className="filter-static-heading"><Icon name="filter" size={16} />Filters{activeCount > 0 && <span>{activeCount}</span>}</span>
         <button
           ref={triggerRef}
           type="button"
@@ -194,7 +280,7 @@ export function FilterPanel(props: FilterPanelProps) {
           aria-expanded={open}
           aria-controls="filter-panel"
           onClick={() => setOpen((v) => !v)}
-          className="mono chrome press flex items-center gap-2"
+          className="mono chrome press flex items-center gap-2 filter-toggle"
           style={{
             color: "var(--accent)",
             background: "none",
@@ -204,7 +290,7 @@ export function FilterPanel(props: FilterPanelProps) {
             cursor: "pointer",
           }}
         >
-          filters
+          <Icon name="filter" size={16} /> filters
           {activeCount > 0 && (
             <span
               aria-label={`${activeCount} active`}
@@ -237,7 +323,7 @@ export function FilterPanel(props: FilterPanelProps) {
           <button
             type="button"
             onClick={closeAndRefocus}
-            className="mono chrome press"
+            className="mono chrome press filter-close"
             style={{
               color: "var(--faint-readable)",
               background: "none",
@@ -254,8 +340,10 @@ export function FilterPanel(props: FilterPanelProps) {
 
       <div
         id="filter-panel"
-        hidden={!open}
-        className="absolute left-0 top-full w-full"
+        data-open={open}
+        className="filter-controls"
+        role="region"
+        aria-label="Refine opportunities"
         style={{
           marginTop: 12,
           zIndex: 50,
@@ -265,29 +353,17 @@ export function FilterPanel(props: FilterPanelProps) {
           padding: 20,
         }}
       >
+        <div className="filter-drawer-header"><strong>Refine opportunities</strong><button type="button" onClick={closeAndRefocus} aria-label="Close filters"><Icon name="close" size={20} /></button></div>
         <GroupLabel>narrow by</GroupLabel>
-        <label className="field-row">
-          <span className="mono chrome">search</span>
-          <input
-            className="field"
-            name="q"
-            defaultValue={q ?? ""}
-            placeholder="nursing · Stripe · first-generation · machine learning"
-          />
-          <span className="mono" style={{ color: "var(--faint-readable)", marginTop: 4 }}>
-            matches the title, the sponsor, or who is eligible — every word must appear
-          </span>
-        </label>
-
         <div className="mt-4 grid gap-4 md:grid-cols-2">
-          <label className="field-row">
+          {!discovery && <label className="field-row">
             <span className="mono chrome">kind</span>
             <select className="field" name="kind" defaultValue={kind ?? ""}>
               <option value="">internships + scholarships</option>
               <option value="internship">internships</option>
               <option value="scholarship">scholarships</option>
             </select>
-          </label>
+          </label>}
 
           <label className="field-row">
             <span className="mono chrome">category</span>
@@ -427,7 +503,7 @@ export function FilterPanel(props: FilterPanelProps) {
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button type="submit" className="btn btn-primary press">
-            {user ? "apply filters" : "score my feed"}
+            {discovery ? "Find my matches" : user ? "apply filters" : "score my feed"}
           </button>
           <span className="mono" style={{ color: "var(--faint-readable)" }}>
             {activeCount > 0

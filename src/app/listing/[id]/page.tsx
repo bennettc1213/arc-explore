@@ -10,18 +10,17 @@ import { ScoreReasons } from "@/components/ScoreReasons";
 import { TrackButton } from "@/components/TrackButton";
 import { recordEvent } from "@/lib/analytics/record";
 import { buildApplicationPacket } from "@/lib/apply/packet";
-import { getSessionUser } from "@/lib/auth";
 import { getCoverLetter } from "@/lib/cover-letter/store";
 import { getPosting } from "@/lib/feed";
 import { formatAward } from "@/lib/scholarships/display";
 import { formatTerm } from "@/lib/terms/display";
-import { getUserTier, presentFit } from "@/lib/pricing/entitlements";
+import { formatCompensation, formatWorkArrangement } from "@/lib/opportunity-details";
+import { presentFit } from "@/lib/pricing/entitlements";
 import { TIER_LABELS, evaluateFeature } from "@/lib/pricing/tiers";
-import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { hasReported } from "@/lib/reports/store";
-import { isProfileReadyForFit, toScoreProfile } from "@/lib/profile/types";
 import { coerceParsedResume } from "@/lib/resume/types";
-import { skillsFromParsedResume } from "@/lib/score/skills";
+import { resolveViewer, type SearchParams } from "@/app/explore/viewer";
+import { ScoringDetails } from "@/components/discovery/ScoringDetails";
 import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
@@ -44,30 +43,17 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 
 export default async function ListingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const { id } = await params;
 
-  const user = await getSessionUser();
-  const [stored, resume] = user
-    ? await Promise.all([getProfile(user.id), getLatestResume(user.id)])
-    : [null, null];
-
-  const resumeSkills = resume ? skillsFromParsedResume(resume.parsed) : [];
-  const profile = user ? toScoreProfile(stored, resumeSkills) : toScoreProfile(null, []);
+  const { user, stored, resume, tier, profile, profileReady } = await resolveViewer(await searchParams);
   const item = await getPosting(id, profile);
   if (!item) notFound();
 
-  const tier = await getUserTier(user?.id);
-  const profileReady = user
-    ? isProfileReadyForFit(stored)
-    : isProfileReadyForFit({
-        major: profile.major ?? null,
-        gradYear: profile.gradYear ?? null,
-        workAuth: profile.workAuth ?? null,
-        targetLocations: profile.targetLocations ?? [],
-      });
   const presented = presentFit(item.fit, tier, { profileReady });
 
   // After the 404 check, so a bad or hidden id is not counted as a view. The
@@ -123,7 +109,7 @@ export default async function ListingPage({
   const amount = item.kind === "scholarship" ? formatAward(item) : null;
 
   return (
-    <main className="wrap" style={{ paddingBlock: "40px 96px" }}>
+    <main className="wrap listing-page" style={{ paddingBlock: "40px 96px" }}>
       <BackLink href={FEED_PATH} label="back to feed" />
 
       <header className="print-hide" style={{ marginBottom: 24 }}>
@@ -202,7 +188,7 @@ export default async function ListingPage({
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn press"
+              className="btn btn-primary press"
               style={{ textDecoration: "none" }}
             >
               apply on {item.kind === "scholarship" ? "the sponsor's site" : "the employer's site"} ↗
@@ -236,6 +222,8 @@ export default async function ListingPage({
             {user && <TrackButton postingId={item.id} current={null} />}
           </div>
         </header>
+
+        <nav className="settings-section-nav print-hide" aria-label="Opportunity sections"><a href="#opportunity-overview">Overview</a><a href="#opportunity-fit">Your fit</a>{item.kind === "scholarship" && item.eligibility.length > 0 && <a href="#opportunity-eligibility">Eligibility</a>}<a href="#cover-letter">Cover letter</a></nav>
 
         {item.applyLinkDead && (
           <section
@@ -276,6 +264,7 @@ export default async function ListingPage({
         )}
 
         <section
+          id="opportunity-overview"
           className="print-hide border-y grid gap-x-8 gap-y-3 md:grid-cols-2"
           style={{ borderColor: "var(--line)", padding: "20px 0", marginBottom: 32 }}
         >
@@ -307,6 +296,8 @@ export default async function ListingPage({
               ) : (
                 <MetaRow label="term" value="not stated" />
               )}
+              <MetaRow label="work arrangement" value={`${formatWorkArrangement(item.workArrangement)}${item.locations.length ? ` · ${item.locations.join(" / ")}` : ""}`} />
+              <MetaRow label="compensation" value={formatCompensation(item.compensationMinCents, item.compensationMaxCents, item.compensationInterval)} />
               {item.workAuth === "citizenship_required" && (
                 <MetaRow label="work auth" value="U.S. citizenship required" />
               )}
@@ -366,14 +357,16 @@ export default async function ListingPage({
           </section>
         )}
 
-        <section className="print-hide" style={{ marginBottom: 32 }}>
-          <ScoreReasons
+        <section id="opportunity-fit" className="print-hide" style={{ marginBottom: 32 }}>
+          {presented.assessment && <ScoringDetails assessment={presented.assessment} />}
+          {!profileReady && <p className="t-sm" style={{ color: "var(--muted)" }}><Link href={user ? "/profile" : FEED_PATH} style={{ color: "var(--accent-lite)" }}>Add your profile details</Link> to see how this opportunity fits you.</p>}
+          {!presented.assessment && <ScoreReasons
             reasons={presented.reasons}
             skills={presented.skills}
             hasResume={Boolean(resume)}
             roleSkills={presented.locked ? [] : item.skills}
-          />
-          {presented.locked && (
+          />}
+          {presented.locked && !presented.assessment && (
             <p className="mono" style={{ marginTop: 8, color: "var(--faint-readable)" }}>
               upgrade to {TIER_LABELS.apply} to see the full score, the factor breakdown, and what this role
               names that your resume does not
@@ -382,7 +375,7 @@ export default async function ListingPage({
         </section>
 
         {item.kind === "scholarship" && item.eligibility.length > 0 && (
-          <section className="print-hide" style={{ marginBottom: 32 }}>
+          <section id="opportunity-eligibility" className="print-hide" style={{ marginBottom: 32 }}>
             <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
               eligibility
             </div>

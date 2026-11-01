@@ -7,7 +7,7 @@ import {
   markAppliedAction,
   saveApplyFieldAction,
   type ApplyActionState,
-} from "@/app/listing/[id]/apply/actions";
+} from "./actions";
 import { embedStatus } from "@/lib/apply/apply-url";
 import type { PacketField } from "@/lib/apply/packet";
 import {

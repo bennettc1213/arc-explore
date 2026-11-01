@@ -49,7 +49,7 @@ establishes current enrollment or activates the discount.
 
 ## Database and rollout
 
-Migration `0028_student_discount_claims.sql` creates server-only email challenges
+Migration `0030_student_discount_claims.sql` creates server-only email challenges
 and RLS-protected claims. Both school-email hashes and university identity hashes
 are unique. A user can have one claim. Case and plus-address aliases collapse to
 the same email hash. Hashes remain after account deletion to prevent reuse; the

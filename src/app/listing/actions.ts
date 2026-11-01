@@ -22,7 +22,8 @@ import { getPosting, type FeedItem } from "@/lib/feed";
 import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature } from "@/lib/pricing/tiers";
 import { ensureProfile, getLatestResume, getProfile } from "@/lib/profile/store";
-import { toScoreProfile, type UserProfile } from "@/lib/profile/types";
+import { type UserProfile } from "@/lib/profile/types";
+import { toScoringProfile as toScoreProfile } from "@/lib/score/v2/profile";
 import { EMPTY_PARSED_RESUME, coerceParsedResume, type ParsedResume } from "@/lib/resume/types";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 
@@ -53,7 +54,7 @@ interface Grounding {
 async function loadGrounding(userId: string, postingId: string): Promise<Grounding> {
   const [stored, resume] = await Promise.all([getProfile(userId), getLatestResume(userId)]);
   const resumeSkills = resume ? skillsFromParsedResume(resume.parsed) : [];
-  const profile = toScoreProfile(stored, resumeSkills);
+  const profile = toScoreProfile(stored, resumeSkills, resume?.parsed);
   const item = await getPosting(postingId, profile);
 
   if (!item) {

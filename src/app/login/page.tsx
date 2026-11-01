@@ -39,7 +39,7 @@ export default async function LoginPage({
   if (user) redirect(next);
 
   return (
-    <main className="wrap" style={{ paddingBlock: "64px 96px", maxWidth: 560 }}>
+    <main className="wrap login-page" style={{ paddingBlock: "64px 96px", maxWidth: 560 }}>
       <BackLink href={FEED_PATH} label="back to the feed" />
       <div className="eyebrow chrome">sign in</div>
       <h1 className="chrome" style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.03em", marginTop: 12 }}>

@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "slug": "boise-state",
+  "name": "Boise State University",
+  "state": "ID",
+  "control": "public",
+  "official_merit_url": "https://www.boisestate.edu/admissions/cost-aid/nonresident-scholarships/",
+  "net_price_calculator_url": "https://fs.boisestate.edu/financialaid/2023-2024%20index.html",
+  "coa_in_state": null,
+  "coa_out_of_state": null,
+  "coa_academic_year": null,
+  "coa_source_url": null,
+  "coa_source_checked_at": null,
+  "notes": "Scope: fixed Ridgeline/Summit first-year and transfer tables. WUE savings are approximate and use a different year; omitted. The official site links a historical NPC. COA unknown.",
+  "status": "draft",
+  "verified_at": null,
+  "source_checked_at": "2026-10-30",
+  "review_issues": [
+    "Review detailed first-year/transfer criteria and complete renewal requirements.",
+    "Review or replace the historical NPC when Boise State supplies a current one."
+  ],
+  "research": {
+    "robots_url": "https://www.boisestate.edu/robots.txt",
+    "terms_urls": [
+      "https://www.boisestate.edu/terms-of-use/"
+    ],
+    "policy_note": "Bounded manual public-page review. Robots does not disallow this scholarship path. Only public facts and paraphrases retained; no logos, screenshots or copied page prose. General terms, where not located, remain an owner review item.",
+    "checked_at": "2026-10-30"
+  },
+  "tiers": [
+    {
+      "seed_key": "first-year-ridgeline",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Ridgeline",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.1,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Cumulative unweighted high-school GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 5000,
+      "amount_max": 5000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Published duration: four years / eight semesters. Full-time 12+ enrollment; confirm additional continuation criteria.",
+      "requires_action": "For fall 2027, all admission materials must arrive by December 15, 2026. Full-time enrollment of 12+ credits and eligible-major/program requirements apply.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.1,
+            "max": 3.29,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "Cumulative unweighted high-school GPA."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligible major/program. Transfer exclusions include nursing, pre-nursing, construction management, radiological science, pre-radiological science, alternative-fee and fully-online programs."
+          }
+        ]
+      },
+      "source_url": "https://www.boisestate.edu/admissions/cost-aid/nonresident-scholarships/",
+      "source_excerpt": "Published Ridgeline: GPA 3.1+; $5000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "first-year-summit",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Summit",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.3,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Cumulative unweighted high-school GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 10000,
+      "amount_max": 10000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Published duration: four years / eight semesters. Full-time 12+ enrollment; confirm additional continuation criteria.",
+      "requires_action": "For fall 2027, all admission materials must arrive by December 15, 2026. Full-time enrollment of 12+ credits and eligible-major/program requirements apply.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.3,
+            "max": 4,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "Cumulative unweighted high-school GPA."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligible major/program. Transfer exclusions include nursing, pre-nursing, construction management, radiological science, pre-radiological science, alternative-fee and fully-online programs."
+          }
+        ]
+      },
+      "source_url": "https://www.boisestate.edu/admissions/cost-aid/nonresident-scholarships/",
+      "source_excerpt": "Published Summit: GPA 3.3+; $10000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "transfer-ridgeline",
+      "audience": "transfer",
+      "residency": "out_of_state",
+      "tier_label": "Ridgeline Transfer",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.1,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Cumulative college GPA; not high-school GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 5000,
+      "amount_max": 5000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Published duration: two years / four semesters. Full-time 12+ enrollment; confirm additional continuation criteria.",
+      "requires_action": "For fall 2027, all admission materials must arrive by December 15, 2026. Full-time enrollment of 12+ credits and eligible-major/program requirements apply.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.1,
+            "max": 3.29,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "Cumulative college GPA; not high-school GPA."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligible major/program. Transfer exclusions include nursing, pre-nursing, construction management, radiological science, pre-radiological science, alternative-fee and fully-online programs."
+          }
+        ]
+      },
+      "source_url": "https://www.boisestate.edu/admissions/cost-aid/nonresident-scholarships/",
+      "source_excerpt": "Published Ridgeline Transfer: GPA 3.1+; $5000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "transfer-summit",
+      "audience": "transfer",
+      "residency": "out_of_state",
+      "tier_label": "Summit Transfer",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.3,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Cumulative college GPA; not high-school GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 10000,
+      "amount_max": 10000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Published duration: two years / four semesters. Full-time 12+ enrollment; confirm additional continuation criteria.",
+      "requires_action": "For fall 2027, all admission materials must arrive by December 15, 2026. Full-time enrollment of 12+ credits and eligible-major/program requirements apply.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.3,
+            "max": 4,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "Cumulative college GPA; not high-school GPA."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm eligible major/program. Transfer exclusions include nursing, pre-nursing, construction management, radiological science, pre-radiological science, alternative-fee and fully-online programs."
+          }
+        ]
+      },
+      "source_url": "https://www.boisestate.edu/admissions/cost-aid/nonresident-scholarships/",
+      "source_excerpt": "Published Summit Transfer: GPA 3.3+; $10000 per year.",
+      "source_checked_at": "2026-10-30"
+    }
+  ]
+}

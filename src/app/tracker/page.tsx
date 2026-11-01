@@ -13,7 +13,8 @@ import {
 import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature, TIER_LABELS } from "@/lib/pricing/tiers";
 
-import { ApplicationCard, type CardApplication } from "./ApplicationCard";
+import { type CardApplication } from "./ApplicationCard";
+import { TrackerList } from "./TrackerList";
 import { ComparePicker } from "./ComparePicker";
 import { FEED_PATH } from "@/lib/routes";
 
@@ -74,11 +75,15 @@ export default async function TrackerPage() {
       url: r.url,
       locations: r.locations,
       term: r.term,
+      workArrangement: r.workArrangement,
+      compensationMinCents: r.compensationMinCents,
+      compensationMaxCents: r.compensationMaxCents,
+      compensationInterval: r.compensationInterval,
       closed: r.closedAt !== null,
     }));
 
   return (
-    <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: 1100 }}>
+    <main className="wrap tracker-page" style={{ paddingBlock: "48px 96px", maxWidth: 1200 }}>
       <BackLink href={FEED_PATH} label="back to the feed" />
       <header style={{ marginBottom: 32 }}>
         <div className="eyebrow chrome">your applications</div>
@@ -92,7 +97,7 @@ export default async function TrackerPage() {
 
       {rows.length > 0 && (
         <section
-          className="flex flex-wrap gap-x-12 gap-y-6 border-y"
+          className="flex flex-wrap gap-x-12 gap-y-6 border-y overview-stats"
           style={{ borderColor: "var(--line)", padding: "22px 0", marginBottom: 32 }}
         >
           <Stat value={counts.active} label="in flight" />
@@ -169,9 +174,7 @@ export default async function TrackerPage() {
             />
           </div>
 
-          {apps.map((app) => (
-            <ApplicationCard key={app.id} app={app} />
-          ))}
+          <TrackerList apps={apps} />
         </div>
       )}
 

@@ -95,6 +95,10 @@ export const ashby: BoardAdapter = {
           url: j.jobUrl ?? j.applyUrl ?? "",
           locations,
           isRemote: remote,
+          workArrangement: /hybrid/i.test(j.workplaceType ?? "") ? "hybrid" : remote ? "remote" : /on.?site|in.?person/i.test(j.workplaceType ?? "") ? "in_person" : null,
+          compensationMinCents: null,
+          compensationMaxCents: null,
+          compensationInterval: null,
           postedAt: toDate(j.publishedAt),
           // Ashby exposes no deadline field — null, never guessed.
           deadlineAt: null,

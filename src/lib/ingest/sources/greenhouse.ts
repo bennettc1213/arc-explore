@@ -97,6 +97,10 @@ export const greenhouse: BoardAdapter = {
         url: j.absolute_url,
         locations,
         isRemote: /\bremote\b/i.test(j.location?.name ?? ""),
+        workArrangement: /\bremote\b/i.test(j.location?.name ?? "") ? "remote" : null,
+        compensationMinCents: null,
+        compensationMaxCents: null,
+        compensationInterval: null,
         postedAt: toDate(j.first_published) ?? toDate(j.updated_at),
         deadlineAt: toDate(j.application_deadline),
         // content=false: fetched separately for postings we keep.

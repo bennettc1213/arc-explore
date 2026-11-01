@@ -243,6 +243,10 @@ export const smartrecruiters: BoardAdapter = {
         url: `https://jobs.smartrecruiters.com/${companyIdentifier}/${p.id}`,
         locations: formatLocation(loc),
         isRemote: loc?.remote === true,
+        workArrangement: loc?.hybrid === true ? "hybrid" : loc?.remote === true ? "remote" : null,
+        compensationMinCents: null,
+        compensationMaxCents: null,
+        compensationInterval: null,
         postedAt: toDate(p.releasedDate),
         deadlineAt: null,
         // Not in the list payload; the detail endpoint has it if we ever need it.

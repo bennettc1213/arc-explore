@@ -125,7 +125,7 @@ export function ToolsMenu() {
         className="navlink press flex items-center gap-2"
         style={{ cursor: "pointer" }}
       >
-        tools
+        Tools
         {/* a drawn caret rather than a text glyph — the mono font has no
             reliable triangle, and a CSS border triangle is font-independent */}
         <span

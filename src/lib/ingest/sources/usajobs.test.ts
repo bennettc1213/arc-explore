@@ -76,6 +76,20 @@ describe("mapUsaJobsPosting", () => {
     assert.equal(mapUsaJobsPosting(byTitle("Student Volunteer"))?.isRemote, false);
   });
 
+  it("keeps the published pay range and rate unit separate from award amounts", () => {
+    const p = mapUsaJobsPosting(byTitle("Graduate Student Research Assistant"));
+    assert.equal(p?.compensationMinCents, 2136);
+    assert.equal(p?.compensationMaxCents, 2404);
+    assert.equal(p?.compensationInterval, "hour");
+  });
+
+  it("keeps an explicitly unpaid federal opportunity distinguishable from an unstated rate", () => {
+    const p = mapUsaJobsPosting(byTitle("Student Volunteer"));
+    assert.equal(p?.compensationMinCents, 0);
+    assert.equal(p?.compensationMaxCents, 0);
+    assert.equal(p?.compensationInterval, null);
+  });
+
   // One announcement covering 96 duty stations is normal for a federal
   // trainee program; repeated names within it are not.
   it("dedupes locations while preserving order", () => {

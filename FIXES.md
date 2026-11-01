@@ -1,5 +1,11 @@
 # Fixes & Open Items
 
+- [ ] **Landing student outcome story needs an approved source (2026-10-29).** The landing expansion includes live listing previews, a first-minute walkthrough, free-plan limits, source coverage, and FAQs. No attributed student quote or permission to publish an outcome story was supplied; collect both before adding testimonials or outcome claims. No placeholder testimonial is shown to visitors.
+- [ ] **Source registry is empty in the connected local database (2026-10-29).** Read-only inspection found zero `sources` rows and 11,132 unmapped observations. The landing source panel reports actual legacy employer poll history and distinct scholarship adapters when there is no active registry, with labels distinguishing these measurements. Rehearse and apply the existing registry backfill separately before claiming active registered coverage; the landing task makes no database changes.
+
+- [ ] **Scoring v2 supplemental academic context is per search (2026-10-27).** GPA scale, enrollment status, education level, and residence are validated search inputs, not persisted profile columns. Background digests and saved searches only score from available saved context. Persist these fields and their verification state if cross-session academic matching is expanded.
+- [ ] **Scoring v2 requirement coverage is deliberately conservative (2026-10-27).** It parses existing eligibility passages at read time; unsupported clauses remain unknown/manual review. Published merit rubrics can be validated when supplied, but this build does not populate an institution rubric catalog or backfill structured source criteria. Expand ingestion and rubric coverage before promising comprehensive academic eligibility matching.
+
 Everything known to be broken, missing, or waiting on a decision. Kept separate
 from `scholarship-platform-roadmap.md`: the roadmap is *what to build*, this is
 *what is wrong with what exists* plus what is blocked on someone.
@@ -2416,11 +2422,12 @@ reason, not an omission.
   close:** apply 0025 and 0026 to production (INS-055's explicit release
   prompt), then push.
 
-- [ ] **Migration `0027_funding_goal` is committed locally, not pushed, not
+- [ ] **Migration `0029_funding_goal` is committed locally, not pushed, not
   applied.** Adds `profiles.funding_goal` for the scholarship Plan view's goal
   meter (released 2026-10-26 as `bb0fb59` without it). It sits on top of the
-  two INS commits on local `master` because `db:migrate` applies in journal
-  order and production is still missing 0025/0026 (entry above). Until it
+  two INS migrations and the upstream `0027_internship_details` and
+  `0028_merit_aid` migrations because `db:migrate` applies in journal order
+  and production is still missing 0025/0026 (entry above). Until it
   lands, `lib/profile/funding-goal.ts` reads the column by name, treats `42703`
   as "goals unavailable", and the meter hides its "how much do you need to
   cover?" prompt — so signed-in students see submitted/saved totals but cannot
@@ -2428,6 +2435,11 @@ reason, not an omission.
   selects every declared column, so declaring it first would 500 every
   signed-in page. After applying, declare it and fold the module into
   `profile/store.ts`.
+
+  _The merge with `origin/master` preserved its published migration IDs
+  `0027`/`0028`, moved the unreleased local migrations to `0029`–`0031`, and
+  made the journal timestamps strictly increasing so no migration is skipped
+  after an earlier timestamp is recorded._
 
 - [ ] **The explore analytics Server Action is a public POST.**
   `trackExploreEvent` (`app/explore/actions.ts`) accepts only the six explore

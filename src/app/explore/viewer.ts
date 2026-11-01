@@ -14,11 +14,12 @@ import { getLatestResume, getProfile, type StoredResume } from "@/lib/profile/st
 import {
   isProfileReadyForFit,
   parseLocations,
-  toScoreProfile,
   type UserProfile,
 } from "@/lib/profile/types";
 import type { ScoreProfile } from "@/lib/score/fit";
 import { skillsFromParsedResume } from "@/lib/score/skills";
+import { toScoringProfile, withScoringPreferences } from "@/lib/score/v2/profile";
+import { profileHasScoringEvidence } from "@/lib/score/v2/engine";
 
 export type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -34,14 +35,14 @@ export function profileFromParams(sp: SearchParams): ScoreProfile {
   };
   const gradYear = Number(one("gradYear"));
 
-  return {
+  return withScoringPreferences({
     major: one("major") ?? null,
     gradYear: Number.isFinite(gradYear) && gradYear > 0 ? gradYear : null,
     workAuth: one("workAuth") ?? null,
     targetLocations: parseLocations(one("locations") ?? ""),
     targetVerticals: all("targetVerticals"),
     openToRemote: one("remote") !== "0",
-  };
+  }, sp, true);
 }
 
 /**
@@ -61,6 +62,7 @@ export function viewPrefsFromParams(sp: SearchParams) {
 
 /** Whether a fit label may be shown — the four fields `presentFit` requires. */
 export function profileReadyFor(user: SessionUser | null, stored: UserProfile | null, profile: ScoreProfile): boolean {
+  if (process.env.INSTELA_SCORING_VERSION !== "legacy") return profileHasScoringEvidence(profile);
   return user
     ? isProfileReadyForFit(stored)
     : isProfileReadyForFit({
@@ -90,7 +92,7 @@ export async function resolveViewer(sp: SearchParams): Promise<ExploreViewer> {
     getUserTier(user?.id),
   ]);
   const resumeSkills = resume ? skillsFromParsedResume(resume.parsed) : [];
-  const profile = user ? toScoreProfile(stored, resumeSkills) : profileFromParams(sp);
+  const profile = user ? withScoringPreferences(toScoringProfile(stored, resumeSkills, resume?.parsed), sp) : profileFromParams(sp);
   return {
     user,
     stored,

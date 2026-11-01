@@ -1,0 +1,1395 @@
+{
+  "schema_version": 1,
+  "slug": "alabama-huntsville",
+  "name": "The University of Alabama in Huntsville",
+  "state": "AL",
+  "control": "public",
+  "official_merit_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+  "net_price_calculator_url": "https://uah.clearcostcalculator.com/student",
+  "coa_in_state": null,
+  "coa_out_of_state": null,
+  "coa_academic_year": null,
+  "coa_source_url": null,
+  "coa_source_checked_at": null,
+  "notes": "Scope: all 22 rows of the published 2027-28 nonresident academic matrix; Alabama/Tennessee excluded. Each alternative has a separate row key. Original band endpoints remain available on the linked source; the matcher must consider all qualifying lower thresholds. COA unknown.",
+  "status": "draft",
+  "verified_at": null,
+  "source_checked_at": "2026-10-30",
+  "review_issues": [
+    "Confirm the official weighted/unweighted GPA basis.",
+    "General reuse terms not located on inspected scholarship page; owner review needed."
+  ],
+  "research": {
+    "robots_url": "https://www.uah.edu/robots.txt",
+    "terms_urls": [
+      "https://www.uah.edu/policies"
+    ],
+    "policy_note": "Bounded manual public-page review. Robots does not disallow this scholarship path. Only public facts and paraphrases retained; no logos, screenshots or copied page prose. General terms, where not located, remain an owner review item.",
+    "checked_at": "2026-10-30"
+  },
+  "tiers": [
+    {
+      "seed_key": "row-01",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Juno 1",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "optional",
+      "amount_type": "fixed",
+      "amount_min": 5000,
+      "amount_max": 5000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": 3.74,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Juno 1: GPA 3.5+; $5000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-02",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Juno 1",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1060,
+      "act_min": 21,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 5000,
+      "amount_max": 5000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": 3.74,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 21,
+                "max": 23
+              },
+              {
+                "kind": "sat",
+                "min": 1060,
+                "max": 1150
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Juno 1: GPA 3.5+; $5000 per year; ACT 21+ or SAT 1060+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-03",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Juno 1",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1160,
+      "act_min": 24,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 5000,
+      "amount_max": 5000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3,
+            "max": 3.49,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 24,
+                "max": 26
+              },
+              {
+                "kind": "sat",
+                "min": 1160,
+                "max": 1250
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Juno 1: GPA 3+; $5000 per year; ACT 24+ or SAT 1160+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-04",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Juno 1",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1260,
+      "act_min": 27,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 5000,
+      "amount_max": 5000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3,
+            "max": 3.49,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 27,
+                "max": 28
+              },
+              {
+                "kind": "sat",
+                "min": 1260,
+                "max": 1320
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Juno 1: GPA 3+; $5000 per year; ACT 27+ or SAT 1260+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-05",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Titan III",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.75,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "optional",
+      "amount_type": "fixed",
+      "amount_min": 10000,
+      "amount_max": 10000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.75,
+            "max": 3.99,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Titan III: GPA 3.75+; $10000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-06",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Titan III",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.75,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1060,
+      "act_min": 21,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 10000,
+      "amount_max": 10000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.75,
+            "max": 3.99,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 21,
+                "max": 23
+              },
+              {
+                "kind": "sat",
+                "min": 1060,
+                "max": 1150
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Titan III: GPA 3.75+; $10000 per year; ACT 21+ or SAT 1060+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-07",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Titan III",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1160,
+      "act_min": 24,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 10000,
+      "amount_max": 10000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": 3.74,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 24,
+                "max": 26
+              },
+              {
+                "kind": "sat",
+                "min": 1160,
+                "max": 1250
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Titan III: GPA 3.5+; $10000 per year; ACT 24+ or SAT 1160+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-08",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Titan III",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1260,
+      "act_min": 27,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 10000,
+      "amount_max": 10000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": 3.74,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 27,
+                "max": 28
+              },
+              {
+                "kind": "sat",
+                "min": 1260,
+                "max": 1320
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Titan III: GPA 3.5+; $10000 per year; ACT 27+ or SAT 1260+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-09",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Titan III",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1330,
+      "act_min": 29,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 10000,
+      "amount_max": 10000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3,
+            "max": 3.49,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 29,
+                "max": 30
+              },
+              {
+                "kind": "sat",
+                "min": 1330,
+                "max": 1380
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Titan III: GPA 3+; $10000 per year; ACT 29+ or SAT 1330+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-10",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Jupiter C",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 4,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "optional",
+      "amount_type": "fixed",
+      "amount_min": 13000,
+      "amount_max": 13000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 4,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Jupiter C: GPA 4+; $13000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-11",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Jupiter C",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 4,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1060,
+      "act_min": 21,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 13000,
+      "amount_max": 13000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 4,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 21,
+                "max": 23
+              },
+              {
+                "kind": "sat",
+                "min": 1060,
+                "max": 1150
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Jupiter C: GPA 4+; $13000 per year; ACT 21+ or SAT 1060+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-12",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Jupiter C",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.75,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1160,
+      "act_min": 24,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 13000,
+      "amount_max": 13000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.75,
+            "max": 3.99,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 24,
+                "max": 26
+              },
+              {
+                "kind": "sat",
+                "min": 1160,
+                "max": 1250
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Jupiter C: GPA 3.75+; $13000 per year; ACT 24+ or SAT 1160+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-13",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Jupiter C",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.75,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1260,
+      "act_min": 27,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 13000,
+      "amount_max": 13000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.75,
+            "max": 3.99,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 27,
+                "max": 28
+              },
+              {
+                "kind": "sat",
+                "min": 1260,
+                "max": 1320
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Jupiter C: GPA 3.75+; $13000 per year; ACT 27+ or SAT 1260+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-14",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Jupiter C",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1330,
+      "act_min": 29,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 13000,
+      "amount_max": 13000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": 3.74,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 29,
+                "max": 30
+              },
+              {
+                "kind": "sat",
+                "min": 1330,
+                "max": 1380
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Jupiter C: GPA 3.5+; $13000 per year; ACT 29+ or SAT 1330+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-15",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Jupiter C",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1390,
+      "act_min": 31,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 13000,
+      "amount_max": 13000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3,
+            "max": 3.49,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 31,
+                "max": 36
+              },
+              {
+                "kind": "sat",
+                "min": 1390,
+                "max": 1600
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Jupiter C: GPA 3+; $13000 per year; ACT 31+ or SAT 1390+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-16",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Jupiter C",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 4,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1160,
+      "act_min": 24,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 16000,
+      "amount_max": 16000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 4,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 24,
+                "max": 26
+              },
+              {
+                "kind": "sat",
+                "min": 1160,
+                "max": 1250
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Jupiter C: GPA 4+; $16000 per year; ACT 24+ or SAT 1160+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-17",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Jupiter C",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 4,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1260,
+      "act_min": 27,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 16000,
+      "amount_max": 16000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 4,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 27,
+                "max": 28
+              },
+              {
+                "kind": "sat",
+                "min": 1260,
+                "max": 1320
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Jupiter C: GPA 4+; $16000 per year; ACT 27+ or SAT 1260+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-18",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Jupiter C",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.75,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1330,
+      "act_min": 29,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 16000,
+      "amount_max": 16000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.75,
+            "max": 3.99,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 29,
+                "max": 30
+              },
+              {
+                "kind": "sat",
+                "min": 1330,
+                "max": 1380
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Jupiter C: GPA 3.75+; $16000 per year; ACT 29+ or SAT 1330+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-19",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Jupiter C",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1390,
+      "act_min": 31,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 16000,
+      "amount_max": 16000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": 3.74,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 31,
+                "max": 36
+              },
+              {
+                "kind": "sat",
+                "min": 1390,
+                "max": 1600
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Jupiter C: GPA 3.5+; $16000 per year; ACT 31+ or SAT 1390+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-20",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Atlas D",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 4,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1330,
+      "act_min": 29,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 19000,
+      "amount_max": 19000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 4,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 29,
+                "max": 30
+              },
+              {
+                "kind": "sat",
+                "min": 1330,
+                "max": 1380
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Atlas D: GPA 4+; $19000 per year; ACT 29+ or SAT 1330+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-21",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Atlas D",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.75,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1390,
+      "act_min": 31,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 19000,
+      "amount_max": 19000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.75,
+            "max": 3.99,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 31,
+                "max": 36
+              },
+              {
+                "kind": "sat",
+                "min": 1390,
+                "max": 1600
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Atlas D: GPA 3.75+; $19000 per year; ACT 31+ or SAT 1390+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "row-22",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Saturn V",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 4,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science.",
+      "sat_min": 1390,
+      "act_min": 31,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 22000,
+      "amount_max": 22000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Four-year fall/spring awards, renewable each semester subject to full-time student status and satisfactory academic progress.",
+      "requires_action": "Gain first-time freshman admission. No separate academic-scholarship application. Transcripts/scores received after May 15, 2027 do not qualify for an upgrade.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 4,
+            "max": null,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "High-school GPA basis not expressly identified as weighted/unweighted. UAH uses superscores and its 2027 ACT calculation excludes Science."
+          },
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "act",
+                "min": 31,
+                "max": 36
+              },
+              {
+                "kind": "sat",
+                "min": 1390,
+                "max": 1600
+              }
+            ]
+          },
+          {
+            "kind": "home_state",
+            "include": [],
+            "exclude": [
+              "AL",
+              "TN"
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm high-school GPA basis and the UAH test calculation where applicable; this table excludes Alabama and Tennessee residents."
+          }
+        ]
+      },
+      "source_url": "https://www.uah.edu/admissions/undergraduate/financial-aid/scholarships/freshmen/freshman-out-of-state-academic-scholarships",
+      "source_excerpt": "Published Saturn V: GPA 4+; $22000 per year; ACT 31+ or SAT 1390+.",
+      "source_checked_at": "2026-10-30"
+    }
+  ]
+}

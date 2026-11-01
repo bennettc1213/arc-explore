@@ -54,6 +54,10 @@ type StoredTouchRow = {
   url: string;
   locations: string[] | null;
   isRemote: boolean | null;
+  workArrangement: PreparedPosting["workArrangement"];
+  compensationMinCents: number | null;
+  compensationMaxCents: number | null;
+  compensationInterval: PreparedPosting["compensationInterval"];
   descriptionText: string | null;
   workAuth: string | null;
   skills: string[] | null;
@@ -111,6 +115,10 @@ export function wouldTouchChange(row: StoredTouchRow, incoming: PreparedPosting)
   if (incoming.url !== row.url) return true;
   if (!sameArray(incoming.locations, row.locations ?? [])) return true;
   if (Boolean(incoming.isRemote) !== Boolean(row.isRemote)) return true;
+  if (incoming.workArrangement && incoming.workArrangement !== row.workArrangement) return true;
+  if (incoming.compensationMinCents !== null && incoming.compensationMinCents !== row.compensationMinCents) return true;
+  if (incoming.compensationMaxCents !== null && incoming.compensationMaxCents !== row.compensationMaxCents) return true;
+  if (incoming.compensationInterval && incoming.compensationInterval !== row.compensationInterval) return true;
   if (incoming.descriptionText && incoming.descriptionText !== row.descriptionText) return true;
   if (incoming.workAuth && incoming.workAuth !== row.workAuth) return true;
   if (incoming.skills.length > 0 && !sameArray(incoming.skills, row.skills ?? [])) return true;
@@ -270,6 +278,10 @@ export async function persistPoll(
         url: postings.url,
         locations: postings.locations,
         isRemote: postings.isRemote,
+        workArrangement: postings.workArrangement,
+        compensationMinCents: postings.compensationMinCents,
+        compensationMaxCents: postings.compensationMaxCents,
+        compensationInterval: postings.compensationInterval,
         descriptionText: postings.descriptionText,
         workAuth: postings.workAuth,
         skills: postings.skills,
@@ -773,6 +785,10 @@ async function insertPostings(
         url: p.url,
         locations: p.locations,
         isRemote: p.isRemote,
+        workArrangement: p.workArrangement,
+        compensationMinCents: p.compensationMinCents,
+        compensationMaxCents: p.compensationMaxCents,
+        compensationInterval: p.compensationInterval,
         term: p.term,
         termSource: p.termSource,
         termSeason: p.termSeason,
@@ -892,6 +908,10 @@ async function touchPostings(
         url: p.url,
         locations: p.locations,
         isRemote: p.isRemote,
+        ...(p.workArrangement ? { workArrangement: p.workArrangement } : {}),
+        ...(p.compensationMinCents !== null ? { compensationMinCents: p.compensationMinCents } : {}),
+        ...(p.compensationMaxCents !== null ? { compensationMaxCents: p.compensationMaxCents } : {}),
+        ...(p.compensationInterval ? { compensationInterval: p.compensationInterval } : {}),
         // Derived fields: only overwrite when we actually learned something.
         ...(p.descriptionText ? { descriptionText: p.descriptionText } : {}),
         ...(p.workAuth ? { workAuth: p.workAuth } : {}),

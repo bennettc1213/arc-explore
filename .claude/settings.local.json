@@ -1,0 +1,11 @@
+{
+  "enabledMcpjsonServers": [
+    "fetch",
+    "filesystem",
+    "memory",
+    "sequential-thinking",
+    "git",
+    "playwright",
+    "time"
+  ]
+}

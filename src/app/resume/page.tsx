@@ -21,7 +21,7 @@ export default async function ResumePage() {
   const resume = await getLatestResume(user.id);
 
   return (
-    <main className="wrap" style={{ paddingBlock: "48px 96px" }}>
+    <main className="wrap tool-page resume-page" style={{ paddingBlock: "48px 96px" }}>
       <BackLink href="/profile" label="back to your profile" />
       <header className="print-hide" style={{ marginBottom: 32 }}>
         <div className="eyebrow chrome">resume</div>

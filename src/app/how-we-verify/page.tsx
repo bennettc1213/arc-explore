@@ -9,7 +9,7 @@ export const metadata = {
 
 export default function HowWeVerifyPage() {
   return (
-    <main className="wrap" style={{ paddingBlock: "48px 96px", maxWidth: "68ch" }}>
+    <main className="wrap reference-page" style={{ paddingBlock: "48px 96px", maxWidth: "76ch" }}>
       <Link href={FEED_PATH} className="mono press" style={{ color: "var(--faint-readable)", textDecoration: "none" }}>
         ← back to feed
       </Link>

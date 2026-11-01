@@ -2,6 +2,7 @@ import type { ApplicationStatus } from "@/db/schema";
 import type { FeedItem } from "@/lib/feed";
 import { formatAward } from "@/lib/scholarships/display";
 import { formatTerm } from "@/lib/terms/display";
+import { formatCompensation, formatWorkArrangement } from "@/lib/opportunity-details";
 // From the pure module, not `entitlements` — a row needs the presentation
 // rule, not a database connection.
 import { presentFit, type TierId } from "@/lib/pricing/tiers";
@@ -10,6 +11,7 @@ import { RowLink } from "./RowLink";
 import { ScoreBadge } from "./ScoreBadge";
 import { ScoreReasons } from "./ScoreReasons";
 import { TrackButton } from "./TrackButton";
+import { ScoringDetails } from "./discovery/ScoringDetails";
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
@@ -64,6 +66,7 @@ export function PostingRow({
   hasResume,
   tier = "free",
   profileReady = false,
+  scoringQuery = "",
 }: {
   item: FeedItem;
   /** This user's application status for the posting, if they have one. */
@@ -80,6 +83,7 @@ export function PostingRow({
    * leak a label against an empty profile.
    */
   profileReady?: boolean;
+  scoringQuery?: string;
 }) {
   const closed = Boolean(item.closedAt);
   const blocked = item.fit.blocked;
@@ -160,7 +164,7 @@ export function PostingRow({
                 hover, and a 1px nudge on the title inside a row that is already
                 moving reads as a wobble rather than as a press. */}
             <RowLink
-              href={`/listing/${item.id}`}
+              href={`/listing/${item.id}${scoringQuery ? `?${scoringQuery}` : ""}`}
               className="row-target"
               style={{ color: "var(--text)", textDecoration: "none" }}
             >
@@ -201,6 +205,16 @@ export function PostingRow({
           )}
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            {item.kind === "internship" && (
+              <span className="mono" style={{ color: "var(--text)" }}>
+                pay: {formatCompensation(item.compensationMinCents, item.compensationMaxCents, item.compensationInterval)}
+              </span>
+            )}
+            {item.kind === "internship" && (
+              <span className="mono" style={{ color: "var(--faint-readable)" }}>
+                {formatWorkArrangement(item.workArrangement)}{item.locations.length ? ` · ${item.locations.slice(0, 2).join(" / ")}` : ""}
+              </span>
+            )}
             {item.term ? (
               <span className="mono" style={{ color: "var(--faint-readable)" }}>
                 {formatTerm(item)}
@@ -318,7 +332,7 @@ export function PostingRow({
           ScoreReasons naturally renders null rather than needing its own
           tier check — the gate lives once, in presentFit. */}
       <div className="row-raise mt-3">
-        <ScoreReasons reasons={presented.reasons} skills={presented.skills} hasResume={hasResume} />
+        {presented.assessment ? <ScoringDetails assessment={presented.assessment} /> : <ScoreReasons reasons={presented.reasons} skills={presented.skills} hasResume={hasResume} />}
       </div>
     </article>
   );

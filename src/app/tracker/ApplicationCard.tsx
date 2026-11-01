@@ -4,6 +4,7 @@ import { useActionState, useOptimistic, useState } from "react";
 
 import type { ApplicationStatus } from "@/db/schema";
 import { STATUSES, statusMeta } from "@/lib/applications/types";
+import { formatCompensation, formatWorkArrangement } from "@/lib/opportunity-details";
 
 import {
   removeAction,
@@ -26,6 +27,10 @@ export interface CardApplication {
   url: string;
   locations: string[];
   term: string | null;
+  workArrangement: "remote" | "hybrid" | "in_person" | null;
+  compensationMinCents: number | null;
+  compensationMaxCents: number | null;
+  compensationInterval: "hour" | "year" | null;
   closed: boolean;
 }
 
@@ -90,6 +95,9 @@ export function ApplicationCard({ app }: { app: CardApplication }) {
             {app.company}
             {app.locations.length > 0 && <> · {app.locations.slice(0, 2).join(" / ")}</>}
             {app.term && <> · {app.term}</>}
+          </div>
+          <div className="mono mt-1" style={{ color: "var(--faint-readable)" }}>
+            {formatWorkArrangement(app.workArrangement)} · pay: {formatCompensation(app.compensationMinCents, app.compensationMaxCents, app.compensationInterval)}
           </div>
         </div>
 
