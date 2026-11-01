@@ -1,0 +1,373 @@
+{
+  "schema_version": 1,
+  "slug": "northern-arizona",
+  "name": "Northern Arizona University",
+  "state": "AZ",
+  "control": "public",
+  "official_merit_url": "https://nau.edu/financial-aid/scholarships/freshman/",
+  "net_price_calculator_url": "https://app.meadowfi.com/nau",
+  "coa_in_state": null,
+  "coa_out_of_state": null,
+  "coa_academic_year": null,
+  "coa_source_url": null,
+  "coa_source_checked_at": null,
+  "notes": "Scope: five resident and four nonresident freshman levels. WUE and non-WUE award amounts are identical in the published table but tuition rates differ. No need-based A2E or departmental awards. COA unknown.",
+  "status": "draft",
+  "verified_at": null,
+  "source_checked_at": "2026-10-30",
+  "review_issues": [
+    "Review full renewal requirements and core-GPA calculation.",
+    "General reuse terms not located on inspected scholarship page; owner review needed."
+  ],
+  "research": {
+    "robots_url": "https://nau.edu/robots.txt",
+    "terms_urls": [],
+    "policy_note": "Bounded manual public-page review. Robots does not disallow this scholarship path. Only public facts and paraphrases retained; no logos, screenshots or copied page prose. General terms, where not located, remain an owner review item.",
+    "checked_at": "2026-10-30"
+  },
+  "tiers": [
+    {
+      "seed_key": "in-state-lumberjack",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Lumberjack Scholars Award",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.75,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 11000,
+      "amount_max": 11000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Renewable for three additional years under published renewal criteria; fall/spring only. Confirm the complete continuation terms.",
+      "requires_action": "Accept admission, pay enrollment fee, submit final high-school transcripts and enroll full-time in 12+ credits. First-year NAU-managed housing AND meal plan required.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.75,
+            "max": 4,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm school-calculated core GPA, first bachelor's degree, eligible Flagstaff/Desert campus and first-year NAU housing/meal plan. For admitted-through-2.99 tiers, no numeric admission GPA floor is published."
+          }
+        ]
+      },
+      "source_url": "https://nau.edu/financial-aid/scholarships/freshman/",
+      "source_excerpt": "Published Lumberjack Scholars Award: GPA 3.75+; $11000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "in-state-president",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "President's",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 9000,
+      "amount_max": 9000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Renewable for three additional years under published renewal criteria; fall/spring only. Confirm the complete continuation terms.",
+      "requires_action": "Accept admission, pay enrollment fee, submit final high-school transcripts and enroll full-time in 12+ credits. First-year NAU-managed housing AND meal plan required.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": 3.74,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm school-calculated core GPA, first bachelor's degree, eligible Flagstaff/Desert campus and first-year NAU housing/meal plan. For admitted-through-2.99 tiers, no numeric admission GPA floor is published."
+          }
+        ]
+      },
+      "source_url": "https://nau.edu/financial-aid/scholarships/freshman/",
+      "source_excerpt": "Published President's: GPA 3.5+; $9000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "in-state-deans-distinction",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Dean's with Distinction",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.4,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 6500,
+      "amount_max": 6500,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Renewable for three additional years under published renewal criteria; fall/spring only. Confirm the complete continuation terms.",
+      "requires_action": "Accept admission, pay enrollment fee, submit final high-school transcripts and enroll full-time in 12+ credits. First-year NAU-managed housing AND meal plan required.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.4,
+            "max": 3.49,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm school-calculated core GPA, first bachelor's degree, eligible Flagstaff/Desert campus and first-year NAU housing/meal plan. For admitted-through-2.99 tiers, no numeric admission GPA floor is published."
+          }
+        ]
+      },
+      "source_url": "https://nau.edu/financial-aid/scholarships/freshman/",
+      "source_excerpt": "Published Dean's with Distinction: GPA 3.4+; $6500 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "in-state-deans",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Dean's",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 5000,
+      "amount_max": 5000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Renewable for three additional years under published renewal criteria; fall/spring only. Confirm the complete continuation terms.",
+      "requires_action": "Accept admission, pay enrollment fee, submit final high-school transcripts and enroll full-time in 12+ credits. First-year NAU-managed housing AND meal plan required.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3,
+            "max": 3.39,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm school-calculated core GPA, first bachelor's degree, eligible Flagstaff/Desert campus and first-year NAU housing/meal plan. For admitted-through-2.99 tiers, no numeric admission GPA floor is published."
+          }
+        ]
+      },
+      "source_url": "https://nau.edu/financial-aid/scholarships/freshman/",
+      "source_excerpt": "Published Dean's: GPA 3+; $5000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "in-state-opportunity",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Opportunity",
+      "award_academic_year": "2027-2028",
+      "gpa_min": null,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 2500,
+      "amount_max": 2500,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Renewable for three additional years under published renewal criteria; fall/spring only. Confirm the complete continuation terms.",
+      "requires_action": "Accept admission, pay enrollment fee, submit final high-school transcripts and enroll full-time in 12+ credits. First-year NAU-managed housing AND meal plan required.",
+      "eligibility_rules": {
+        "kind": "manual_review",
+        "note": "Confirm school-calculated core GPA, first bachelor's degree, eligible Flagstaff/Desert campus and first-year NAU housing/meal plan. For admitted-through-2.99 tiers, no numeric admission GPA floor is published."
+      },
+      "source_url": "https://nau.edu/financial-aid/scholarships/freshman/",
+      "source_excerpt": "Published Opportunity: GPA see conditions; $2500 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "out-of-state-summit",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Summit",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.75,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 6500,
+      "amount_max": 6500,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Renewable for three additional years under published renewal criteria; fall/spring only. Confirm the complete continuation terms.",
+      "requires_action": "Accept admission, pay enrollment fee, submit final high-school transcripts and enroll full-time in 12+ credits. First-year NAU-managed housing AND meal plan required.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.75,
+            "max": 4,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm school-calculated core GPA, first bachelor's degree, eligible Flagstaff/Desert campus and first-year NAU housing/meal plan. For admitted-through-2.99 tiers, no numeric admission GPA floor is published."
+          }
+        ]
+      },
+      "source_url": "https://nau.edu/financial-aid/scholarships/freshman/",
+      "source_excerpt": "Published Summit: GPA 3.75+; $6500 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "out-of-state-peak",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Peak",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.5,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 6000,
+      "amount_max": 6000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Renewable for three additional years under published renewal criteria; fall/spring only. Confirm the complete continuation terms.",
+      "requires_action": "Accept admission, pay enrollment fee, submit final high-school transcripts and enroll full-time in 12+ credits. First-year NAU-managed housing AND meal plan required.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3.5,
+            "max": 3.74,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm school-calculated core GPA, first bachelor's degree, eligible Flagstaff/Desert campus and first-year NAU housing/meal plan. For admitted-through-2.99 tiers, no numeric admission GPA floor is published."
+          }
+        ]
+      },
+      "source_url": "https://nau.edu/financial-aid/scholarships/freshman/",
+      "source_excerpt": "Published Peak: GPA 3.5+; $6000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "out-of-state-ascent",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Ascent",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 5000,
+      "amount_max": 5000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Renewable for three additional years under published renewal criteria; fall/spring only. Confirm the complete continuation terms.",
+      "requires_action": "Accept admission, pay enrollment fee, submit final high-school transcripts and enroll full-time in 12+ credits. First-year NAU-managed housing AND meal plan required.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "gpa",
+            "min": 3,
+            "max": 3.49,
+            "min_inclusive": true,
+            "max_inclusive": true,
+            "basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA."
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm school-calculated core GPA, first bachelor's degree, eligible Flagstaff/Desert campus and first-year NAU housing/meal plan. For admitted-through-2.99 tiers, no numeric admission GPA floor is published."
+          }
+        ]
+      },
+      "source_url": "https://nau.edu/financial-aid/scholarships/freshman/",
+      "source_excerpt": "Published Ascent: GPA 3+; $5000 per year.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "out-of-state-trailhead",
+      "audience": "first_year",
+      "residency": "out_of_state",
+      "tier_label": "Trailhead",
+      "award_academic_year": "2027-2028",
+      "gpa_min": null,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted high-school core GPA calculated under NAU admissions requirements; not necessarily overall unweighted GPA.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 2500,
+      "amount_max": 2500,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Renewable for three additional years under published renewal criteria; fall/spring only. Confirm the complete continuation terms.",
+      "requires_action": "Accept admission, pay enrollment fee, submit final high-school transcripts and enroll full-time in 12+ credits. First-year NAU-managed housing AND meal plan required.",
+      "eligibility_rules": {
+        "kind": "manual_review",
+        "note": "Confirm school-calculated core GPA, first bachelor's degree, eligible Flagstaff/Desert campus and first-year NAU housing/meal plan. For admitted-through-2.99 tiers, no numeric admission GPA floor is published."
+      },
+      "source_url": "https://nau.edu/financial-aid/scholarships/freshman/",
+      "source_excerpt": "Published Trailhead: GPA see conditions; $2500 per year.",
+      "source_checked_at": "2026-10-30"
+    }
+  ]
+}

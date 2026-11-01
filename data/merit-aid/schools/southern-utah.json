@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "slug": "southern-utah",
+  "name": "Southern Utah University",
+  "state": "UT",
+  "control": "public",
+  "official_merit_url": "https://www.suu.edu/finaid/scholarships.html",
+  "net_price_calculator_url": "https://my.suu.edu/finaid/net-price-calculator",
+  "coa_in_state": null,
+  "coa_out_of_state": null,
+  "coa_academic_year": null,
+  "coa_source_url": null,
+  "coa_source_checked_at": null,
+  "notes": "Scope: three unambiguous resident automatic first-year tiers. Founders omitted: admissions and renewal amounts conflict. President's is competitive. Nonresident and transfer tables are not drafted. COA is unknown; tuition is not used as COA.",
+  "status": "draft",
+  "verified_at": null,
+  "source_checked_at": "2026-10-30",
+  "review_issues": [
+    "Resolve the Founders discrepancy before claiming full resident-table coverage.",
+    "Review award-specific renewal and age conditions at https://www.suu.edu/finaid/scholarshipguidelines.html.",
+    "Confirm the number of award-bearing semesters per academic year before any annual cost conversion; it is currently unknown."
+  ],
+  "research": {
+    "robots_url": "https://www.suu.edu/robots.txt",
+    "terms_urls": [],
+    "policy_note": "Bounded manual public-page review. Robots does not disallow this scholarship path. Only public facts and paraphrases retained; no logos, screenshots or copied page prose. General terms, where not located, remain an owner review item.",
+    "checked_at": "2026-10-30"
+  },
+  "tiers": [
+    {
+      "seed_key": "centurium",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Centurium",
+      "award_academic_year": "2027-2028",
+      "gpa_min": null,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted cumulative high-school GPA. GPA OR ACT OR SAT pathways; a test-based award also needs high-school GPA 2.3. No superscores.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "optional",
+      "amount_type": "fixed",
+      "amount_min": 500,
+      "amount_max": 500,
+      "per": "semester",
+      "award_periods_per_year": null,
+      "renewable": true,
+      "renewal_conditions": "Eight-semester renewable award. Full-time enrollment, completion rate and award-specific SUU GPA requirements apply; compare the official renewal table and award agreement.",
+      "requires_action": "Complete admission before March 1 for fall or November 1 for spring. Attend SUU Main Campus; the source identifies Fall 2027 awards.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "gpa",
+                "min": 3.4,
+                "max": 3.59,
+                "min_inclusive": true,
+                "max_inclusive": true,
+                "basis_note": "Published unweighted high-school GPA."
+              },
+              {
+                "kind": "all",
+                "rules": [
+                  {
+                    "kind": "gpa",
+                    "min": 2.3,
+                    "max": null,
+                    "min_inclusive": true,
+                    "max_inclusive": true,
+                    "basis_note": "Published unweighted high-school GPA."
+                  },
+                  {
+                    "kind": "any",
+                    "rules": [
+                      {
+                        "kind": "act",
+                        "min": 23,
+                        "max": 26
+                      },
+                      {
+                        "kind": "sat",
+                        "min": 1130,
+                        "max": 1250
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm traditional-age and Main Campus eligibility under SUU academic scholarship guidelines."
+          }
+        ]
+      },
+      "source_url": "https://www.suu.edu/finaid/scholarships.html",
+      "source_excerpt": "Resident Centurium: $500/semester; GPA 3.4+ OR ACT 23+ OR SAT 1130+. Test route needs GPA 2.3+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "deans",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Deans'",
+      "award_academic_year": "2027-2028",
+      "gpa_min": null,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted cumulative high-school GPA. GPA OR ACT OR SAT pathways; a test-based award also needs high-school GPA 2.3. No superscores.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "optional",
+      "amount_type": "fixed",
+      "amount_min": 1000,
+      "amount_max": 1000,
+      "per": "semester",
+      "award_periods_per_year": null,
+      "renewable": true,
+      "renewal_conditions": "Eight-semester renewable award. Full-time enrollment, completion rate and award-specific SUU GPA requirements apply; compare the official renewal table and award agreement.",
+      "requires_action": "Complete admission before March 1 for fall or November 1 for spring. Attend SUU Main Campus; the source identifies Fall 2027 awards.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "gpa",
+                "min": 3.6,
+                "max": 3.79,
+                "min_inclusive": true,
+                "max_inclusive": true,
+                "basis_note": "Published unweighted high-school GPA."
+              },
+              {
+                "kind": "all",
+                "rules": [
+                  {
+                    "kind": "gpa",
+                    "min": 2.3,
+                    "max": null,
+                    "min_inclusive": true,
+                    "max_inclusive": true,
+                    "basis_note": "Published unweighted high-school GPA."
+                  },
+                  {
+                    "kind": "any",
+                    "rules": [
+                      {
+                        "kind": "act",
+                        "min": 27,
+                        "max": 29
+                      },
+                      {
+                        "kind": "sat",
+                        "min": 1260,
+                        "max": 1350
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm traditional-age and Main Campus eligibility under SUU academic scholarship guidelines."
+          }
+        ]
+      },
+      "source_url": "https://www.suu.edu/finaid/scholarships.html",
+      "source_excerpt": "Resident Deans': $1000/semester; GPA 3.6+ OR ACT 27+ OR SAT 1260+. Test route needs GPA 2.3+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "fellows",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Fellow's",
+      "award_academic_year": "2027-2028",
+      "gpa_min": null,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Unweighted cumulative high-school GPA. GPA OR ACT OR SAT pathways; a test-based award also needs high-school GPA 2.3. No superscores.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "optional",
+      "amount_type": "fixed",
+      "amount_min": 2250,
+      "amount_max": 2250,
+      "per": "semester",
+      "award_periods_per_year": null,
+      "renewable": true,
+      "renewal_conditions": "Eight-semester renewable award. Full-time enrollment, completion rate and award-specific SUU GPA requirements apply; compare the official renewal table and award agreement.",
+      "requires_action": "Complete admission before March 1 for fall or November 1 for spring. Attend SUU Main Campus; the source identifies Fall 2027 awards.",
+      "eligibility_rules": {
+        "kind": "all",
+        "rules": [
+          {
+            "kind": "any",
+            "rules": [
+              {
+                "kind": "gpa",
+                "min": 3.9,
+                "max": 4,
+                "min_inclusive": true,
+                "max_inclusive": true,
+                "basis_note": "Published unweighted high-school GPA."
+              },
+              {
+                "kind": "all",
+                "rules": [
+                  {
+                    "kind": "gpa",
+                    "min": 2.3,
+                    "max": null,
+                    "min_inclusive": true,
+                    "max_inclusive": true,
+                    "basis_note": "Published unweighted high-school GPA."
+                  },
+                  {
+                    "kind": "any",
+                    "rules": [
+                      {
+                        "kind": "act",
+                        "min": 33,
+                        "max": 36
+                      },
+                      {
+                        "kind": "sat",
+                        "min": 1450,
+                        "max": 1600
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "manual_review",
+            "note": "Confirm traditional-age and Main Campus eligibility under SUU academic scholarship guidelines."
+          }
+        ]
+      },
+      "source_url": "https://www.suu.edu/finaid/scholarships.html",
+      "source_excerpt": "Resident Fellow's: $2250/semester; GPA 3.9+ OR ACT 33+ OR SAT 1450+. Test route needs GPA 2.3+.",
+      "source_checked_at": "2026-10-30"
+    }
+  ]
+}

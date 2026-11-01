@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "slug": "iowa-state",
+  "name": "Iowa State University",
+  "state": "IA",
+  "control": "public",
+  "official_merit_url": "https://www.iastate.edu/admission-and-aid/admissions/first-year-students/national-scholars/first-year-scholarship-awards/ia",
+  "net_price_calculator_url": "https://financialaid.iastate.edu/getting-started/cost/net-price-calculator/",
+  "coa_in_state": null,
+  "coa_out_of_state": null,
+  "coa_academic_year": null,
+  "coa_source_url": null,
+  "coa_source_checked_at": null,
+  "notes": "Scope: the three automatic Iowa-resident recognition awards only. Utah-specific URL could not be read; no nonresident amounts assumed. National Merit recognition excluded. Official NPC uses historical data; COA unknown.",
+  "status": "draft",
+  "verified_at": null,
+  "source_checked_at": "2026-10-30",
+  "review_issues": [
+    "General reuse terms not located on inspected admissions page; owner review needed.",
+    "Nonresident state-specific tables are outside this draft's coverage."
+  ],
+  "research": {
+    "robots_url": "https://www.iastate.edu/robots.txt",
+    "terms_urls": [
+      "https://www.iastate.edu/consumer-information"
+    ],
+    "policy_note": "Bounded manual public-page review. Robots does not disallow this scholarship path. Only public facts and paraphrases retained; no logos, screenshots or copied page prose. General terms, where not located, remain an owner review item.",
+    "checked_at": "2026-10-30"
+  },
+  "tiers": [
+    {
+      "seed_key": "loyal",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Loyal Scholar",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.8,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Cumulative high-school GPA on school's 4-point scale, rounded to hundredths; weighted GPA accepted under published school-wide transcript conditions.",
+      "sat_min": 1450,
+      "act_min": 32,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 3000,
+      "amount_max": 3000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Continuous full-time enrollment, at least 12 credits per semester, resident tuition and minimum 2.50 cumulative GPA; fall/spring only, for four years.",
+      "requires_action": "Iowa-resident admission; priority date March 1, 2027. Final transcripts and official tests must substantiate eligibility. First-year enrollment restrictions apply; awards cannot stack with full-tuition admissions awards.",
+      "eligibility_rules": {
+        "kind": "manual_review",
+        "note": "Confirm official GPA/transcript requirements and citizenship/permanent-resident/refugee/asylee eligibility. Prior college coursework and first-year enrollment restrictions apply."
+      },
+      "source_url": "https://www.iastate.edu/admission-and-aid/admissions/first-year-students/national-scholars/first-year-scholarship-awards/ia",
+      "source_excerpt": "Published Loyal Scholar: GPA 3.8+; $3000 per year; ACT 32+ or SAT 1450+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "forever",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "Forever Scholar",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 3.6,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Cumulative high-school GPA on school's 4-point scale, rounded to hundredths; weighted GPA accepted under published school-wide transcript conditions.",
+      "sat_min": 1300,
+      "act_min": 28,
+      "test_policy": "required",
+      "amount_type": "fixed",
+      "amount_min": 2000,
+      "amount_max": 2000,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Continuous full-time enrollment, at least 12 credits per semester, resident tuition and minimum 2.50 cumulative GPA; fall/spring only, for four years.",
+      "requires_action": "Iowa-resident admission; priority date March 1, 2027. Final transcripts and official tests must substantiate eligibility. First-year enrollment restrictions apply; awards cannot stack with full-tuition admissions awards.",
+      "eligibility_rules": {
+        "kind": "manual_review",
+        "note": "Confirm official GPA/transcript requirements and citizenship/permanent-resident/refugee/asylee eligibility. Prior college coursework and first-year enrollment restrictions apply."
+      },
+      "source_url": "https://www.iastate.edu/admission-and-aid/admissions/first-year-students/national-scholars/first-year-scholarship-awards/ia",
+      "source_excerpt": "Published Forever Scholar: GPA 3.6+; $2000 per year; ACT 28+ or SAT 1300+.",
+      "source_checked_at": "2026-10-30"
+    },
+    {
+      "seed_key": "true",
+      "audience": "first_year",
+      "residency": "in_state",
+      "tier_label": "True Scholar",
+      "award_academic_year": "2027-2028",
+      "gpa_min": 4,
+      "gpa_min_inclusive": true,
+      "gpa_basis_note": "Cumulative high-school GPA on school's 4-point scale, rounded to hundredths; weighted GPA accepted under published school-wide transcript conditions.",
+      "sat_min": null,
+      "act_min": null,
+      "test_policy": "not_considered",
+      "amount_type": "fixed",
+      "amount_min": 1500,
+      "amount_max": 1500,
+      "per": "year",
+      "award_periods_per_year": 1,
+      "renewable": true,
+      "renewal_conditions": "Continuous full-time enrollment, at least 12 credits per semester, resident tuition and minimum 2.50 cumulative GPA; fall/spring only, for four years.",
+      "requires_action": "Iowa-resident admission; priority date March 1, 2027. Final transcripts and official tests must substantiate eligibility. First-year enrollment restrictions apply; awards cannot stack with full-tuition admissions awards.",
+      "eligibility_rules": {
+        "kind": "manual_review",
+        "note": "Confirm official GPA/transcript requirements and citizenship/permanent-resident/refugee/asylee eligibility. Prior college coursework and first-year enrollment restrictions apply."
+      },
+      "source_url": "https://www.iastate.edu/admission-and-aid/admissions/first-year-students/national-scholars/first-year-scholarship-awards/ia",
+      "source_excerpt": "Published True Scholar: GPA 4+; $1500 per year.",
+      "source_checked_at": "2026-10-30"
+    }
+  ]
+}
