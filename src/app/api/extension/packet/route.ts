@@ -47,14 +47,16 @@ export async function GET(req: Request) {
   const origin = req.headers.get("origin");
   const headers = corsHeaders(origin);
 
-  const pageUrl = new URL(req.url).searchParams.get("url");
-  if (!pageUrl) {
-    return NextResponse.json({ error: "missing url" }, { status: 400, headers });
-  }
-
+  // Session first, then input: an unauthenticated caller learns only that
+  // they are not signed in, the same answer `/api/extension/applied` gives.
   const user = await getSessionUser();
   if (!user) {
     return NextResponse.json({ error: "not signed in" }, { status: 401, headers });
+  }
+
+  const pageUrl = new URL(req.url).searchParams.get("url");
+  if (!pageUrl) {
+    return NextResponse.json({ error: "missing url" }, { status: 400, headers });
   }
 
   // The extension's autofill is an Apply-tier entitlement

@@ -14,27 +14,22 @@ import { FreePlan, LandingFAQ, LiveMatchPreview, PreviewSkeleton, SourceProof } 
 export const dynamic = "force-dynamic";
 
 /**
- * Students helped. **Stated by the owner, not measured here.**
+ * The landing page, ordered by the remodel plan (INSTELA_REMODEL_PLAN.md):
+ * offer and primary action, compact live proof, an interactive starting
+ * point, why the results deserve attention, the free plan, then the toolkit,
+ * FAQ and a final Explore CTA.
  *
- * Nothing in this database can produce it: `profiles` holds a handful of test
- * accounts, because the people behind this number were helped outside the
- * app, before it had sign-ups. So it is a constant rather than a query, on
- * purpose — a count the page appears to compute but does not would be a
- * stronger claim than the one being made. It is deliberately a floor ("+"),
- * and it is the one figure on this page that does not move when we poll.
- * Change it here, and only here, when the real number changes.
- */
-const STUDENTS_HELPED = 10_000;
-
-/**
- * The landing page.
+ * The primary action goes straight to the feed, because it needs no account.
+ * Guided setup is still one click away, but it is no longer the price of a
+ * first look.
  *
- * The feed lives at `FEED_PATH`, one click away with no account. A small
- * product preview now shows three real public listings without profile scores
- * or invented activity; the full feed and its controls remain on Explore.
+ * Every figure in the live row is counted by `getLandingStats` and carries its
+ * definition. The owner-stated "10,000+ students helped" used to sit in this
+ * row beside counted numbers; the plan moves it out until its basis is
+ * explained (FIXES.md §4), so it is not rendered at all for now.
  *
- * Listing counts come from `getLandingStats`; students helped remains the
- * owner-stated constant above. Each figure retains its definition.
+ * The old "three steps" walkthrough was removed: it duplicated the interactive
+ * preview below it, which does the same job with real listings.
  */
 export default async function LandingPage() {
   // An old `/?kind=…` feed link never reaches this component: `proxy.ts`
@@ -43,49 +38,19 @@ export default async function LandingPage() {
 
   const STATS = [
     {
+      value: stats.openInternships,
+      label: "internships open now",
+      detail: "still taking applications on the employer's own board",
+    },
+    {
+      value: stats.openScholarships,
+      label: "scholarships open now",
+      detail: "still taking applications on the sponsor's own page",
+    },
+    {
       value: stats.foundAllTime,
       label: "opportunities found, all time",
-      detail: "internships and scholarships we have listed, including ones since closed",
-    },
-    {
-      value: STUDENTS_HELPED,
-      suffix: "+",
-      label: "students helped",
-      detail: "students we have helped find internships and scholarships",
-    },
-    {
-      value: stats.openNow,
-      label: "open right now",
-      detail: "internships and scholarships still taking applications",
-    },
-  ];
-
-  /*
-   * The first-minute walkthrough leads to real actions. The preview lets a
-   * visitor choose a direction, guided setup makes recommendations personal,
-   * and an account keeps saved applications together.
-   */
-  const STEPS = [
-    {
-      title: "Pick a direction",
-      body: "An internship to build experience, or a scholarship to help pay for your next chapter. Start with what matters to you.",
-      cta: "try the preview below",
-      href: "#try-it",
-      note: null,
-    },
-    {
-      title: "Make it personal",
-      body: "Add your major, graduation year, location, and work authorization. Guided setup helps make your matches more relevant.",
-      cta: user ? "complete your profile" : "start with your profile",
-      href: user ? "/profile" : "/onboarding",
-      note: null,
-    },
-    {
-      title: "Take your next step",
-      body: "Read the original listing, check the requirements, and apply on the source site. Create an account to keep your saved opportunities and applications together.",
-      cta: user ? "open your tracker" : "start your free tracker",
-      href: user ? "/tracker" : "/login",
-      note: null,
+      detail: "everything we have listed, including ones since closed",
     },
   ];
 
@@ -105,17 +70,17 @@ export default async function LandingPage() {
         </h1>
 
         <p className="landing-sub landing-rise" style={{ animationDelay: "220ms" }}>
-          We read employers&rsquo; own job boards and sponsors&rsquo; own pages instead of
-          aggregators, so you can trace an opportunity back to where it began. Find your direction,
-          check your fit, and take the next step. Your data is never sold.
+          We check employers&rsquo; own job boards and sponsors&rsquo; own pages directly, not
+          aggregators, so every listing traces back to where it began. Tell us about yourself and we
+          rank what fits, showing what we know and what we don&rsquo;t. Your data is never sold.
         </p>
 
         <div className="landing-ctas landing-rise" style={{ animationDelay: "320ms" }}>
-          <Link href="/onboarding" className="landing-cta landing-cta-primary press">
+          <Link href={FEED_PATH} className="landing-cta landing-cta-primary press">
             <span className="landing-cta-label">
-              explore opportunities now <span aria-hidden>→</span>
+              Explore opportunities <span aria-hidden>→</span>
             </span>
-            <span className="landing-cta-note">your goals · your profile · your opportunities</span>
+            <span className="landing-cta-note">No signup required</span>
           </Link>
 
           {/* The second door depends on who is knocking. Signed out, the
@@ -127,18 +92,21 @@ export default async function LandingPage() {
               the useful door is the work they have in progress. */}
           {user ? (
             <Link href="/tracker" className="landing-cta press">
-              <span className="landing-cta-label">open your tracker</span>
-              <span className="landing-cta-note">everything you saved and sent</span>
+              <span className="landing-cta-label">Open your tracker</span>
+              <span className="landing-cta-note">Everything you saved and sent</span>
             </Link>
           ) : (
             <Link href="/login" className="landing-cta press">
-              <span className="landing-cta-label">create a free account</span>
-              <span className="landing-cta-note">save listings · track every application</span>
+              <span className="landing-cta-label">Create a free account</span>
+              <span className="landing-cta-note">Save listings · track every application</span>
             </Link>
           )}
         </div>
 
         <a href="#try-it" className="landing-try-link">Not sure where to start? Try a quick preview <Icon name="arrow" size={15} /></a>
+        {!user && (
+          <Link href="/onboarding" className="landing-try-link">Want personal matches? Set up your profile <Icon name="arrow" size={15} /></Link>
+        )}
 
         <Link
           href="/how-we-verify"
@@ -159,7 +127,7 @@ export default async function LandingPage() {
         {STATS.map((s, i) => (
           <div key={s.label} className="landing-stat">
             <div className="landing-stat-value">
-              <CountUp value={s.value} suffix={s.suffix} delay={0.55 + i * 0.12} />
+              <CountUp value={s.value} delay={0.55 + i * 0.12} />
             </div>
             <div className="mono-strong chrome landing-stat-label">{s.label}</div>
             <div className="mono landing-stat-detail">{s.detail}</div>
@@ -169,46 +137,22 @@ export default async function LandingPage() {
 
       <p className="mono landing-footnote">
         &ldquo;found&rdquo; means first seen by us, not the date an employer says they posted it.
-        the listing counts move every time we poll.
+        &ldquo;open&rdquo; means not closed, hidden or past its term. the counts move every time we poll.
       </p>
 
-      <section className="landing-how" aria-labelledby="how-title">
-        <div className="eyebrow chrome landing-eyebrow">your first 60 seconds</div>
-        <h2 id="how-title" className="landing-how-title">
-          Three steps. <span style={{ color: "var(--accent)" }}>No guessing.</span>
-        </h2>
-
-        <ol className="landing-steps">
-          {STEPS.map((step, i) => (
-            <li key={step.title} className="landing-step-item">
-              <Link href={step.href} className="landing-step press">
-                <span className="landing-step-num" aria-hidden>
-                  0{i + 1}
-                </span>
-                <span className="landing-step-title">{step.title}</span>
-                <span className="landing-step-body">{step.body}</span>
-                {step.note && <span className="mono landing-step-note">{step.note}</span>}
-                <span className="landing-step-go">
-                  {step.cta} <span aria-hidden>→</span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ol>
-      </section>
-
       <Suspense fallback={<PreviewSkeleton />}><LiveMatchPreview /></Suspense>
+
+      <Suspense fallback={<section className="landing-block landing-section-loading" aria-busy="true" aria-label="Loading source coverage"><div className="eyebrow">Follow the evidence</div><h2>Checking our source coverage…</h2></section>}><SourceProof /></Suspense>
 
       <FreePlan signedIn={Boolean(user)} />
 
       <section className="landing-toolkit" aria-labelledby="toolkit-title">
         <div className="landing-section-heading"><div><div className="eyebrow">Your application toolkit</div><h2 id="toolkit-title">More than a place to search.</h2></div><p>Prepare your profile, refine your application, and take your next step with the tools already in Instela.</p></div>
-        <div className="landing-tool-grid">{TOOLS.map(t => <Link key={t.href} href={t.href} className="landing-tool"><span className="tool-icon"><Icon name={t.href.slice(1) as IconName} size={23} /></span><h3>{t.label === "github" ? "GitHub audit" : t.label === "linkedin" ? "LinkedIn tools" : t.label === "essay" ? "Essay review" : "Autofill extension"}</h3><p>{t.blurb}</p><span className="tool-open">Explore tool <Icon name="arrow" size={16} /></span></Link>)}</div>
+        <div className="landing-tool-grid">{TOOLS.map(t => <Link key={t.href} href={t.href} className="landing-tool"><span className="tool-icon"><Icon name={t.href.slice(1) as IconName} size={23} /></span><h3>{t.title}{t.status === "beta" && <span className="tool-beta">beta</span>}</h3><p>{t.blurb}</p><span className="tool-access">{t.access}</span><span className="tool-open">Explore tool <Icon name="arrow" size={16} /></span></Link>)}</div>
       </section>
 
-      <Suspense fallback={<section className="landing-block landing-section-loading" aria-busy="true" aria-label="Loading source coverage"><div className="eyebrow">Follow the evidence</div><h2>Checking our source coverage…</h2></section>}><SourceProof /></Suspense>
       <LandingFAQ />
-      <section className="landing-final"><div className="eyebrow">Your next chapter starts here</div><h2>Find the opportunity.<br /><span>Make it yours.</span></h2><Link href={FEED_PATH} className="btn btn-primary">Explore opportunities now<Icon name="arrow" size={18} /></Link><p>No signup required.</p></section>
+      <section className="landing-final"><div className="eyebrow">Your next chapter starts here</div><h2>Find the opportunity.<br /><span>Make it yours.</span></h2><Link href={FEED_PATH} className="btn btn-primary">Explore opportunities<Icon name="arrow" size={18} /></Link><p>No signup required.</p></section>
     </main>
   );
 }

@@ -1,7 +1,9 @@
 import type { CSSProperties, ReactNode } from "react";
 
-export type IconName = "explore" | "tracker" | "resume" | "tools" | "profile" | "arrow" | "check" | "search" | "filter" | "shield" | "github" | "linkedin" | "essay" | "extension" | "home" | "close" | "menu" | "chevron" | "bookmark" | "award" | "people" | "calendar" | "pin" | "external" | "flip" | "info" | "graduation";
+export type IconName = "explore" | "tracker" | "resume" | "tools" | "profile" | "arrow" | "check" | "search" | "filter" | "shield" | "github" | "linkedin" | "essay" | "extension" | "home" | "close" | "menu" | "chevron" | "bookmark" | "award" | "people" | "calendar" | "pin" | "external" | "flip" | "info" | "graduation" | "portal" | "lock";
 const paths: Record<IconName, ReactNode> = {
+  portal: <><rect x="3" y="3" width="8" height="11" rx="1.5" /><rect x="13" y="3" width="8" height="6" rx="1.5" /><rect x="3" y="16" width="8" height="5" rx="1.5" /><rect x="13" y="11" width="8" height="10" rx="1.5" /></>,
+  lock: <><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15.5v2" /></>,
   bookmark: <path d="M6 3h12v18l-6-4-6 4Z" />,
   award: <><circle cx="12" cy="8" r="5" /><path d="m8 12-2 9 6-3 6 3-2-9M10 8h4" /></>,
   people: <><circle cx="9" cy="8" r="3" /><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 5a3 3 0 0 1 0 6M21 20v-2a6 6 0 0 0-3-5" /></>,

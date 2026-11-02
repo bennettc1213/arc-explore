@@ -1,4 +1,4 @@
-import { and, count, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { applications, organizations, postings, type ApplicationStatus } from "@/db/schema";
@@ -46,7 +46,10 @@ export async function listApplications(userId: string): Promise<TrackedApplicati
       notes: applications.notes,
       updatedAt: applications.updatedAt,
       title: postings.title,
-      company: organizations.name,
+      // Scholarships carry no orgId, so this is a LEFT join and the sponsor
+      // stands in for the company — the same coalesce FEED_SELECT does. An
+      // inner join here silently dropped every saved scholarship (FIXES.md §2).
+      company: sql<string>`coalesce(${organizations.name}, ${postings.sponsorName}, 'sponsor not stated')`,
       url: postings.url,
       locations: postings.locations,
       term: postings.term,
@@ -59,7 +62,7 @@ export async function listApplications(userId: string): Promise<TrackedApplicati
     })
     .from(applications)
     .innerJoin(postings, eq(applications.postingId, postings.id))
-    .innerJoin(organizations, eq(postings.orgId, organizations.id))
+    .leftJoin(organizations, eq(postings.orgId, organizations.id))
     .where(eq(applications.userId, userId))
     .orderBy(desc(applications.updatedAt));
 }

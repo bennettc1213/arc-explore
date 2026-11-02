@@ -195,8 +195,21 @@ only you can make, and the feature on the other side of it is already written.
   and which ATS internships almost never publish. Company discovery is
   unaffected — that step passes._
 
-- [ ] **`ingest-fast` is scheduled every 20 minutes and actually runs every
-  3-5 hours.** Measured 2026-09-03 off `ingest_runs`, which is the only place
+- [~] **`ingest-fast` is scheduled every 20 minutes and actually runs every
+  3-5 hours.** _2026-11-01: moved the trigger off GitHub's scheduler. n8n
+  workflow "Instela - Ingest Trigger (every 20 min)" (id `GVzfCnr6kVr254tU`, on
+  benchu33.app.n8n.cloud) POSTs `workflow_dispatch` to `ingest-fast.yml`; the
+  first test fired run #833 one second after the call. "Instela - Ingest
+  Watchdog (hourly)" (id `IRMSt1BLwAmTV14l`) emails if no successful run in 90
+  minutes. At the time of the test the last success was 17:20 UTC, ~2h stale,
+  so the watchdog's first email was real. Left `[~]` because the cadence has
+  not yet been observed over a day: check `ingest_runs` gaps tomorrow. The
+  `*/20` cron in `ingest-fast.yml` is left in place as a backup; the workflow's
+  `concurrency` group stops the two from overlapping. **New dependency:** the
+  GitHub token behind both workflows (fine-grained, Actions read/write on this
+  repo) **expires 2026-12-31**. When it does the trigger fails silently and only
+  the watchdog notices, so renew it before then. Both workflows hard-code the
+  repo name `arc-explore`; renaming the repo (§7) means editing two URLs._ Measured 2026-09-03 off `ingest_runs`, which is the only place
   this is visible — `ingest:status` reports the last run's age but not the
   gaps between runs, so a cron that fires a sixth as often as it claims looks
   identical to a healthy one until you list the timestamps:
@@ -286,7 +299,7 @@ only you can make, and the feature on the other side of it is already written.
 
 ## 2. Known bugs
 
-- [ ] **Saved scholarships never appear on `/tracker`.** `listApplications`
+- [x] **Saved scholarships never appear on `/tracker`.** `listApplications`
   (`lib/applications/store.ts`) inner-joins `organizations`, and scholarships
   have no `org_id` — so a student can press "save" on a scholarship, see the
   button turn to "▪ saved", and never find it on the tracker. Found 2026-10-26
@@ -296,6 +309,43 @@ only you can make, and the feature on the other side of it is already written.
   plus `coalesce(organizations.name, postings.sponsor_name)` for the company,
   the same coalesce `FEED_SELECT` already does. Not touched here: it changes
   the tracker, which this work was told to leave alone.
+
+  _**2026-11-01 — the new portal now disagrees with the tracker because of
+  this, measured on live data.** `/portal` (`lib/portal/activity.ts`) reads
+  `postings` directly with a left join, so it counts scholarships. For one test
+  account holding 3 tracked listings (2 scholarships submitted worth $15,000,
+  1 internship saved) the tracker's inner join returns **1 of 3**, the portal
+  returns all 3. The portal is right and the tracker is wrong, so the portal was
+  not bent to match it — but until this fix lands, "Submitted" on `/portal` and
+  on `/tracker` can differ for anyone who has tracked a scholarship. Fixing the
+  tracker's join closes both._
+
+  _**Fixed 2026-11-01** (remodel Phase 4): `listApplications` now left-joins
+  `organizations` and reads the company as
+  `coalesce(organizations.name, postings.sponsor_name, 'sponsor not stated')`,
+  the same coalesce `FEED_SELECT` uses. Not driven with a signed-in session —
+  same §3 gap as the rest of the tracker._
+
+- [x] **`/pricing` ignores the `?feature=` parameter every upgrade link sends.**
+  Found 2026-11-01 building the portal. `UpgradeWall` links to
+  `/pricing?feature=<key>` and so do the portal's locked tiles, but
+  `app/pricing/page.tsx` reads no `searchParams` at all, so the student who
+  clicked "Essay review — Pro" lands on the generic plans page with nothing
+  saying why. Nothing is broken — the link works — but the parameter is dead
+  weight until the page highlights that feature's row.
+  _Fixed 2026-11-01: the page parses `feature` against `FEATURE_KEYS` (unknown
+  values are ignored, never echoed), shows a "you came here from" panel with
+  the feature's description, per-plan limit and status, and marks its line in
+  each plan card. Verified on `?feature=essay_reviewer`._
+
+- [ ] **FIXES §5b says free depth was "cut from 20 to 10"; the code says 20.**
+  `FREE_DAILY_RESULTS = 20` (`lib/feed-trim.ts:20`, whose own comment calls
+  twenty "the public promise across the homepage, pricing, onboarding, and
+  emails"), and `FEATURES.feed_full_depth` also says "daily 20". The entry
+  marked `[x]` under "Session 6" describes a change that is not in the tree. The
+  portal's "Free shows your top 20 matches" is derived from the constant, so it
+  is right against the code — the doc is what is stale. Decide which number is
+  real, then correct the entry or the constant.
 
 - [ ] **Two program totals are stored as per-award amounts, and "up to" ranges
   render as a flat figure.** Measured 2026-10-26 over the 349 open
@@ -367,7 +417,7 @@ only you can make, and the feature on the other side of it is already written.
   before rendering, and it is now a real 307. That is the same move this entry
   recommends for `/admin`, and it worked._
 
-- [ ] **The feed's own "open now" stat counts rows the feed will not show.**
+- [x] **The feed's own "open now" stat counts rows the feed will not show.**
   `getFeedStats` filters only `closed_at is null`, while `getFeed` also drops
   `hidden_at` and `term_ended_flag_at` rows — so the strip on `/explore` can
   read higher than the feed beneath it. Found 2026-10-26 while building the
@@ -375,8 +425,9 @@ only you can make, and the feature on the other side of it is already written.
   feed's full visibility rule for exactly this reason. Small, but it is a
   number on the page that disagrees with the page; point `getFeedStats` at the
   same three conditions.
+  _Fixed 2026-11-01: `getFeedStats.open` now applies all three conditions._
 
-- [ ] **`/api/extension/packet` validates the URL before checking the
+- [x] **`/api/extension/packet` validates the URL before checking the
   session**, so an unauthenticated request gets `400 {"error":"missing url"}`
   where §5b's enforcement table says 401. Measured on production; the sibling
   `/api/extension/applied` correctly answers `401 {"error":"not signed in"}`.
@@ -384,8 +435,10 @@ only you can make, and the feature on the other side of it is already written.
   posting — but the two endpoints disagree about which check comes first, and
   the audit table records a behaviour the endpoint does not have. Order the
   auth check first, and the table becomes true again.
+  _Fixed 2026-11-01; verified locally: a bare unauthenticated GET now answers
+  `401 {"error":"not signed in"}`._
 
-- [ ] **`lib/tools.ts` tells the nav that all four tools are "open
+- [x] **`lib/tools.ts` tells the nav that all four tools are "open
   signed-out", and two of them are not.** Its header comment reads "Open
   signed-out on purpose, like each tool it names: the github audit runs only on
   public data, and the others run entirely in your browser." Verified on
@@ -400,6 +453,13 @@ only you can make, and the feature on the other side of it is already written.
   meets a wall. Either the comment and the two blurbs say what a click actually
   costs, or the tools are opened up. **A one-line-each documentation fix, not a
   code change.**
+  _Fixed 2026-11-01 (remodel Phase 1, "distinguish available tools from
+  unfinished ones"): each tool now carries `access` ("open to everyone",
+  "free account · 1 run", "Pro plan", "Pro plan · beta…") and `status`, shown
+  in the tools menu, mobile menu, feed tease and landing toolkit; the extension
+  card carries a BETA badge. The paid plan name comes from `TIER_LABELS`, so
+  it cannot drift again — the landing FAQ and free-plan copy were still saying
+  "Apply", a plan renamed to Pro, and now read the constant too._
 
 
 - [x] **Sign-in was completely broken in production — "fetch failed" on every
@@ -1177,6 +1237,20 @@ only you can make, and the feature on the other side of it is already written.
 
 ---
 
+- [~] **Remodel Phase 1 overflow audit (2026-11-01): one real overflow found
+  and fixed, on `/resume`.** Measured in Chromium, in a browser that held a
+  local signed-in session, at 390, 430, 768, 1024 and 1440px across `/`,
+  `/explore` (both kinds), `/pricing`, `/github`, `/linkedin`, `/essay`,
+  `/extension`, `/how-we-verify`, `/privacy`, `/tracker`, `/profile`,
+  `/resume`, `/portal` and `/onboarding`. The only failure: `/resume` at 390
+  and 430px, where the `white-space: nowrap` "place · dates" line beside each
+  entry title pushed the page to 441px. Fixed in `globals.css`
+  (`.resume-entry-head` wraps; the meta may break below 640px); re-measured, no
+  overflow at any width. No console errors on any route. **Still unmeasured:**
+  the apply wizard modal, signed-out `/login`, and real iOS Safari, where the
+  plan's original "mobile clipping" observation may have come from — get the
+  device and route it was seen on before calling Phase 1 done.
+
 ## 3. Never verified with a real signed-in session
 
 - [~] **Guided onboarding: real email verification, authenticated resume parsing, and final account persistence still need a real signed-in walkthrough.** Added 2026-10-26. _Updated: authenticated browser tests created isolated synthetic Supabase users without sending mail, uploaded actual HTML/DOCX/PDF bytes, verified stored resume rows and autofilled school/major/GPA, saved medical/custom interests and the final profile, and cleaned up test accounts. Image and scanned-PDF OCR also passed. Real delivered email-code verification and university SSO still need configured senders/institution connections and real institutional test accounts._
@@ -1185,6 +1259,16 @@ Auth is **magic-link only**, so every signed-in page below has been verified by
 unit test, by accessibility snapshot, or through a temporary preview route —
 never driven end to end with a real session. This is one login away from being
 closed out and is the largest untested surface in the project.
+
+- [ ] **`/portal` signed in with a real session.** Built 2026-11-01. Two halves
+  were each verified, never together. The query (`getPortalActivity`) ran
+  against the live database for a real test account and returned correct
+  counts and dollars; the rendering was checked in a browser with fixture rows
+  through a temporary route (since deleted). What has not happened is a
+  signed-in student loading `/portal` and reading their own numbers. Signed out
+  and on both plans (Pro forced with `DEV_TIER`) the page and its locked/open
+  tiles were driven in a browser, and `/portal/navigate` was checked at 1440,
+  1100 and 390px.
 
 - [ ] **The optimistic status controls, on failure.** `TrackButton` and the
   tracker card now update on click and let `useOptimistic` roll back if the
@@ -1332,6 +1416,11 @@ Things that are currently true but should not stay true.
   students were actually counted (a prior product, a campus program, a sign-up
   sheet) — keep that source somewhere findable, since this repo does not hold
   it.
+
+  _**2026-11-01: no longer displayed.** The remodel plan moves it out of the
+  live metrics row "until its basis is explained", so the landing row now shows
+  three counted numbers (open internships, open scholarships, found all time)
+  and the constant was deleted. Reinstate it only with its source named._
 
 - [ ] **No scholarship states how many essays or letters it needs, or where it
   is open to — so half the Plan view has nothing to stand on.** Built
@@ -2422,6 +2511,8 @@ reason, not an omission.
   close:** apply 0025 and 0026 to production (INS-055's explicit release
   prompt), then push.
 
+  _**2026-11-01: the database half is stale.** Measured before the remodel deploy: the shared database has 31 migrations applied (`drizzle.__drizzle_migrations`), `postings.confirmed_at` and the `sources` table both exist. What is still true: the commits are not on `origin/master`, so the cron still runs the old ingest code. Confirm 0029 (`profiles.funding_goal`) by name before declaring it in the schema, then push and close this._
+
 - [ ] **Migration `0029_funding_goal` is committed locally, not pushed, not
   applied.** Adds `profiles.funding_goal` for the scholarship Plan view's goal
   meter (released 2026-10-26 as `bb0fb59` without it). It sits on top of the
@@ -2440,6 +2531,8 @@ reason, not an omission.
   `0027`/`0028`, moved the unreleased local migrations to `0029`–`0031`, and
   made the journal timestamps strictly increasing so no migration is skipped
   after an earlier timestamp is recorded._
+
+  _**2026-11-01: the database half is stale.** Measured before the remodel deploy: the shared database has 31 migrations applied (`drizzle.__drizzle_migrations`), `postings.confirmed_at` and the `sources` table both exist. What is still true: the commits are not on `origin/master`, so the cron still runs the old ingest code. Confirm 0029 (`profiles.funding_goal`) by name before declaring it in the schema, then push and close this._
 
 - [ ] **The explore analytics Server Action is a public POST.**
   `trackExploreEvent` (`app/explore/actions.ts`) accepts only the six explore

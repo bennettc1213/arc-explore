@@ -932,7 +932,10 @@ export async function getFeedStats(kind?: PostingKind | null): Promise<FeedStats
   const [row] = await db
     .select({
       total: sql<number>`count(*)::int`,
-      open: sql<number>`count(*) filter (where ${postings.closedAt} is null)::int`,
+      // The feed's own visibility rule, the same three conditions
+      // `getLandingStats` uses — counting only `closed_at` let this strip read
+      // higher than the feed beneath it (FIXES.md §2).
+      open: sql<number>`count(*) filter (where ${postings.closedAt} is null and ${postings.hiddenAt} is null and ${postings.termEndedFlagAt} is null)::int`,
       newToday: sql<number>`count(*) filter (where ${postings.firstSeenAt} > ${dayAgo}::timestamptz)::int`,
       withUnknownTerm: sql<number>`count(*) filter (where ${postings.term} is null)::int`,
     })
@@ -968,6 +971,8 @@ export async function getFeedStats(kind?: PostingKind | null): Promise<FeedStats
 export interface LandingStats {
   foundAllTime: number;
   openNow: number;
+  openInternships: number;
+  openScholarships: number;
 }
 
 /**
@@ -987,12 +992,16 @@ export async function getLandingStats(): Promise<LandingStats> {
       foundAllTime: sql<number>`count(*) filter (where ${postings.hiddenAt} is null)::int`,
       // The feed's own visibility rule: not hidden, not term-ended, not closed.
       openNow: sql<number>`count(*) filter (where ${postings.hiddenAt} is null and ${postings.termEndedFlagAt} is null and ${postings.closedAt} is null)::int`,
+      openInternships: sql<number>`count(*) filter (where ${postings.kind} = 'internship' and ${postings.hiddenAt} is null and ${postings.termEndedFlagAt} is null and ${postings.closedAt} is null)::int`,
+      openScholarships: sql<number>`count(*) filter (where ${postings.kind} = 'scholarship' and ${postings.hiddenAt} is null and ${postings.termEndedFlagAt} is null and ${postings.closedAt} is null)::int`,
     })
     .from(postings);
 
   const value: LandingStats = {
     foundAllTime: posting.foundAllTime,
     openNow: posting.openNow,
+    openInternships: posting.openInternships,
+    openScholarships: posting.openScholarships,
   };
   landingMemo = { at: Date.now(), value };
   return value;

@@ -30,7 +30,8 @@ export function ToolsTease() {
         style={{ color: "var(--muted)", maxWidth: "58ch", marginBottom: 24 }}
       >
         Each one runs on text you bring and returns advice you can act on. The audit is the only one
-        that fetches anything, and it pulls only what is already public. None of them need an account.
+        that fetches anything, and it pulls only what is already public. Each card says what it
+        needs before you click.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -51,6 +52,9 @@ export function ToolsTease() {
             </span>
             <span className="t-xs" style={{ color: "var(--faint-readable)" }}>
               {t.blurb}
+            </span>
+            <span className="t-xs" style={{ color: t.status === "beta" ? "var(--accent-lite)" : "var(--muted)" }}>
+              {t.access}
             </span>
           </Link>
         ))}

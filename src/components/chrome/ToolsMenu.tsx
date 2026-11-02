@@ -169,6 +169,9 @@ export function ToolsMenu() {
             <span className="t-xs" style={{ color: "var(--faint-readable)" }}>
               {tool.blurb}
             </span>
+            <span className="t-xs" style={{ color: tool.status === "beta" ? "var(--accent-lite)" : "var(--muted)" }}>
+              {tool.access}
+            </span>
           </Link>
         ))}
       </div>

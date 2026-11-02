@@ -7,6 +7,7 @@ import "./remodel.css";
 import "./landing.css";
 import "./discovery.css";
 import "./scoring.css";
+import "./portal.css";
 
 import { Chrome } from "@/components/chrome/Chrome";
 import { Frame } from "@/components/chrome/Frame";

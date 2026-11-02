@@ -53,14 +53,38 @@ function allowance(feature: FeatureKey, tier: TierId): string | null {
   return `${limit} free`;
 }
 
-function FeatureLine({ feature, tier }: { feature: FeatureKey; tier: TierId }) {
+/**
+ * Every upgrade link sends `?feature=<key>` (UpgradeWall, the portal's locked
+ * tiles). Parsed against the real key list so an unknown or hand-edited value
+ * is simply ignored rather than echoed onto the page.
+ */
+function featureFromParam(value: string | string[] | undefined): FeatureKey | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw && (FEATURE_KEYS as readonly string[]).includes(raw) ? (raw as FeatureKey) : null;
+}
+
+/** "1 free", "unlimited", "not included" — the same reading FeatureLine gives. */
+function limitWords(limit: number | null): string {
+  if (limit === null) return "unlimited";
+  if (limit === 0) return "not included";
+  return `${limit} included`;
+}
+
+function FeatureLine({ feature, tier, highlighted }: { feature: FeatureKey; tier: TierId; highlighted: boolean }) {
   const entry = FEATURES[feature];
   const note = statusNote(entry.status);
   const allow = allowance(feature, tier);
   const dim = entry.status === "coming_soon";
 
   return (
-    <li style={{ marginBottom: 9 }}>
+    <li
+      style={{
+        marginBottom: 9,
+        ...(highlighted
+          ? { borderLeft: "2px solid var(--accent)", paddingLeft: 8, marginLeft: -10 }
+          : {}),
+      }}
+    >
       <span
         className="t-sm"
         style={{ color: dim ? "var(--faint-readable)" : "var(--text)" }}
@@ -88,7 +112,12 @@ function FeatureLine({ feature, tier }: { feature: FeatureKey; tier: TierId }) {
   );
 }
 
-export default async function PricingPage() {
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const asked = featureFromParam((await searchParams).feature);
   const user = await getSessionUser();
   const tier = await getUserTier(user?.id);
   const devTier = await devTierInForce();
@@ -134,6 +163,28 @@ export default async function PricingPage() {
           )
         )}
       </header>
+
+      {asked && (
+        <section
+          aria-label="The feature you came from"
+          style={{ border: "1px solid var(--accent)", padding: "16px 18px", marginBottom: 28 }}
+        >
+          <div className="mono chrome" style={{ color: "var(--accent-lite)" }}>
+            you came here from: {FEATURES[asked].label}
+          </div>
+          <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "66ch" }}>
+            {FEATURES[asked].description}
+          </p>
+          <p className="mono" style={{ marginTop: 8, color: "var(--text)" }}>
+            {TIER_IDS.map((t) => `${TIER_LABELS[t]}: ${limitWords(FEATURES[asked].limits[t])}`).join("  ·  ")}
+          </p>
+          {statusNote(FEATURES[asked].status) && (
+            <p className="mono" style={{ marginTop: 4, color: "var(--accent-lite)" }}>
+              {statusNote(FEATURES[asked].status)}
+            </p>
+          )}
+        </section>
+      )}
 
       {studentPricing && (
         <section style={{ border: "1px solid var(--accent)", background: "var(--accent-dim)", padding: "24px 26px", marginBottom: 28 }}>
@@ -209,7 +260,7 @@ export default async function PricingPage() {
 
               <ul style={{ display: "flex", flexDirection: "column" }}>
                 {included.map((k) => (
-                  <FeatureLine key={k} feature={k} tier={t} />
+                  <FeatureLine key={k} feature={k} tier={t} highlighted={k === asked} />
                 ))}
               </ul>
 

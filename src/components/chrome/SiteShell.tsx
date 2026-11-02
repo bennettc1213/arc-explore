@@ -8,8 +8,9 @@ import { Mascot } from "./Mascot";
 import { ToolsMenu } from "./ToolsMenu";
 import { ExploreMenu } from "@/components/discovery/ExploreMenu";
 
-type ShellProps = { children: ReactNode; footer: ReactNode; signedIn: boolean; email: string | null; isAdmin: boolean; plan: string; dev: { forced: boolean; label: string | null } | null };
+type ShellProps = { children: ReactNode; footer: ReactNode; signedIn: boolean; email: string | null; isAdmin: boolean; plan: string; paid: boolean; dev: { forced: boolean; label: string | null } | null };
 const workspaceLinks: { href: string; label: string; icon: IconName }[] = [
+  { href: "/portal", label: "Portal", icon: "portal" },
   { href: "/explore", label: "Explore", icon: "explore" },
   { href: "/tracker", label: "Application tracker", icon: "tracker" },
   { href: "/resume", label: "Resume", icon: "resume" },
@@ -45,7 +46,7 @@ function PublicNavigation({ signedIn, plan, dev }: ShellProps) {
     <button className="shell-menu-toggle" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="public-mobile-menu" aria-label={open ? "Close navigation" : "Open navigation"}><Icon name={open ? "close" : "menu"} /></button>
   </div>{open && <nav className="public-mobile-menu" id="public-mobile-menu" aria-label="Mobile navigation"><Link href="/explore">Explore opportunities</Link>{toolLinks.map(l => <Link key={l.href} href={l.href}>{l.label}</Link>)}<Link href="/pricing">Pricing</Link><Link href="/how-we-verify">How we verify</Link><Link href={signedIn ? "/profile" : "/login"}>{signedIn ? "Your profile" : "Sign in"}</Link><DevMarker dev={dev} /></nav>}</header>;
 }
-function WorkspaceNavigation({ pathname, signedIn, email, isAdmin, plan, dev }: ShellProps & { pathname: string }) {
+function WorkspaceNavigation({ pathname, signedIn, email, isAdmin, plan, paid, dev }: ShellProps & { pathname: string }) {
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -54,11 +55,12 @@ function WorkspaceNavigation({ pathname, signedIn, email, isAdmin, plan, dev }: 
     document.addEventListener("keydown", escape);
     return () => document.removeEventListener("keydown", escape);
   }, [open]);
-  const current = [...workspaceLinks, ...toolLinks, { href: "/profile", label: "Profile & settings" }, { href: "/compare", label: "Compare opportunities" }, { href: "/admin", label: "Administration" }].find(l => l.href === pathname)?.label ?? "Opportunity details";
+  const current = [...workspaceLinks, ...toolLinks, { href: "/portal/navigate", label: "Portal · Navigate" }, { href: "/profile", label: "Profile & settings" }, { href: "/compare", label: "Compare opportunities" }, { href: "/admin", label: "Administration" }].find(l => l.href === pathname)?.label ?? "Opportunity details";
   function navLink(l: { href: string; label: string; icon: IconName }) {
     if (l.href === "/explore") return <Suspense key={l.href} fallback={<Link href="/explore" className="sidebar-link"><Icon name="explore" size={18} />Explore</Link>}><ExploreMenu onNavigate={() => setOpen(false)} /></Suspense>;
-    const active = pathname === l.href || (l.href === "/explore" && pathname.startsWith("/listing/"));
-    return <Link key={l.href} href={l.href} className={`sidebar-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}><Icon name={l.icon} size={18} /><span>{l.label}</span>{active && <span className="sidebar-active-dot" />}</Link>;
+    const active = pathname === l.href || (l.href === "/explore" && pathname.startsWith("/listing/")) || (l.href === "/portal" && pathname.startsWith("/portal/"));
+    // The portal is open to everyone but built for the paid plan, so anyone not on it sees the tag before they click.
+    return <Link key={l.href} href={l.href} className={`sidebar-link ${active ? "is-active" : ""}`} aria-current={active ? "page" : undefined}><Icon name={l.icon} size={18} /><span>{l.label}</span>{l.href === "/portal" && !paid && <span className="sidebar-tag">Pro</span>}{active && <span className="sidebar-active-dot" />}</Link>;
   }
   return <>
     <header className="workspace-topbar print-hide"><div className="workspace-breadcrumb"><span>Workspace</span><Icon name="chevron" size={13} /><span>{current}</span></div><div className="workspace-topbar-right"><Link href="/how-we-verify" className="source-assurance"><Icon name="shield" size={15} />Checked at the source</Link><DevMarker dev={dev} /><Link href={signedIn ? "/profile" : "/login"} className="account-avatar" aria-label={signedIn ? "Your profile" : "Sign in"}>{signedIn ? (email?.[0] ?? "S").toUpperCase() : <Icon name="profile" size={16} />}</Link><button ref={toggleRef} className="shell-menu-toggle" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="workspace-sidebar" aria-label={open ? "Close workspace navigation" : "Open workspace navigation"}><Icon name={open ? "close" : "menu"} /></button></div></header>

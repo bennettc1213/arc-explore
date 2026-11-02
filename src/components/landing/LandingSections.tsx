@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { getLandingPreview, getSourceCoverage } from "@/lib/landing-data";
 import { FREE_DAILY_RESULTS } from "@/lib/feed-trim";
-import { FEATURES } from "@/lib/pricing/tiers";
+import { FEATURES, TIER_LABELS } from "@/lib/pricing/tiers";
 import { FEED_PATH } from "@/lib/routes";
 import { MatchPreview } from "./MatchPreview";
 
@@ -22,7 +22,7 @@ export function FreePlan({ signedIn }: { signedIn: boolean }) {
     <div className="free-intro"><div className="eyebrow">Room to get started</div><h2 id="free-title">Your ambition.<br />A free place to start.</h2><p>Find possibilities, check the details, and keep your next steps together.</p><Link href={signedIn ? "/tracker" : "/login"} className="btn btn-primary">{signedIn ? "Open your tracker" : "Create your free account"}<Icon name="arrow" size={17} /></Link><span className="free-no-card">No credit card required.</span></div>
     <div className="free-inclusions"><div className="free-plan-label"><span>Included in the free plan</span><strong>$0<span> / to get started</span></strong></div><ul>
       <li><Icon name="search" size={20} /><div><h3>Search. Open. Go to the source.</h3><p>Search listings and open their details without signing up. Follow the original application link when you’re ready.</p></div></li>
-      <li><Icon name="explore" size={20} /><div><h3>{FREE_DAILY_RESULTS} ranked results to explore</h3><p>Add your background for more relevant results. Free matching shows fit labels; full numerical scores and detailed breakdowns are on Apply.</p></div></li>
+      <li><Icon name="explore" size={20} /><div><h3>{FREE_DAILY_RESULTS} ranked results to explore</h3><p>Add your background for more relevant results. Free matching shows fit labels; full numerical scores and detailed breakdowns are on {TIER_LABELS.apply}.</p></div></li>
       <li><Icon name="tracker" size={20} /><div><h3>{trackerLimit === null ? "Keep your applications together" : `Track up to ${trackerLimit} applications`}</h3><p>Create an account to save opportunities and follow their progress from saved to applied to decision.</p></div></li>
     </ul><Link href="/pricing" className="landing-text-link">See all features and limits<Icon name="arrow" size={16} /></Link></div>
   </section>;
@@ -50,7 +50,7 @@ export function LandingFAQ() {
     { question: "What can I do for free?", answer: <>The free plan includes searching and opening listings, {FREE_DAILY_RESULTS} ranked results, and fit labels. An account lets you track {FEATURES.tracker.limits.free === null ? "your" : `up to ${FEATURES.tracker.limits.free}`} applications. Some application tools have free allowances; full limits and availability are on the <Link href="/pricing">pricing page</Link>.</> },
     { question: "Where do the opportunities come from?", answer: <>We read employer job boards and scholarship pages published by sponsors, universities, and foundations. Each listing links to its source. Check its timestamp to see when it was last observed; different sources are checked on different schedules. <Link href="/how-we-verify">See how we verify listings.</Link></> },
     { question: "What does a fit score actually mean?", answer: <>It compares the background you provide with information available in the listing. Unknown details stay unknown, and eligibility requirements are checked separately. A fit label or score is a guide for what to review next, never a prediction of winning an award or getting hired.</> },
-    { question: "Does Instela submit applications for me?", answer: <>You apply on the employer’s or sponsor’s own site and review everything before submitting. The internship autofill extension is an Apply feature that is still being tested end to end; it helps fill fields and never presses submit. Scholarship autofill is not available yet.</> },
+    { question: "Does Instela submit applications for me?", answer: <>You apply on the employer’s or sponsor’s own site and review everything before submitting. The internship autofill extension is a {TIER_LABELS.apply} feature in beta, still being tested end to end; it helps fill fields and never presses submit. Scholarship autofill is not available yet.</> },
     { question: "Is this only for computer science students?", answer: <>You can search both internships and scholarships across subjects. Our current field filters focus on software, data, hardware, finance, product, and business. For other subjects, use a keyword search; coverage and the detail available vary by source.</> },
     { question: "What happens to my personal information?", answer: <>Your profile supports matching and application tools. We never sell student data. You can manage your information from your profile; the <Link href="/privacy">privacy policy</Link> explains what we store and how to delete your account.</> },
   ];

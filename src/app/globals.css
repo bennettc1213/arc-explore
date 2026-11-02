@@ -1058,6 +1058,20 @@ html {
   font-weight: 400;
   white-space: nowrap;
 }
+/* On a phone the title and its "place · dates" line cannot share one row:
+   measured at 390px the nowrap meta pushed /resume 61px past the viewport.
+   Wrap the row, then let the meta itself break. Print and desktop widths fit
+   on one line, so wrapping never triggers there. */
+.resume-entry-head {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+@media (max-width: 640px) {
+  .resume-entry-meta {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
 .resume-sheet ul {
   margin: 6px 0 0;
   padding-left: 18px;
