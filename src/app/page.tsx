@@ -23,32 +23,44 @@ export const dynamic = "force-dynamic";
  * Guided setup is still one click away, but it is no longer the price of a
  * first look.
  *
- * Every figure in the live row is counted by `getLandingStats` and carries its
- * definition. The owner-stated "10,000+ students helped" used to sit in this
- * row beside counted numbers; the plan moves it out until its basis is
- * explained (FIXES.md §4), so it is not rendered at all for now.
+ * The live row mixes one counted number with two owner-stated ones, at the
+ * owner's instruction (2026-11-02). Open internships comes from
+ * `getLandingStats`; the two constants below do not, and FIXES.md §4 says so.
  *
  * The old "three steps" walkthrough was removed: it duplicated the interactive
  * preview below it, which does the same job with real listings.
  */
+/**
+ * Owner-stated: the students were helped outside the app, before it had
+ * sign-ups, so nothing in this database can produce it. A floor ("+").
+ */
+const STUDENTS_HELPED = 10_000;
+
+/**
+ * Owner-stated (2026-11-02), not the live `stats.foundAllTime` count. It does
+ * not move when we poll; change it here when the real number changes.
+ */
+const OPPORTUNITIES_FOUND = 50_463;
+
 export default async function LandingPage() {
   // An old `/?kind=…` feed link never reaches this component: `proxy.ts`
   // forwards it to the feed first (see `legacyFeedRedirect`).
   const [user, stats] = await Promise.all([getSessionUser(), getLandingStats()]);
 
-  const STATS = [
+  const STATS: { value: number; suffix?: string; label: string; detail: string }[] = [
+    {
+      value: STUDENTS_HELPED,
+      suffix: "+",
+      label: "students helped",
+      detail: "students we have helped find internships and scholarships",
+    },
     {
       value: stats.openInternships,
       label: "internships open now",
       detail: "still taking applications on the employer's own board",
     },
     {
-      value: stats.openScholarships,
-      label: "scholarships open now",
-      detail: "still taking applications on the sponsor's own page",
-    },
-    {
-      value: stats.foundAllTime,
+      value: OPPORTUNITIES_FOUND,
       label: "opportunities found, all time",
       detail: "everything we have listed, including ones since closed",
     },
@@ -127,7 +139,7 @@ export default async function LandingPage() {
         {STATS.map((s, i) => (
           <div key={s.label} className="landing-stat">
             <div className="landing-stat-value">
-              <CountUp value={s.value} delay={0.55 + i * 0.12} />
+              <CountUp value={s.value} suffix={s.suffix} delay={0.55 + i * 0.12} />
             </div>
             <div className="mono-strong chrome landing-stat-label">{s.label}</div>
             <div className="mono landing-stat-detail">{s.detail}</div>
@@ -137,7 +149,7 @@ export default async function LandingPage() {
 
       <p className="mono landing-footnote">
         &ldquo;found&rdquo; means first seen by us, not the date an employer says they posted it.
-        &ldquo;open&rdquo; means not closed, hidden or past its term. the counts move every time we poll.
+        &ldquo;open&rdquo; means not closed, hidden or past its term. the open count moves every time we poll.
       </p>
 
       <Suspense fallback={<PreviewSkeleton />}><LiveMatchPreview /></Suspense>

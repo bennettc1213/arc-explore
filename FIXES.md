@@ -1449,6 +1449,16 @@ Things that are currently true but should not stay true.
   three counted numbers (open internships, open scholarships, found all time)
   and the constant was deleted. Reinstate it only with its source named._
 
+  _**2026-11-02: reinstated at the owner's instruction, source still not
+  named.** The landing row is now "10,000+ students helped", open internships
+  (counted), and "50,463 opportunities found, all time" — **also an
+  owner-stated constant** (`OPPORTUNITIES_FOUND` in `src/app/page.tsx`), shown
+  in place of the live `foundAllTime` count. That live count is not shown
+  anywhere on the page now, and the hard-coded figure will not grow as ingest
+  adds rows. Open scholarships was dropped from the row. Two of the three
+  numbers are not something we counted, so neither can be cited until its
+  source is written down._
+
 - [ ] **No scholarship states how many essays or letters it needs, or where it
   is open to — so half the Plan view has nothing to stand on.** Built
   2026-10-26 (`/explore?kind=scholarship`, `lib/scholarships/plan.ts`).
