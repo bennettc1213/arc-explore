@@ -30,6 +30,9 @@ export function Footer() {
           <Link href="/privacy" className="navlink press">
             privacy
           </Link>
+          <Link href="/terms" className="navlink press">
+            terms
+          </Link>
           <span className="mono chrome">tech vertical · business vertical next</span>
         </div>
       </div>

@@ -153,9 +153,31 @@ export default function PrivacyPage() {
           to prevent the same student discount being claimed on another account.</p>
       </Section>
 
+      <Section title="signing in with Google">
+        <p style={{ marginBottom: 12 }}>
+          Where Google sign-in is switched on, choosing it sends you to Google, and Google returns
+          your email address, along with basic profile details (name and picture) that Supabase
+          holds in your login record. We ask for nothing else: no access to your Gmail, Drive,
+          Calendar, contacts or any other Google data, now or later. We use the email address only
+          to sign you in and to match you to the same account a magic link would give you.
+        </p>
+        <p>
+          We do not sell it, use it for advertising, or share it beyond the services listed below,
+          and our use of information received from Google APIs follows the{" "}
+          <a
+            href="https://developers.google.com/terms/api-services-user-data-policy"
+            style={{ color: "var(--accent)" }}
+          >
+            Google API Services User Data Policy
+          </a>
+          , including its Limited Use requirements. Deleting your account removes your login
+          record.
+        </p>
+      </Section>
+
       <Section title="what leaves our systems, and to whom">
         <p style={{ marginBottom: 12 }}>
-          Four services, each doing one job. None of them is paid for your data, and none of them
+          Up to five services, each doing one job. None of them is paid for your data, and none of them
           receives anything we were not asked to send.
         </p>
         <ul style={{ paddingLeft: 18 }}>
@@ -170,6 +192,10 @@ export default function PrivacyPage() {
           <Row
             what="Supabase — everything above"
             why="it is the database and the sign-in provider; the data lives there"
+          />
+          <Row
+            what="Google — only if you choose Google sign-in"
+            why="Google learns that you signed in to Instela; it receives nothing from your profile or resume"
           />
           <Row
             what="GitHub — the username you type into the audit"

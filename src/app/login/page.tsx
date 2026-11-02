@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { BackLink } from "@/components/BackLink";
 import { getSessionUser } from "@/lib/auth";
+import { googleSignInEnabled } from "@/lib/auth-providers";
 import { safeNextPath } from "@/lib/safe-redirect";
 
 import { LoginForm } from "./LoginForm";
@@ -14,6 +15,8 @@ const AUTH_ERRORS: Record<string, string> = {
   expired: "that sign-in link has expired or was already used — request a new one",
   invalid: "that sign-in link could not be verified — request a new one",
   missing: "that link was missing its sign-in token — request a new one",
+  cancelled: "sign-in was cancelled — pick an account to try again, or use the email link",
+  google: "google sign-in could not be started — use the email link instead",
 };
 
 export default async function LoginPage({
@@ -60,7 +63,7 @@ export default async function LoginPage({
         </p>
       )}
 
-      <LoginForm next={next} />
+      <LoginForm next={next} google={googleSignInEnabled()} />
     </main>
   );
 }

@@ -26,12 +26,14 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null;
   const code = searchParams.get("code");
 
-  const fail = (reason: "expired" | "invalid" | "missing") =>
+  const fail = (reason: "expired" | "invalid" | "missing" | "cancelled") =>
     NextResponse.redirect(
       new URL(`/login?error=${reason}&next=${encodeURIComponent(next)}`, request.url),
     );
 
-  if (!tokenHash && !code) return fail("missing");
+  // A provider (Google) that was cancelled or refused comes back with `error=`
+  // and no code. Name that, rather than calling it a broken link.
+  if (!tokenHash && !code) return fail(searchParams.get("error") ? "cancelled" : "missing");
 
   const supabase = await createSupabaseServerClient();
 
