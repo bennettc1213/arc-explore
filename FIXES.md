@@ -1,6 +1,31 @@
 # Fixes & Open Items
 
-- [ ] **Landing student outcome story needs an approved source (2026-10-29).** The landing expansion includes live listing previews, a first-minute walkthrough, free-plan limits, source coverage, and FAQs. No attributed student quote or permission to publish an outcome story was supplied; collect both before adding testimonials or outcome claims. No placeholder testimonial is shown to visitors.
+- [ ] **Landing student outcome 
+- [ ] **Google sign-in is built but switched off until Google and Supabase are configured (2026-11-02).**
+  Measured: `GET <supabase>/auth/v1/settings` reports `external.google: false`, so
+  the button is hidden unless `GOOGLE_SIGNIN_ENABLED=true` (`lib/auth-providers.ts`)
+  — otherwise students would land on a Supabase 400. Verified locally with the
+  flag on: the button reaches `/auth/v1/authorize?provider=google` with a PKCE
+  challenge and the right `redirect_to`, and a cancelled sign-in
+  (`/auth/confirm?error=access_denied`) shows "sign-in was cancelled". **Never
+  completed with a real Google account.** To turn on: (1) Google Cloud Console →
+  OAuth client (Web), authorised redirect URI
+  `https://tumajkbrzxdikgdvdgaz.supabase.co/auth/v1/callback`; (2) Supabase →
+  Authentication → Providers → Google, paste client id + secret; (3) Supabase →
+  URL Configuration, allow `https://instela.org/auth/confirm` (and
+  `http://localhost:3100/auth/confirm` to test locally); (4) set
+  `GOOGLE_SIGNIN_ENABLED=true` in `.env` and as a Vercel env var, redeploy.
+  Also unverified: Supabase links a Google login to an existing magic-link
+  account with the same verified email by default — confirm that on a real
+  account before relying on it.
+- [ ] **Magic-link email may be hitting Supabase's built-in mail rate limit (2026-11-02).**
+  The default Supabase mailer allows only a handful of emails per hour for the
+  whole project, which would read as "email rate limit exceeded" for students
+  at launch — §2's sign-in entry hit exactly that message. Not measured against
+  the current project's limits. Fix is a custom SMTP sender (the Resend domain
+  already blocked above) in Supabase → Authentication → SMTP; Google sign-in
+  sidesteps it for students who use it.
+story needs an approved source (2026-10-29).** The landing expansion includes live listing previews, a first-minute walkthrough, free-plan limits, source coverage, and FAQs. No attributed student quote or permission to publish an outcome story was supplied; collect both before adding testimonials or outcome claims. No placeholder testimonial is shown to visitors.
 - [ ] **Source registry is empty in the connected local database (2026-10-29).** Read-only inspection found zero `sources` rows and 11,132 unmapped observations. The landing source panel reports actual legacy employer poll history and distinct scholarship adapters when there is no active registry, with labels distinguishing these measurements. Rehearse and apply the existing registry backfill separately before claiming active registered coverage; the landing task makes no database changes.
 
 - [ ] **Scoring v2 supplemental academic context is per search (2026-10-27).** GPA scale, enrollment status, education level, and residence are validated search inputs, not persisted profile columns. Background digests and saved searches only score from available saved context. Persist these fields and their verification state if cross-session academic matching is expanded.
