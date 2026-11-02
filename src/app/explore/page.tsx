@@ -437,7 +437,9 @@ export default async function FeedPage({
           <span style={{ color: "var(--accent)" }}>{deckView ? "More possibility." : "ranked for you."}</span>
         </h1>
         <p className="t-base" style={{ color: "var(--muted)", maxWidth: "58ch", marginTop: 14 }}>
-          {deckView ? "One opportunity at a time. Skip what isn't you. Save what could be. Take your next step." : "Every listing is checked at the source. Your data is never sold."}{" "}
+          {deckView && kind === "internship"
+            ? <><span style={{ color: "var(--text)" }}>{stats.newToday.toLocaleString("en-US")}</span> {stats.newToday === 1 ? "internship" : "internships"} found today</>
+            : deckView ? "One opportunity at a time. Skip what isn't you. Save what could be. Take your next step." : "Every listing is checked at the source. Your data is never sold."}{" "}
           <Link href="/how-we-verify" style={{ color: "var(--accent)" }}>
             How we verify
           </Link>
@@ -467,7 +469,6 @@ export default async function FeedPage({
           inside the collapsed filter panel, which is why scholarships felt
           missing. Writes the same `kind` param that select does. */}
       <div className="explore-page-toolbar">
-        {deckView && <div id="discovery-top-tabs" />}
         <div className="explore-view-options">
         {!deckView && <KindSwitcher
           current={kind === "scholarship" ? "scholarship" : kind === "internship" ? "internship" : "all"}

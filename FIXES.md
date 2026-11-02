@@ -1280,6 +1280,8 @@ only you can make, and the feature on the other side of it is already written.
 
 ## 3. Never verified with a real signed-in session
 
+- [ ] **The mobile swipe sheet has only been driven with synthetic pointer events (2026-11-02).** On screens ≤900px the Cards deck (`OpportunityDeck`) is a bottom sheet that rises on its own, with swipe-right-to-save, swipe-left-to-skip and drag-down-to-minimize. Verified in Chromium at an emulated 390×844 touch viewport signed out (save, skip, snap-back on a short drag, minimize, reopen, scroll lock, no console errors; desktop unchanged). Not verified: a real finger on real iOS Safari/Android Chrome (rubber-banding, the `100dvh` sheet height against the collapsing URL bar, vertical-scroll-vs-horizontal-swipe feel inside a long card), and the signed-in save path from a swipe (same §3 gap as the tracker).
+
 - [~] **Guided onboarding: real email verification, authenticated resume parsing, and final account persistence still need a real signed-in walkthrough.** Added 2026-10-26. _Updated: authenticated browser tests created isolated synthetic Supabase users without sending mail, uploaded actual HTML/DOCX/PDF bytes, verified stored resume rows and autofilled school/major/GPA, saved medical/custom interests and the final profile, and cleaned up test accounts. Image and scanned-PDF OCR also passed. Real delivered email-code verification and university SSO still need configured senders/institution connections and real institutional test accounts._
 
 Auth is **magic-link only**, so every signed-in page below has been verified by
