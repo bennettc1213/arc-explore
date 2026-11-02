@@ -365,7 +365,7 @@ only you can make, and the feature on the other side of it is already written.
   the feature's description, per-plan limit and status, and marks its line in
   each plan card. Verified on `?feature=essay_reviewer`._
 
-- [ ] **FIXES §5b says free depth was "cut from 20 to 10"; the code says 20.**
+- [x] **FIXES §5b says free depth was "cut from 20 to 10"; the code says 20.** _Fixed 2026-11-02: the owner confirmed ten, `FREE_DAILY_RESULTS` is now 10 and the one hard-coded "20" in the tiers copy (`feed_full_depth`) now says 10; every other surface reads the constant. The text below describes what it was._
   `FREE_DAILY_RESULTS = 20` (`lib/feed-trim.ts:20`, whose own comment calls
   twenty "the public promise across the homepage, pricing, onboarding, and
   emails"), and `FEATURES.feed_full_depth` also says "daily 20". The entry

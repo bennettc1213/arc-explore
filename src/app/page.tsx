@@ -8,7 +8,7 @@ import { CountUp } from "@/components/ui/count-up";
 import { TactileHighlight } from "@/components/ui/tactile-highlight";
 import { getSessionUser } from "@/lib/auth";
 import { getLandingStats } from "@/lib/feed";
-import { FEED_PATH } from "@/lib/routes";
+import { PORTAL_PATH } from "@/lib/routes";
 import { FreePlan, LandingFAQ, LiveMatchPreview, PreviewSkeleton, SourceProof } from "@/components/landing/LandingSections";
 
 export const dynamic = "force-dynamic";
@@ -88,9 +88,9 @@ export default async function LandingPage() {
         </p>
 
         <div className="landing-ctas landing-rise" style={{ animationDelay: "320ms" }}>
-          <Link href={FEED_PATH} className="landing-cta landing-cta-primary press">
+          <Link href={PORTAL_PATH} className="landing-cta landing-cta-primary press">
             <span className="landing-cta-label">
-              Explore opportunities <span aria-hidden>→</span>
+              Get started <span aria-hidden>→</span>
             </span>
             <span className="landing-cta-note">No signup required</span>
           </Link>
@@ -164,7 +164,7 @@ export default async function LandingPage() {
       </section>
 
       <LandingFAQ />
-      <section className="landing-final"><div className="eyebrow">Your next chapter starts here</div><h2>Find the opportunity.<br /><span>Make it yours.</span></h2><Link href={FEED_PATH} className="btn btn-primary">Explore opportunities<Icon name="arrow" size={18} /></Link><p>No signup required.</p></section>
+      <section className="landing-final"><div className="eyebrow">Your next chapter starts here</div><h2>Find the opportunity.<br /><span>Make it yours.</span></h2><Link href={PORTAL_PATH} className="btn btn-primary">Get started<Icon name="arrow" size={18} /></Link><p>No signup required.</p></section>
     </main>
   );
 }

@@ -12,12 +12,13 @@ import { POSTING_KINDS, type PostingKind } from "@/db/schema";
 /**
  * How many ranked matches the free plan shows.
  *
- * Twenty is the public promise across the homepage, pricing, onboarding, and
- * emails. It is large enough to demonstrate that the ranking works, small
- * enough to make the upgrade (the full list) a clear next step, and it keeps
- * every surface telling the same story.
+ * Ten is the public promise across the homepage, pricing, portal, onboarding,
+ * and emails — and every one of those reads this constant rather than a
+ * number of its own. Set to ten by the owner on 2026-11-02 (it was twenty); the
+ * ranking now orders a student's results by relevance, so ten well-matched rows
+ * demonstrate that it works, and the full list stays a clear next step.
  */
-export const FREE_DAILY_RESULTS = 20;
+export const FREE_DAILY_RESULTS = 10;
 
 /**
  * Slots held for each kind inside a capped list.
@@ -31,9 +32,9 @@ export const FREE_DAILY_RESULTS = 20;
  * internship 82.0 — no internship could outrank any of the top scholarships.
  *
  * The uncapped feed hides that by showing everything, which FIXES.md records
- * as a known latent bias. Cutting the free plan to twenty rows would stop
- * hiding it, and a free user could open the product to twenty scholarships and
- * no internships at all. The weekly digest hit exactly this and answered it
+ * as a known latent bias. Cutting the free plan to a short window would stop
+ * hiding it, and a free user could open the product to a full window of
+ * scholarships and no internships at all. The weekly digest hit exactly this and answered it
  * the same way, with reserved slots per kind.
  */
 export const FEED_MIN_PER_KIND = 5;

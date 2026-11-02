@@ -206,9 +206,9 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
   },
   feed_full_depth: {
     key: "feed_full_depth",
-    label: "See every match, not just the daily 20",
+    label: "See every match, not just the daily 10",
     description:
-      "Free shows your 20 highest-ranked matches, re-ranked as new postings arrive and " +
+      "Free shows your 10 highest-ranked matches, re-ranked as new postings arrive and " +
       "deadlines approach. Paid shows the full ranked list.",
     status: "live",
     limits: { free: 0, apply: null },

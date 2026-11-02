@@ -7,6 +7,7 @@ import { Icon, type IconName } from "@/components/ui/Icon";
 import { Mascot } from "./Mascot";
 import { ToolsMenu } from "./ToolsMenu";
 import { ExploreMenu } from "@/components/discovery/ExploreMenu";
+import { PORTAL_PATH } from "@/lib/routes";
 
 type ShellProps = { children: ReactNode; footer: ReactNode; signedIn: boolean; email: string | null; isAdmin: boolean; plan: string; paid: boolean; dev: { forced: boolean; label: string | null } | null };
 const workspaceLinks: { href: string; label: string; icon: IconName }[] = [
@@ -42,7 +43,7 @@ function PublicNavigation({ signedIn, plan, dev }: ShellProps) {
   return <header className="public-header print-hide"><div className="wrap public-header-inner">
     <Brand />
     <nav aria-label="Main navigation" className="public-nav"><Link href="/explore">Explore</Link><ToolsMenu /><Link href="/pricing">{signedIn ? `${plan} plan` : "Pricing"}</Link><Link href="/how-we-verify">How we verify</Link></nav>
-    <div className="public-header-actions"><DevMarker dev={dev} /><Link href={signedIn ? "/profile" : "/login"} className="header-signin">{signedIn ? "Your profile" : "Sign in"}</Link><Link href="/explore" className="btn btn-primary header-start">{signedIn ? "Open workspace" : "Get started"}<Icon name="arrow" size={16} /></Link></div>
+    <div className="public-header-actions"><DevMarker dev={dev} /><Link href={signedIn ? "/profile" : "/login"} className="header-signin">{signedIn ? "Your profile" : "Sign in"}</Link><Link href={PORTAL_PATH} className="btn btn-primary header-start">{signedIn ? "Open workspace" : "Get started"}<Icon name="arrow" size={16} /></Link></div>
     <button className="shell-menu-toggle" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="public-mobile-menu" aria-label={open ? "Close navigation" : "Open navigation"}><Icon name={open ? "close" : "menu"} /></button>
   </div>{open && <nav className="public-mobile-menu" id="public-mobile-menu" aria-label="Mobile navigation"><Link href="/explore">Explore opportunities</Link>{toolLinks.map(l => <Link key={l.href} href={l.href}>{l.label}</Link>)}<Link href="/pricing">Pricing</Link><Link href="/how-we-verify">How we verify</Link><Link href={signedIn ? "/profile" : "/login"}>{signedIn ? "Your profile" : "Sign in"}</Link><DevMarker dev={dev} /></nav>}</header>;
 }

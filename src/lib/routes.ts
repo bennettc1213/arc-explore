@@ -13,6 +13,14 @@
  */
 export const FEED_PATH = "/explore";
 
+/**
+ * Where every "Get started" button goes. The portal is the workspace home and
+ * is open signed-out (it is the shop window), so a first visit lands there
+ * before the feed. It is not the feed, so it is named separately: use
+ * `FEED_PATH` when the feed itself is meant.
+ */
+export const PORTAL_PATH = "/portal";
+
 /** The feed with a query string, or the bare feed when there is none. */
 export function feedHref(query?: string): string {
   return query ? `${FEED_PATH}?${query}` : FEED_PATH;
