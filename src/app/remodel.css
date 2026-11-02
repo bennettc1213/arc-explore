@@ -1,9 +1,9 @@
 /* Instela product system. Brand colors and stored content remain unchanged. */
-:root { --nav-h: 76px; --workspace-sidebar: 238px; --gutter: clamp(20px, 3.5vw, 56px); }
+:root { --nav-h: 4.75rem; --workspace-sidebar: 14.9rem; --gutter: clamp(20px, 3.5vw, 56px); }
 .site-shell { min-height: 100vh; width: 100%; }
 .site-content { min-width: 0; display: flex; flex-direction: column; min-height: calc(100vh - var(--nav-h)); }
 .site-content > main { flex: 1; width: 100%; }
-.site-shell .wrap { max-width: 1440px; }
+.site-shell .wrap { max-width: 98rem; }
 .site-shell .mono { font-family: var(--font-sans); font-size: .8rem; letter-spacing: 0; line-height: 1.6; }
 .site-shell .mono-strong { font-family: var(--font-sans); font-size: .875rem; letter-spacing: -.01em; font-weight: 500; }
 .site-shell .chrome { text-transform: none; }
@@ -76,7 +76,7 @@
 .source-assurance svg { color: var(--accent-lite); }
 .account-avatar { width: 31px; height: 31px; display: grid; place-items: center; text-decoration: none; color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 50%; font-size: .75rem; }
 .workspace-shell .site-content { min-height: calc(100vh - 65px); }
-.workspace-shell main.wrap { padding: 36px clamp(20px, 3vw, 44px) 64px !important; max-width: 1440px; margin-inline: auto; }
+.workspace-shell main.wrap { padding: 36px clamp(20px, 3vw, 44px) 64px !important; max-width: 98rem; margin-inline: auto; }
 .workspace-shell main > header .section-title { font-size: clamp(1.65rem, 2.8vw, 2.35rem); max-width: 30ch; }
 .workspace-shell main > header > .eyebrow { font-size: .65rem; }
 .workspace-shell main > header > p { font-size: .875rem; line-height: 1.65; max-width: 76ch !important; }
@@ -280,7 +280,7 @@
   .explore-filters .filter-toggle { display: none; }
 }
 @media (max-width: 1200px) {
-  :root { --workspace-sidebar: 218px; }
+  :root { --workspace-sidebar: 13.6rem; }
   .public-nav { gap: 19px; }
   .public-header-actions { gap: 14px; }
   .public-header-actions .dev-marker { display: none; }
@@ -398,4 +398,23 @@
   .site-shell .site-content { display: block; min-height: 0; }
   .site-shell .letter-sheet, .site-shell .resume-sheet { border-radius: 0; }
   .listing-page > section { background: transparent; padding: 0 !important; }
+}
+
+/* Desktop zoom. Almost every size in this file is in rem, and many are small
+   (the preview cards use .5rem, i.e. 8px), so on a wide screen the page read as
+   a small column in the middle. Scaling the root size zooms the whole layout
+   together, and the content width above is in rem too, so it grows with it
+   rather than staying capped at 1440px. Screen only: print keeps its own sizes. */
+@media screen and (min-width: 1100px) {
+  html { font-size: clamp(16px, .85vw, 20px); }
+}
+/* The top toolbar, larger than the rest of the zoom alone makes it. */
+@media screen and (min-width: 1100px) {
+  .public-header-inner { gap: 2rem; }
+  .public-nav { gap: 2.1rem; }
+  .public-header-actions { gap: 1.5rem; }
+  .public-nav > a, .public-nav .navlink, .header-signin { font-size: .875rem; }
+  .site-shell .brand-word { font-size: 1.55rem; }
+  .site-shell .brand-mark { width: 1.9rem; height: 1.9rem; }
+  .site-shell .header-start { font-size: .85rem; min-height: 2.5rem; padding-inline: 1.1rem; }
 }
