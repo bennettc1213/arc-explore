@@ -1,6 +1,7 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { POST_AUTH_COOKIE } from "@/lib/post-auth";
 import { ensureProfile } from "@/lib/profile/store";
 import { safeNextPath } from "@/lib/safe-redirect";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -20,15 +21,28 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const next = safeNextPath(searchParams.get("next"), "/profile");
+  // The destination travels in a cookie set by the login action (see
+  // `lib/post-auth.ts`); `?next=` is still read so links already sent keep working.
+  const next = safeNextPath(
+    searchParams.get("next") ?? request.cookies.get(POST_AUTH_COOKIE)?.value,
+    "/profile",
+  );
 
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const code = searchParams.get("code");
 
+  // Used once either way; the path option must match the one it was set with.
+  const done = (res: NextResponse) => {
+    res.cookies.set(POST_AUTH_COOKIE, "", { path: "/auth", maxAge: 0 });
+    return res;
+  };
+
   const fail = (reason: "expired" | "invalid" | "missing" | "cancelled") =>
-    NextResponse.redirect(
-      new URL(`/login?error=${reason}&next=${encodeURIComponent(next)}`, request.url),
+    done(
+      NextResponse.redirect(
+        new URL(`/login?error=${reason}&next=${encodeURIComponent(next)}`, request.url),
+      ),
     );
 
   // A provider (Google) that was cancelled or refused comes back with `error=`
@@ -54,5 +68,5 @@ export async function GET(request: NextRequest) {
   const { data } = await supabase.auth.getUser();
   if (data.user) await ensureProfile(data.user.id);
 
-  return NextResponse.redirect(new URL(next, request.url));
+  return done(NextResponse.redirect(new URL(next, request.url)));
 }
