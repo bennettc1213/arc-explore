@@ -8,6 +8,7 @@ import "./landing.css";
 import "./discovery.css";
 import "./scoring.css";
 import "./portal.css";
+import "./scout.css";
 
 import { Chrome } from "@/components/chrome/Chrome";
 import { Frame } from "@/components/chrome/Frame";

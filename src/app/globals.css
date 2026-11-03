@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @import "@fontsource-variable/space-grotesk";
 @import "@fontsource/ibm-plex-mono/400.css";
@@ -89,6 +90,7 @@
 
   /* square corners everywhere — rounded would break the pixel-art language */
   --radius-none: 0px;
+  --radius-full: 999px;
 }
 
 /* ==========================================================================
@@ -787,31 +789,18 @@ input[type="file"] {
 .focus-ring i:nth-child(4) { bottom: 0; right: 0; border-left: none; border-top: none; }
 
 /* ==========================================================================
-   custom cursor — small square, never a dot. Off for coarse pointers and
+   magnetic cursor — square at rest, snaps to marked controls. Off for coarse pointers and
    reduced-motion, so `cursor: none` never strands a touch or a11y user.
    ========================================================================== */
 
 @media (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .js-ready,
-  .js-ready * {
+  .magnetic-cursor-active,
+  .magnetic-cursor-active * {
     cursor: none !important;
   }
 }
 
-.cursor-square {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 10px;
-  height: 10px;
-  background: var(--accent);
-  border: 1px solid var(--bg);
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0; /* fades in on first real mousemove, not visible at (0,0) on load */
-}
-
-/* the trail rides between the background and the content */
+/* Content sits above the background grid. */
 header,
 main,
 footer {
@@ -826,20 +815,8 @@ body > header {
   z-index: 20;
 }
 
-.cursor-trail {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0; /* hidden until the mouse first moves */
-}
-
-.cursor-trail span {
-  position: absolute;
-  top: 0;
-  left: 0;
-  background: var(--accent);
-  will-change: transform;
+@media print {
+  .magnetic-cursor { display: none !important; }
 }
 
 /* ==========================================================================
