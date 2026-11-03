@@ -68,7 +68,23 @@ describe("a free plan", () => {
       const tile = byId(tiles, id);
       assert.equal(tile.state, "limited", id);
       assert.match(tile.note ?? "", /top \d+ matches/, id);
-      assert.ok(tile.href?.startsWith("/explore"), id);
+    }
+  });
+
+  it("opens each discovery tool as a tailored Scout, not a screen of results", () => {
+    const expected: Record<string, [string, string]> = {
+      merit: ["/scout?for=merit", "Start a Scout for college merit awards"],
+      scholarships: ["/scout?for=scholarships", "Start a Scout for scholarships"],
+      internships: ["/scout?for=internships", "Start a Scout for internships"],
+    };
+    for (const [id, [href, cta]] of Object.entries(expected)) {
+      const tile = byId(tiles, id);
+      assert.equal(tile.href, href, id);
+      assert.equal(tile.cta, cta, id);
+    }
+    // Only the discovery tools carry a Scout button.
+    for (const tile of tiles) {
+      if (!(tile.id in expected)) assert.equal(tile.cta, null, tile.id);
     }
   });
 

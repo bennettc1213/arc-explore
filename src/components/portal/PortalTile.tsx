@@ -57,6 +57,12 @@ export function PortalTile({ tile, bento = false }: { tile: Tile; bento?: boolea
             <Icon name="arrow" size={14} />
           </span>
         )}
+        {(tile.state === "open" || tile.state === "limited") && tile.cta && (
+          <span className="ptile-cta">
+            {tile.cta}
+            <Icon name="arrow" size={14} />
+          </span>
+        )}
       </div>
 
       {(tile.state === "open" || tile.state === "limited") && (

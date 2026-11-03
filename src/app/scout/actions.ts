@@ -19,10 +19,10 @@ export async function runScout(raw: unknown) {
   try {
     const user = await getSessionUser();
     const [stored, resume, tier] = await Promise.all([user ? getProfile(user.id) : null, user ? getLatestResume(user.id) : null, getUserTier(user?.id)]);
-    const profile = { ...toScoringProfile(stored, [], resume?.parsed), major: p.field, school: p.school || stored?.school, gradYear: p.gradYear || stored?.gradYear, workAuth: p.workAuth || stored?.workAuth, gpa: p.gpa === "" ? stored?.gpa : p.gpa, gpaScale: Number(p.gpaScale), residency: p.residency || null, priority: p.priority, targetLocations: p.location ? [p.location] : [], openToRemote: p.remote };
+    const profile = { ...toScoringProfile(stored, [], resume?.parsed), major: p.field || null, school: p.school || stored?.school, gradYear: p.gradYear || stored?.gradYear, workAuth: p.workAuth || stored?.workAuth, gpa: p.gpa === "" ? stored?.gpa : p.gpa, gpaScale: Number(p.gpaScale), residency: p.residency || null, priority: p.priority, targetLocations: p.location ? [p.location] : [], openToRemote: p.remote };
     const full = evaluateFeature(tier, "feed_full_depth").usable;
     const limit = full ? 100 : FREE_DAILY_RESULTS;
-    const feed = await getFeed(profile, { q: p.field, kind: p.kind === "both" ? null : p.kind, location: p.location || null, remoteOnly: p.remote, hideBlocked: true, excludeMarketing: true, limit, reservePerKind: p.kind === "both" ? reservationFor(limit) : 0, timingPoints: TIMING_PRIORITY_POINTS[tier] });
+    const feed = await getFeed(profile, { q: p.field || null, kind: p.kind === "both" ? null : p.kind, location: p.location || null, remoteOnly: p.remote, hideBlocked: true, excludeMarketing: true, meritOnly: p.merit, college: p.merit && p.college ? p.college : null, limit, reservePerKind: p.kind === "both" ? reservationFor(limit) : 0, timingPoints: TIMING_PRIORITY_POINTS[tier] });
     const now = new Date();
     const sections = selectScoutSections(feed.items, now);
     const displayed = sections.flatMap(section => section.items.map(entry => entry.item));

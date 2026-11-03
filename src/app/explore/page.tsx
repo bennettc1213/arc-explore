@@ -30,11 +30,11 @@ import { PlanView, type FundingState } from "@/components/scholarships/PlanView"
 import { getFundingGoal } from "@/lib/profile/funding-goal";
 import { FEED_PATH } from "@/lib/routes";
 import { ActiveFilters } from "@/components/ActiveFilters";
-import { OpportunityDeck } from "@/components/discovery/OpportunityDeck";
 import { DiscoveryPreferences } from "@/components/discovery/DiscoveryPreferences";
-import { toDiscoveryCard } from "@/lib/discovery/cards";
-import { toScoringProfile, withScoringPreferences, scoringQueryFrom } from "@/lib/score/v2/profile";
 import { Icon } from "@/components/ui/Icon";
+import { ExploreScoutEntry } from "@/components/scout/ExploreScoutEntry";
+import { exploreEntryFocus, scoutButtonLabel, scoutHref, type ScoutFocus } from "@/lib/scout/focus";
+import { toScoringProfile, withScoringPreferences, scoringQueryFrom } from "@/lib/score/v2/profile";
 import { getFundingTotals, getScholarshipPlan } from "@/lib/scholarships/explore";
 import { parseExploreView, type ExploreView } from "@/lib/scholarships/plan";
 
@@ -133,6 +133,12 @@ export default async function FeedPage({
 }) {
   const sp = await searchParams;
 
+  // Picking a category (sidebar, old Cards links) opens a Scout start screen, not
+  // the ranked list. Returned before anything is loaded: nothing here needs the
+  // session, the profile or the feed.
+  const entry = exploreEntryFocus(sp);
+  if (entry) return <ExploreScoutEntry focus={entry.focus} />;
+
   /*
    * Set by the account-deletion redirect. Worth a banner rather than a silent
    * landing: someone who just destroyed everything they had here should be told
@@ -217,9 +223,12 @@ export default async function FeedPage({
    * the default there, List is the existing ranked feed below.
    */
   const scholarshipViews = kind === "scholarship";
-  const deckView = sp.view !== "list" && sp.view !== "plan";
   const view: ExploreView = parseExploreView(sp.view);
-  const planView = !deckView && scholarshipViews && view === "plan";
+  const planView = scholarshipViews && view === "plan";
+  // Which Scout the header button opens: the tool being looked at, or a plain one.
+  const scoutFocus: ScoutFocus | null = currentFilters.meritOnly
+    ? "merit"
+    : kind === "scholarship" ? "scholarships" : kind === "internship" ? "internships" : null;
   const newDaysRaw = Number(Array.isArray(sp.new) ? sp.new[0] : sp.new);
   const newSinceDays = Number.isFinite(newDaysRaw) && newDaysRaw > 0 ? Math.round(newDaysRaw) : null;
 
@@ -409,10 +418,9 @@ export default async function FeedPage({
     ? await statusesForPostings(user.id, [...items, ...lotteryAwards].map((i) => i.id))
     : new Map();
   const discoveryKey = new URLSearchParams(Object.entries(sp).flatMap(([key, value]) => value === undefined ? [] : (Array.isArray(value) ? value : [value]).map(v => [key, v]))).toString();
-  const moreHref = !dailyCapped && total > items.length && items.length < 500 ? hrefWith({ show: String(Math.min(items.length + FEED_PAGE_SIZE * 2, 500)), view: "deck" }) : null;
 
   return (
-    <main className={`wrap explore-page ${deckView ? "discovery-page" : ""}`} style={{ paddingBlock: "48px 96px" }}>
+    <main className="wrap explore-page" style={{ paddingBlock: "48px 96px" }}>
       {deleted && (
         <div
           className="border"
@@ -431,19 +439,23 @@ export default async function FeedPage({
       )}
 
       <header className="workspace-page-heading" style={{ marginBottom: 40 }}>
-        <div className="eyebrow chrome">{deckView ? "A world of possibilities. A place to start." : "01 — internships + scholarships"}</div>
+        <div className="eyebrow chrome">01 — internships + scholarships</div>
         <h1 className="section-title" style={{ marginTop: 12 }}>
-          {deckView ? "Less searching." : "Everything open right now,"}{" "}
-          <span style={{ color: "var(--accent)" }}>{deckView ? "More possibility." : "ranked for you."}</span>
+          Everything open right now,{" "}
+          <span style={{ color: "var(--accent)" }}>ranked for you.</span>
         </h1>
         <p className="t-base" style={{ color: "var(--muted)", maxWidth: "58ch", marginTop: 14 }}>
-          {deckView && kind === "internship"
-            ? <><span style={{ color: "var(--text)" }}>{stats.newToday.toLocaleString("en-US")}</span> {stats.newToday === 1 ? "internship" : "internships"} found today</>
-            : deckView ? "One opportunity at a time. Skip what isn't you. Save what could be. Take your next step." : "Every listing is checked at the source. Your data is never sold."}{" "}
+          Every listing is checked at the source. Your data is never sold.{" "}
           <Link href="/how-we-verify" style={{ color: "var(--accent)" }}>
             How we verify
           </Link>
         </p>
+        {/* A guided way in for anyone who would rather answer a few questions
+            than read a ranked list. Tailored to the tool they are looking at. */}
+        <Link href={scoutHref(scoutFocus)} className="btn btn-primary" style={{ marginTop: 20 }}>
+          {scoutButtonLabel(scoutFocus)}
+          <Icon name="arrow" size={16} />
+        </Link>
       </header>
 
       <section
@@ -470,12 +482,11 @@ export default async function FeedPage({
           missing. Writes the same `kind` param that select does. */}
       <div className="explore-page-toolbar">
         <div className="explore-view-options">
-        {!deckView && <KindSwitcher
+        <KindSwitcher
           current={kind === "scholarship" ? "scholarship" : kind === "internship" ? "internship" : "all"}
           hrefs={kindHrefs}
-        />}
-        <nav className="discovery-mode-switch" aria-label="Explore experience"><Link href={hrefWith({ view: "deck" })} aria-current={deckView ? "page" : undefined} prefetch={false}><Icon name="explore" size={15} />Cards</Link><Link href={hrefWith({ view: "list" })} aria-current={!deckView && !planView ? "page" : undefined} prefetch={false}><Icon name="menu" size={15} />List</Link>{scholarshipViews && <Link href={viewHrefs.plan} aria-current={planView ? "page" : undefined} prefetch={false}>Funding plan</Link>}</nav>
-        {!deckView && scholarshipViews && (
+        />
+        {scholarshipViews && (
           <ViewToggle current={view} explicit={sp.view !== undefined} hrefs={viewHrefs} />
         )}
       </div>
@@ -488,7 +499,6 @@ export default async function FeedPage({
         key={discoveryKey}
         compact
         scoring={{ school: profile.school, gpa: profile.gpa, gpaScale: profile.gpaScale, enrollmentStatus: profile.enrollmentStatus, educationLevel: profile.educationLevel, residency: profile.residency, priority: profile.priority }}
-        discovery={deckView}
         meritOnly={currentFilters.meritOnly}
         college={currentFilters.college}
         user={Boolean(user)}
@@ -516,7 +526,7 @@ export default async function FeedPage({
         hideBlocked={hideBlocked}
         excludeMarketing={excludeMarketing}
         activeCount={activeCount}
-        view={deckView ? "deck" : scholarshipViews ? view : "list"}
+        view={scholarshipViews ? view : "list"}
       /></DiscoveryPreferences>
       </div>
 
@@ -524,7 +534,7 @@ export default async function FeedPage({
       <div className="explore-results" id="opportunity-results">
       <ActiveFilters params={sp} />
 
-      {!deckView && user && !profileReady && (
+      {user && !profileReady && (
         <div className="slot" style={{ marginBottom: 24, padding: "14px 16px" }}>
           <Mascot size={26} />
           <span className="flex-1">
@@ -543,7 +553,7 @@ export default async function FeedPage({
         </div>
       )}
 
-      {!deckView && !user && !hasProfile && (
+      {!user && !hasProfile && (
         <div className="slot" style={{ marginBottom: 24, padding: "14px 16px" }}>
           <span>
             personalize your matches to score these — or{" "}
@@ -552,11 +562,11 @@ export default async function FeedPage({
         </div>
       )}
 
-      {!deckView && <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
+      <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
         {plan
           ? `03 — your plan, from ${plan.counts.listings.toLocaleString("en-US")} open scholarships`
           : `03 — ${items.length} results`}
-      </div>}
+      </div>
 
       {/* A category can only be read off what the source actually wrote. Most
           scholarships name no field at all, so without this line picking a
@@ -585,7 +595,7 @@ export default async function FeedPage({
         />
       )}
 
-      {deckView ? <OpportunityDeck key={discoveryKey} cards={items.map(item => toDiscoveryCard(item, tier, profileReady, scoringQueryFrom(sp)))} signedIn={Boolean(user)} statuses={Object.fromEntries(tracked)} kindLabel={currentFilters.meritOnly ? "college merit scholarships" : kind === "scholarship" ? "scholarships" : kind === "internship" ? "internships" : "opportunities"} total={total} dailyCapped={dailyCapped} moreHref={moreHref} /> : plan ? (
+      {plan ? (
         <EmailModalProvider>
           <PlanView
             plan={plan}

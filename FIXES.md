@@ -1290,7 +1290,7 @@ only you can make, and the feature on the other side of it is already written.
 
 ## 3. Never verified with a real signed-in session
 
-- [ ] **The mobile swipe sheet has only been driven with synthetic pointer events (2026-11-02).** On screens ≤900px the Cards deck (`OpportunityDeck`) is a bottom sheet that rises on its own, with swipe-right-to-save, swipe-left-to-skip and drag-down-to-minimize. Verified in Chromium at an emulated 390×844 touch viewport signed out (save, skip, snap-back on a short drag, minimize, reopen, scroll lock, no console errors; desktop unchanged). Not verified: a real finger on real iOS Safari/Android Chrome (rubber-banding, the `100dvh` sheet height against the collapsing URL bar, vertical-scroll-vs-horizontal-swipe feel inside a long card), and the signed-in save path from a swipe (same §3 gap as the tracker).
+- [x] **The mobile swipe sheet has only been driven with synthetic pointer events (2026-11-02).** _Moot 2026-11-03: the Cards deck was taken out of Explore (pivot to Scout), so nothing renders this sheet. If Cards returns, the unverified items below return with it._ On screens ≤900px the Cards deck (`OpportunityDeck`) is a bottom sheet that rises on its own, with swipe-right-to-save, swipe-left-to-skip and drag-down-to-minimize. Verified in Chromium at an emulated 390×844 touch viewport signed out (save, skip, snap-back on a short drag, minimize, reopen, scroll lock, no console errors; desktop unchanged). Not verified: a real finger on real iOS Safari/Android Chrome (rubber-banding, the `100dvh` sheet height against the collapsing URL bar, vertical-scroll-vs-horizontal-swipe feel inside a long card), and the signed-in save path from a swipe (same §3 gap as the tracker).
 
 - [~] **Guided onboarding: real email verification, authenticated resume parsing, and final account persistence still need a real signed-in walkthrough.** Added 2026-10-26. _Updated: authenticated browser tests created isolated synthetic Supabase users without sending mail, uploaded actual HTML/DOCX/PDF bytes, verified stored resume rows and autofilled school/major/GPA, saved medical/custom interests and the final profile, and cleaned up test accounts. Image and scanned-PDF OCR also passed. Real delivered email-code verification and university SSO still need configured senders/institution connections and real institutional test accounts._
 
@@ -1424,6 +1424,8 @@ closed out and is the largest untested surface in the project.
 ## 4. Honesty and trust debt
 
 Things that are currently true but should not stay true.
+
+- [ ] **The merit-awards tools rest on 8 listings (2026-11-03).** "College merit awards" is not a stored category: the feed's merit filter (`lib/feed.ts`, `meritOnly`) keeps scholarships whose title, eligibility or description contains the word "merit". Measured on the live corpus through `/explore?kind=scholarship&focus=merit`: **8 open results**, and **0** once any field such as "Engineering" is added. So the new merit Scout makes its field optional and starts without a remembered one (`lib/scout/focus.ts`, `ScoutWorkspace`), and its empty state says why, but the tool is only as full as that word match. The structured merit-aid data (`0028_merit_aid`, Merit aid Stage 1 in §1) is what would widen it, and is unverified and unapplied. The portal's "College merit awards" tile and the Explore header button both lead to this Scout.
 
 - [x] **No privacy policy.** Fixed — `/privacy`, written from the schema and
   linked from the footer. Writing it surfaced two things worth keeping in mind:
@@ -2472,6 +2474,10 @@ reason, not an omission.
 ---
 
 ## 7. Housekeeping
+
+- [ ] **Explore's category pages no longer show a list; search and filters are one link deep (2026-11-03).** `/explore`, `?kind=internship`, `?kind=scholarship` and `?kind=scholarship&focus=merit` (and any old `view=deck` link) now return the Scout start screen (`exploreEntryFocus` in `lib/scout/focus.ts`, `ExploreScoutEntry`), before any data loads. Anything carrying a query, filter or explicit view still renders the results, so saved searches, alert emails (`See them in the feed: …/explore?kind=internship`) and shared links that carry filters work as before, **but an alert email's bare `/explore?kind=internship` link now lands on the Scout screen, not the list** (`lib/searches/searches.test.ts` pins that URL shape). The search box, filters and Funding plan are reachable only through the "or browse the full list" link (`view=list`) or a URL. Decide whether the quiet link stays, or whether the list should be removed from Explore for good.
+
+- [ ] **The Cards deck is switched off, not deleted (2026-11-03).** Explore no longer renders `OpportunityDeck`, the "Cards | List | Funding plan" switch is gone, and nothing links to `view=deck` (sidebar Explore menu, portal tiles, "show more"). An old `?view=deck` URL now falls back to the normal default (Funding plan for scholarships, list otherwise). Left in place because the pivot is "for now": `components/discovery/OpportunityDeck.tsx`, the deck rules in `app/discovery.css`, and the `discovery` branches in `FilterPanel.tsx` (which set `view=deck` on submit, but only when `discovery` is passed, and nothing passes it). `lib/discovery/cards.ts` is **not** dead: Scout uses `toDiscoveryCard`. Delete the rest once Cards is definitely not coming back. Not reachable from the nav: Scout itself is linked only from the portal home, not the sidebar.
 
 - [ ] **Dependency advisories surfaced during resume-parser installation.**
   `npm audit` reported 10 advisories, including a critical advisory on the existing

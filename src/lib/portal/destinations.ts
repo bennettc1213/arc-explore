@@ -19,7 +19,7 @@
 import type { FeatureKey, TierId } from "@/lib/pricing/tiers";
 import { evaluateFeature, FEATURES, statusNote, TIER_LABELS } from "@/lib/pricing/tiers";
 import { FREE_DAILY_RESULTS } from "@/lib/feed-trim";
-import { feedHref } from "@/lib/routes";
+import { scoutButtonLabel, scoutHref, type ScoutFocus } from "@/lib/scout/focus";
 
 export const PORTAL_ART_IDS = [
   "merit",
@@ -62,6 +62,11 @@ interface Destination {
   limitedNote?: string;
   /** Nouns for a usage cap, so "1 free run" and "up to 5 tracked listings" read right. */
   unit?: readonly [singular: string, plural: string];
+  /**
+   * The discovery tools open a guided Scout rather than a screen of ranked
+   * results. Set, it replaces `href` and names the tile's button.
+   */
+  scout?: ScoutFocus;
   /** Grid column span on the 12-column navigate grid. */
   span: 3 | 4 | 5 | 12;
 }
@@ -75,7 +80,8 @@ const DESTINATIONS: readonly Destination[] = [
     id: "merit",
     title: "College merit awards",
     blurb: "Merit-based awards from colleges and sponsors, ranked for you.",
-    href: feedHref("kind=scholarship&focus=merit&view=deck"),
+    href: scoutHref("merit"),
+    scout: "merit",
     feature: "feed_browse",
     full: "feed_full_depth",
     limitedNote: `Free shows your top ${FREE_DAILY_RESULTS} matches`,
@@ -85,7 +91,8 @@ const DESTINATIONS: readonly Destination[] = [
     id: "scholarships",
     title: "Scholarships",
     blurb: "Every open scholarship, scored for how well you fit.",
-    href: feedHref("kind=scholarship&view=deck"),
+    href: scoutHref("scholarships"),
+    scout: "scholarships",
     feature: "feed_browse",
     full: "feed_full_depth",
     limitedNote: `Free shows your top ${FREE_DAILY_RESULTS} matches`,
@@ -95,7 +102,8 @@ const DESTINATIONS: readonly Destination[] = [
     id: "internships",
     title: "Internships",
     blurb: "Open roles, confirmed live on the employer's own board.",
-    href: feedHref("kind=internship&view=deck"),
+    href: scoutHref("internships"),
+    scout: "internships",
     feature: "feed_browse",
     full: "feed_full_depth",
     limitedNote: `Free shows your top ${FREE_DAILY_RESULTS} matches`,
@@ -177,6 +185,8 @@ export interface PortalTile {
   note: string | null;
   /** A truthfulness caveat about the feature itself, shown on the way in. */
   caveat: string | null;
+  /** The button on a tile that opens a guided Scout ("Start a Scout for internships"). */
+  cta: string | null;
   feature: FeatureKey | null;
 }
 
@@ -190,7 +200,7 @@ function sentence(text: string | null): string | null {
 }
 
 function resolve(d: Destination, tier: TierId): PortalTile {
-  const base = { id: d.id, title: d.title, blurb: d.blurb, span: d.span, feature: d.feature };
+  const base = { id: d.id, title: d.title, blurb: d.blurb, span: d.span, feature: d.feature, cta: d.scout ? scoutButtonLabel(d.scout) : null };
 
   // Open to everyone, no entitlement behind it.
   if (!d.feature) {
