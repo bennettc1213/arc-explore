@@ -242,8 +242,11 @@ only you can make, and the feature on the other side of it is already written.
   and which ATS internships almost never publish. Company discovery is
   unaffected — that step passes._
 
-- [~] **`ingest-fast` is scheduled every 20 minutes and actually runs every
-  3-5 hours.** _2026-11-01: moved the trigger off GitHub's scheduler. n8n
+- [x] **`ingest-fast` is scheduled every 20 minutes and actually runs every
+  3-5 hours.** _Closed 2026-11-03: observed **75 finished tier A runs in 24
+  hours** (target 72; the GitHub cron backup adds a few, and the concurrency
+  group queues them), starting on the :02/:22/:42 marks the n8n trigger fires
+  on. `/admin/sources` now shows this count live. 2026-11-01: moved the trigger off GitHub's scheduler. n8n
   workflow "Instela - Ingest Trigger (every 20 min)" (id `GVzfCnr6kVr254tU`, on
   benchu33.app.n8n.cloud) POSTs `workflow_dispatch` to `ingest-fast.yml`; the
   first test fired run #833 one second after the call. "Instela - Ingest
@@ -345,6 +348,10 @@ only you can make, and the feature on the other side of it is already written.
 ---
 
 ## 2. Known bugs
+
+- [ ] **`ingest_runs.status` says `successful_complete` for runs that failed and for runs still in progress (2026-11-03).** Found building `/admin/sources`. The column defaults to `successful_complete` at insert, so an unfinished run carries it; and the scholarship and USAJobs scripts never pass a status, so the 2026-11-01 Scholarships.com and ScholarshipPortal runs (`PARSE_API_KEY is not set`, 0 read, 1 error) and the 2026-11-03 USAJobs run (keys missing) are all stored as successes. Only tier A sets `partial`. `/admin/sources` judges health from rows read, errors and `finished_at` instead (`lib/admin/source-health.ts`), so the page is right, but anything else reading `status` is not. Fix: insert with a `running` status and have `finishRun` derive `failed` when a run read nothing and errored.
+
+- [ ] **CFT Texas returned 48 scholarships on 2026-11-01 and none is open.** `/admin/sources` flags it "needs a look". It may be honest, since CFT states each award's open status directly and the season may simply be closed, but 0 of 48 is also what a changed status field would look like. Check the live page before the next Sunday run.
 
 - [x] **Saved scholarships never appear on `/tracker`.** `listApplications`
   (`lib/applications/store.ts`) inner-joins `organizations`, and scholarships
@@ -1299,6 +1306,8 @@ only you can make, and the feature on the other side of it is already written.
   device and route it was seen on before calling Phase 1 done.
 
 ## 3. Never verified with a real signed-in session
+
+- [ ] **`/admin/sources` (2026-11-03).** The source-health portal. Its report ran against the live database and the page was rendered locally with `requireAdmin` stubbed for one request and then restored; signed out it shows the not-found page. Never loaded by a signed-in admin, and `ADMIN_EMAILS` is still unset on Vercel (§1), so in production it 404s for everyone.
 
 - [x] **The mobile swipe sheet has only been driven with synthetic pointer events (2026-11-02).** _Moot 2026-11-03: the Cards deck was taken out of Explore (pivot to Scout), so nothing renders this sheet. If Cards returns, the unverified items below return with it._ On screens ≤900px the Cards deck (`OpportunityDeck`) is a bottom sheet that rises on its own, with swipe-right-to-save, swipe-left-to-skip and drag-down-to-minimize. Verified in Chromium at an emulated 390×844 touch viewport signed out (save, skip, snap-back on a short drag, minimize, reopen, scroll lock, no console errors; desktop unchanged). Not verified: a real finger on real iOS Safari/Android Chrome (rubber-banding, the `100dvh` sheet height against the collapsing URL bar, vertical-scroll-vs-horizontal-swipe feel inside a long card), and the signed-in save path from a swipe (same §3 gap as the tracker).
 
