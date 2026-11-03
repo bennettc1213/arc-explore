@@ -160,7 +160,7 @@ test("the free tier keeps the things promised as free forever", () => {
 
 test("prices are ordered and the paid ones are the stated figures", () => {
   assert.equal(TIER_PRICE_USD.free, 0);
-  assert.equal(TIER_PRICE_USD.apply, 5.99);
+  assert.equal(TIER_PRICE_USD.apply, 20);
 });
 
 test("minimumTierFor names the cheapest tier that includes a feature", () => {
@@ -328,7 +328,7 @@ test("Free keeps eligibility conflicts and unknown requirements under the bucket
 test("the approved Free/Pro matrix", () => {
   assert.equal(TIER_LABELS.free, "Free");
   assert.equal(TIER_LABELS.apply, "Pro");
-  assert.equal(TIER_PRICE_USD.apply, 5.99);
+  assert.equal(TIER_PRICE_USD.apply, 20);
   assert.equal(FEATURES.tracker.limits.free, 10);
   assert.equal(FEATURES.saved_search_alerts.limits.free, 1);
   assert.equal(FEATURES.weekly_digest.limits.free, null);

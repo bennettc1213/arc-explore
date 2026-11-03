@@ -27,7 +27,7 @@ Measured from the repository on 2026-11-03, not from production.
 | Weekly digest | Pro only (SQL `plan in ('edge','apply')`) | |
 | Fit (v1 path) | Free bucketed label **also dropped work-authorization and location conflicts** | |
 | Stripe | Checkout, portal and signed webhook exist behind `MARKET_READY_BILLING`. `tiers.ts` and `schema.ts` comments said "no Stripe exists" | |
-| Stripe price | **Local test price `STRIPE_PRICE_APPLY_MONTHLY` = $20.00/month** (read-only check, test mode), page shows $5.99. No coupons exist. A second env var, `STRIPE_PRICE_INSTELLA_PRO_MONTHLY`, appears twice in `.env` and names a price that does not exist; no code reads it | |
+| Stripe price | **Local test price `STRIPE_PRICE_APPLY_MONTHLY` = $20.00/month** (read-only check, test mode), page showed $5.99 (the Pro price was changed to $20.00 the same day, which this test price now matches). No coupons exist. A second env var, `STRIPE_PRICE_INSTELLA_PRO_MONTHLY`, appears twice in `.env` and names a price that does not exist; no code reads it | |
 | Student discount | Pricing page showed "50% off" for a *pending* claim; checkout never applied any discount | |
 | Webhook | `checkout.session.completed` granted Pro without checking `payment_status`; subscription events were applied in arrival order | |
 | Build | `lib/stripe.ts` constructed the client at import and threw without `STRIPE_SECRET_KEY`, failing `next build` page-data collection | |
@@ -49,11 +49,11 @@ Official pages only. "Unknown" means the official source did not state it or cou
 | Teal | unknown (pricing page returned 403) | unknown | https://www.tealhq.com/pricing |
 | Bold.org | unknown (site returned 429 to every fetch) | unknown | https://bold.org/ |
 
-**What this says about positioning.** Instela is not the most generous on every axis and should not say it is. Simplify and Huntr give unlimited autofill free; Huntr tracks 100 jobs free against our 10 active. Fastweb is a free scholarship search with no paid tier at all. Instela's specific combination is: internships *and* scholarships in one ranked feed, every safety and eligibility fact on Free, a fit explanation that admits what it does not know, and preparation tools that run without uploading essays or profile text — at $5.99/month, which is below every published paid price above. Material gaps worth a later experiment: Free tracking capacity (Huntr's 100), and free autofill (Simplify, Huntr), which Instela cannot offer until the extension is verified.
+**What this says about positioning.** Instela is not the most generous on every axis and should not say it is. Simplify and Huntr give unlimited autofill free; Huntr tracks 100 jobs free against our 10 active. Fastweb is a free scholarship search with no paid tier at all. Instela's specific combination is: internships *and* scholarships in one ranked feed, every safety and eligibility fact on Free, a fit explanation that admits what it does not know, and preparation tools that run without uploading essays or profile text — at $20/month: the same as ScholarshipOwl's monthly plan, below Kickresume ($24), Simplify+ ($39.99) and Huntr Pro ($40), and with no weekly plan. Material gaps worth a later experiment: Free tracking capacity (Huntr's 100), and free autofill (Simplify, Huntr), which Instela cannot offer until the extension is verified.
 
 ## 3. The plans
 
-| | Free | Pro ($5.99/month) |
+| | Free | Pro ($20/month) |
 |---|---|---|
 | Search, filter, open every listing | unlimited | unlimited |
 | Source links, verification and freshness, eligibility and work-authorization facts, scam/lottery/marketing flags | always | always |
@@ -117,8 +117,8 @@ Only a move **into** the active set can be refused: a new save, or reopening a f
 
 ## 7. Billing
 
-- `getCheckoutQuote` reads the configured Stripe price (read-only) and checkout is offered and accepted **only** if it is $5.99, USD, monthly and active. The current local test price ($20.00) therefore disables checkout locally, and the page says checkout is not available rather than showing a price it would not charge.
-- Student price: shown as applied only for a **current** verified enrollment claim **and** a valid coupon in `STRIPE_COUPON_STUDENT`, at the amount computed from the coupon (a 50% coupon on $5.99 computes to $2.99, with Stripe's half-cent rounding taken as rounding the discount up; **confirm with one test-mode checkout before relying on it**). A pending claim shows "may be available", never a price. No coupon exists today, so no student price is offered.
+- `getCheckoutQuote` reads the configured Stripe price (read-only) and checkout is offered and accepted **only** if it equals the displayed Pro price ($20.00), USD, monthly and active. The local test price ($20.00) matches; production has no `STRIPE_PRICE_APPLY_MONTHLY`, so checkout there stays closed.
+- Student price: shown as applied only for a **current** verified enrollment claim **and** a valid coupon in `STRIPE_COUPON_STUDENT`, at the amount computed from the coupon (a 50% coupon on $20.00 is exactly $10.00). A pending claim shows "may be available", never a price. No coupon exists today, so no student price is offered.
 - Pro is granted only by the signed webhook: `checkout.session.completed` now requires `payment_status` paid (or no payment required), and subscription events re-read the subscription from Stripe so a late "active" cannot override a cancellation. The `?checkout=success` redirect grants nothing.
 - Cancellation and the billing portal are unchanged.
 
@@ -129,7 +129,7 @@ Local or staging only; none of this has been run against the shared database.
 1. `npm run check`.
 2. On a staging database (FIXES.md §7: none exists yet — create one first): `npm run db:migrate`, which applies `0032_recurring_allowances`. It creates `feature_grants` and `tool_request_log` with RLS, adds `saved_searches.free_alert_picked_at`, and backfills grants from `cover_letters` and from `feature_usage.last_key`.
 3. Verify: a Free account's existing cover letters reopen and regenerate without a wall; a resume critiqued in the last 30 days replays; an older one does not block a new revision.
-4. Set `STRIPE_PRICE_APPLY_MONTHLY` to a $5.99 monthly USD price. Optionally create a 50% `forever` coupon and set `STRIPE_COUPON_STUDENT`. Run one test-mode checkout per path.
+4. Set `STRIPE_PRICE_APPLY_MONTHLY` to a $20.00 monthly USD price. Optionally create a 50% `forever` coupon and set `STRIPE_COUPON_STUDENT`. Run one test-mode checkout per path.
 5. Deploy the code and the migration together. Code without 0032 fails on every page that reads `feature_grants` (profile, GitHub, LinkedIn, essay, cover letters).
 
 **Rollback:** redeploy the previous commit. 0032 is additive; the old code never reads the new tables or column and `feature_usage` was left intact. Grants written meanwhile are simply ignored. Dropping the new objects is optional.
@@ -156,6 +156,6 @@ No benchmark conversion rate is assumed. With 10 profiles, all test accounts, no
 ## 10. Open operational dependencies
 
 - Migration 0032 needs a staging database to rehearse on.
-- Stripe price must be $5.99 for checkout to open; the student coupon does not exist.
+- Stripe price must be $20.00 for checkout to open; the student coupon does not exist.
 - Email sender (`REMINDER_FROM_EMAIL`) for any delivery.
 - The signed-in flows above have not been driven by a human session; see FIXES.md.

@@ -51,7 +51,7 @@ export const TIER_LABELS: Record<TierId, string> = {
  */
 export const TIER_PRICE_USD: Record<TierId, number> = {
   free: 0,
-  apply: 5.99,
+  apply: 20,
 };
 
 export const TIER_TAGLINES: Record<TierId, string> = {

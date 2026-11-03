@@ -33,7 +33,7 @@ export const dynamic = "force-dynamic";
  * CHECKOUT IS SHOWN ONLY WHEN IT WOULD CHARGE WHAT THIS PAGE SAYS. Billing
  * runs through Stripe behind `MARKET_READY_BILLING`; `getCheckoutQuote` reads
  * the configured price and the page offers checkout only when it matches the
- * displayed $5.99. A student price is shown as available only for a current
+ * displayed Pro price. A student price is shown as available only for a current
  * verified claim AND a configured coupon, at the exact amount Stripe charges.
  *
  * Current benefits and unfinished work are separate lists. Anything not built,

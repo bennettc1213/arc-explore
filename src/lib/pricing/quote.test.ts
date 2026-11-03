@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { DISPLAYED_PRO_CENTS, reconcileQuote, type StripePriceFacts } from "./quote";
 
 const price = (over: Partial<StripePriceFacts> = {}): StripePriceFacts => ({
-  unitAmountCents: 599,
+  unitAmountCents: 2000,
   currency: "usd",
   interval: "month",
   intervalCount: 1,
@@ -12,8 +12,8 @@ const price = (over: Partial<StripePriceFacts> = {}): StripePriceFacts => ({
   ...over,
 });
 
-test("the displayed Pro price is $5.99", () => {
-  assert.equal(DISPLAYED_PRO_CENTS, 599);
+test("the displayed Pro price is $20.00", () => {
+  assert.equal(DISPLAYED_PRO_CENTS, 2000);
 });
 
 test("a configured price matching the page allows checkout", () => {
@@ -23,10 +23,10 @@ test("a configured price matching the page allows checkout", () => {
 });
 
 test("a mismatched Stripe price refuses checkout and says why", () => {
-  // The locally configured test price on 2026-11-03 was $20.00/month.
-  const q = reconcileQuote(price({ unitAmountCents: 2000 }), null);
+  // The old $5.99 price, left configured after the change to $20.
+  const q = reconcileQuote(price({ unitAmountCents: 599 }), null);
   assert.equal(q.ok, false);
-  assert.match(!q.ok ? q.reason : "", /\$20\.00/);
+  assert.match(!q.ok ? q.reason : "", /\$5\.99/);
 });
 
 test("wrong interval, currency or an archived price also refuse", () => {
@@ -36,10 +36,10 @@ test("wrong interval, currency or an archived price also refuse", () => {
   assert.equal(reconcileQuote(null, null).ok, false);
 });
 
-test("the student price is the exact amount Stripe charges, not a rounded $3.00", () => {
+test("the student price is the exact amount Stripe charges, computed from the coupon", () => {
   const q = reconcileQuote(price(), { percentOff: 50, amountOffCents: null, currency: null, valid: true, duration: "forever" });
-  // 50% of 599 is 299.5; Stripe rounds the discount to 300, charging 299.
-  assert.equal(q.ok && q.studentCents, 299);
+  // 50% of 2000 is exactly 1000 — no half-cent rounding to guess at.
+  assert.equal(q.ok && q.studentCents, 1000);
   assert.equal(q.ok && q.studentRecurring, true);
 });
 
