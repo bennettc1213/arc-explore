@@ -6,6 +6,7 @@ import { allowanceWords } from "@/lib/pricing/describe";
 import { TIER_LABELS } from "@/lib/pricing/tiers";
 import { FEED_PATH } from "@/lib/routes";
 import { MatchPreview } from "./MatchPreview";
+import { ScoutMap } from "@/components/scout/ScoutMap";
 
 export async function LiveMatchPreview() {
   const lanes = await getLandingPreview().catch(() => null);
@@ -31,6 +32,27 @@ export function FreePlan({ signedIn }: { signedIn: boolean }) {
 
 function timestamp(value: string) {
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Denver", timeZoneName: "short" }).format(new Date(value));
+}
+
+/**
+ * The headline count is a floor of what `getSourceCoverage` measured, rounded
+ * down to the nearest 50 so it never overstates, and the same figure the
+ * evidence section below breaks down. Registry mode counts each source once;
+ * observed mode adds boards to scholarship adapters, which never overlap.
+ */
+export async function SourceNetwork() {
+  const coverage = await getSourceCoverage().catch(() => null);
+  const total = coverage ? coverage.mode === "registry" ? coverage.activeSources : coverage.employerBoards + coverage.scholarshipSources : 0;
+  const count = total >= 100 ? `${(Math.floor(total / 50) * 50).toLocaleString("en-US")}+` : null;
+  return <section className="landing-network landing-block" aria-labelledby="network-title">
+    <div className="landing-network-copy">
+      <div className="eyebrow">Always looking</div>
+      <h2 id="network-title">{count ? <>Connected to <span>{count} sources</span>,</> : <>Connected to <span>hundreds of sources</span>,</>} constantly finding new opportunities.</h2>
+      <p>We check employers&rsquo; job boards and sponsors&rsquo; scholarship pages on a schedule. Every new listing we find goes straight into Scout, so your next search starts from what is open now.</p>
+      <Link href="/scout" className="landing-text-link">Start a Scout<Icon name="arrow" size={16} /></Link>
+    </div>
+    <ScoutMap stream />
+  </section>;
 }
 
 export async function SourceProof() {
