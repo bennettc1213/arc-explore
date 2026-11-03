@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { getLandingPreview, getSourceCoverage } from "@/lib/landing-data";
-import { FREE_DAILY_RESULTS } from "@/lib/feed-trim";
-import { FEATURES, TIER_LABELS } from "@/lib/pricing/tiers";
+import { FREE_RANKED_RESULTS } from "@/lib/feed-trim";
+import { allowanceWords } from "@/lib/pricing/describe";
+import { TIER_LABELS } from "@/lib/pricing/tiers";
 import { FEED_PATH } from "@/lib/routes";
 import { MatchPreview } from "./MatchPreview";
 
@@ -17,13 +18,13 @@ export function PreviewSkeleton() {
 }
 
 export function FreePlan({ signedIn }: { signedIn: boolean }) {
-  const trackerLimit = FEATURES.tracker.limits.free;
   return <section className="landing-free landing-block" aria-labelledby="free-title">
     <div className="free-intro"><div className="eyebrow">Room to get started</div><h2 id="free-title">Your ambition.<br />A free place to start.</h2><p>Find possibilities, check the details, and keep your next steps together.</p><Link href={signedIn ? "/tracker" : "/login"} className="btn btn-primary">{signedIn ? "Open your tracker" : "Create your free account"}<Icon name="arrow" size={17} /></Link><span className="free-no-card">No credit card required.</span></div>
     <div className="free-inclusions"><div className="free-plan-label"><span>Included in the free plan</span><strong>$0<span> / to get started</span></strong></div><ul>
       <li><Icon name="search" size={20} /><div><h3>Search. Open. Go to the source.</h3><p>Search listings and open their details without signing up. Follow the original application link when you’re ready.</p></div></li>
-      <li><Icon name="explore" size={20} /><div><h3>{FREE_DAILY_RESULTS} ranked results to explore</h3><p>Add your background for more relevant results. Free matching shows fit labels; full numerical scores and detailed breakdowns are on {TIER_LABELS.apply}.</p></div></li>
-      <li><Icon name="tracker" size={20} /><div><h3>{trackerLimit === null ? "Keep your applications together" : `Track up to ${trackerLimit} applications`}</h3><p>Create an account to save opportunities and follow their progress from saved to applied to decision.</p></div></li>
+      <li><Icon name="explore" size={20} /><div><h3>Your top {FREE_RANKED_RESULTS} ranked matches for every search</h3><p>Change the search or filters and you get that search&rsquo;s top {FREE_RANKED_RESULTS}. Free shows fit labels with their confidence and every eligibility warning; numerical scores and detailed guidance are on {TIER_LABELS.apply}.</p></div></li>
+      <li><Icon name="tracker" size={20} /><div><h3>Track {allowanceWords("tracker", "free")}</h3><p>Follow each one from saved to applied to decision. Finished applications and your history never count against the limit.</p></div></li>
+      <li><Icon name="resume" size={20} /><div><h3>A first draft of everything</h3><p>A resume critique, a cover letter, a GitHub audit, a LinkedIn session and an essay review, each {allowanceWords("cover_letter", "free")}. Plus a weekly digest and deadline reminders.</p></div></li>
     </ul><Link href="/pricing" className="landing-text-link">See all features and limits<Icon name="arrow" size={16} /></Link></div>
   </section>;
 }
@@ -47,7 +48,7 @@ export async function SourceProof() {
 export function LandingFAQ() {
   const questions = [
     { question: "Can I explore without an account?", answer: <>Yes. Search opportunities, read listing details, and follow the original application link without signing up. Create a free account when you want to save listings and track applications.</> },
-    { question: "What can I do for free?", answer: <>The free plan includes searching and opening listings, {FREE_DAILY_RESULTS} ranked results, and fit labels. An account lets you track {FEATURES.tracker.limits.free === null ? "your" : `up to ${FEATURES.tracker.limits.free}`} applications. Some application tools have free allowances; full limits and availability are on the <Link href="/pricing">pricing page</Link>.</> },
+    { question: "What can I do for free?", answer: <>Search and open every listing with all its warnings and source facts, see your top {FREE_RANKED_RESULTS} ranked matches for each search with fit labels, track {allowanceWords("tracker", "free")}, get deadline reminders and a weekly digest, keep one saved search with weekly alerts, and use each preparation tool once every 30 days. Full limits are on the <Link href="/pricing">pricing page</Link>.</> },
     { question: "Where do the opportunities come from?", answer: <>We read employer job boards and scholarship pages published by sponsors, universities, and foundations. Each listing links to its source. Check its timestamp to see when it was last observed; different sources are checked on different schedules. <Link href="/how-we-verify">See how we verify listings.</Link></> },
     { question: "What does a fit score actually mean?", answer: <>It compares the background you provide with information available in the listing. Unknown details stay unknown, and eligibility requirements are checked separately. A fit label or score is a guide for what to review next, never a prediction of winning an award or getting hired.</> },
     { question: "Does Instela submit applications for me?", answer: <>You apply on the employer’s or sponsor’s own site and review everything before submitting. The internship autofill extension is a {TIER_LABELS.apply} feature in beta, still being tested end to end; it helps fill fields and never presses submit. Scholarship autofill is not available yet.</> },

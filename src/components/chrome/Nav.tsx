@@ -91,8 +91,8 @@ export async function Nav() {
               mode grants a tier nobody paid for, so a screenshot taken with it
               on is not a picture of the product.
 
-              It reads "dev mode · Apply plan", not "dev · apply" — the tiers
-              are named See it / Edge / Apply, and a bare lowercase "apply"
+              It reads "dev mode · Pro plan", not "dev · apply" — the paid
+              plan's internal id is "apply", and a bare lowercase "apply"
               beside a row of nav links reads as a verb, i.e. as a button that
               submits an application. The word "plan" is what stops it.
 

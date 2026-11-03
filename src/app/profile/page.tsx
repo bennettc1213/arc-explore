@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { recordEvent } from "@/lib/analytics/record";
 
 import { BackLink } from "@/components/BackLink";
 import { UpgradeWall } from "@/components/pricing/UpgradeGate";
 import { requireUser } from "@/lib/auth";
 import { getCompletionCorpus } from "@/lib/feed";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { consumeUsage } from "@/lib/pricing/usage";
+import { withAllowance } from "@/lib/pricing/grants";
+import { resumeRevisionKey } from "@/lib/resume/revision";
 import { profileCompletion } from "@/lib/profile/completion";
 import { routePresence } from "@/lib/profile/routing";
 import { getEmailPrefs, getLatestResume, getProfile } from "@/lib/profile/store";
@@ -53,21 +55,24 @@ export default async function ProfilePage({
   const competitiveness = await resumeCompetitiveness(resumeSkills);
 
   const tier = await getUserTier(user.id);
-  // Keyed on the resume id, not consumed on every render: re-opening /profile
-  // to look at the same resume's critique again is not a second "run" of the
-  // free tier's one — only critiquing a genuinely different resume is. See
-  // src/lib/pricing/usage.ts.
-  const critiqueAccess = resume
-    ? await consumeUsage(user.id, tier, "resume_critique", resume.id)
+  // One critique per distinct resume REVISION per 30-day allowance period.
+  // Keyed on the content of the parse the critique reads (resumeRevisionKey),
+  // so re-opening /profile, or changing unrelated profile fields, replays the
+  // earned critique for free; editing the resume itself is a new revision.
+  // The resume id is a replay alias for critiques recorded before 0032.
+  // Pure function over the stored parse — no model call — and computed only
+  // when the allowance admits it: a locked critique renders a wall, never the
+  // findings underneath it.
+  const parsed = resume ? coerceParsedResume(resume.parsed) : null;
+  const critiqueRun = resume && parsed
+    ? await withAllowance(
+        { userId: user.id, tier, feature: "resume_critique", keys: [resumeRevisionKey(parsed), resume.id] },
+        async () => critiqueResume(parsed),
+      )
     : null;
-  // Pure function over the stored parse — no model call, no query, so it costs
-  // nothing to recompute and always reflects the current checks. Only
-  // computed at all when the gate says this viewer may see it: a locked
-  // critique renders an upgrade wall, never the findings underneath it.
-  const critique =
-    resume && critiqueAccess?.access.usable
-      ? critiqueResume(coerceParsedResume(resume.parsed))
-      : null;
+  const critique = critiqueRun?.value ?? null;
+  const critiqueAccess = critiqueRun?.begin ?? null;
+  if (critiqueAccess?.outcome === "blocked") void recordEvent("upgrade_prompt_viewed", { feature: "resume_critique" });
   const routing = routePresence(profile, resumeSkills);
   const completion = profileCompletion(profile, resumeSkills, corpus);
 
@@ -182,11 +187,16 @@ export default async function ProfilePage({
       />
 
       {critique && <ResumeCritique critique={critique} />}
-      {resume && critiqueAccess && !critiqueAccess.access.usable && (
+      {resume && critiqueAccess && critique === null && (
         <UpgradeWall
           feature="resume_critique"
           access={critiqueAccess.access}
-          reasonNote="you've used your free resume critique"
+          renewsAt={critiqueAccess.renewsAt}
+          reasonNote={
+            critiqueAccess.outcome === "in_flight"
+              ? "your critique is already being prepared — reload in a moment"
+              : "this resume revision has not been critiqued, and this period's free critique is used"
+          }
         />
       )}
 

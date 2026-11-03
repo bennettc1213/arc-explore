@@ -16,7 +16,7 @@ import { db, closeDb } from "@/db/client";
 import { postings, postingSources, profiles } from "@/db/schema";
 import { getFeed } from "@/lib/feed";
 import { toScoreProfile } from "@/lib/profile/types";
-import { FREE_DAILY_RESULTS } from "@/lib/feed-trim";
+import { FREE_RANKED_RESULTS } from "@/lib/feed-trim";
 
 const OUT = "docs/instela-market-ready/gates/phase-1-samples.md";
 
@@ -323,7 +323,7 @@ ${profileRowsMd}
 
 ## 4. Default top-10 fit labels with an empty profile
 
-Free-limit cap under test: ${FREE_DAILY_RESULTS}.
+Free-limit cap under test: ${FREE_RANKED_RESULTS}.
 
 | # | Kind | Title | Fit score | Known/Total dimensions | Blocked |
 |---|---|---|---|---|---|---|---|

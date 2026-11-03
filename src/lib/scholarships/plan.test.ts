@@ -14,7 +14,7 @@ import {
   parseExploreView,
   parseFundingGoal,
   selectRows,
-  SIGNED_OUT_CARD_CAP,
+  PLAN_FREE_CARD_CAP,
   type PlanInput,
   type ScholarshipCardData,
 } from "./plan";
@@ -208,22 +208,25 @@ function card(id: string): ScholarshipCardData {
 }
 
 describe("buildPlanPayload — server-side locking", () => {
-  // 20 big swings, all closing this week too, so the same ids recur across rows.
+  // 20 big swings, all closing this week too, so the same ids recur across
+  // rows. The view shows at most NEXT_MOVES_COUNT + ROW_SIZE per row, so the
+  // locking mechanism is exercised with a cap below what this fixture reveals.
+  const CAP = 5;
   const inputs = Array.from({ length: 20 }, (_, i) =>
     input(`p${i}`, { amount: 10_000 + i, effort: effort(0, 0), daysUntilDeadline: 3 + (i % 5) }),
   );
   const cards = new Map(inputs.map((i) => [i.id, card(i.id)]));
 
-  test("signed out: at most the cap of distinct real cards, everything else locked", () => {
-    const payload = buildPlanPayload(inputs, cards, { cap: SIGNED_OUT_CARD_CAP });
+  test("Free or signed out: at most the cap of distinct real cards, everything else locked", () => {
+    const payload = buildPlanPayload(inputs, cards, { cap: CAP });
     const slots = [...payload.nextMoves, ...payload.rows.flatMap((r) => r.slots)];
     const revealed = new Set(slots.flatMap((s) => (s.locked ? [] : [s.card.id])));
-    assert.ok(revealed.size <= SIGNED_OUT_CARD_CAP);
+    assert.ok(revealed.size <= CAP);
     assert.ok(payload.lockedCount > 0);
   });
 
   test("locked content never appears anywhere in the serialised response", () => {
-    const payload = buildPlanPayload(inputs, cards, { cap: SIGNED_OUT_CARD_CAP });
+    const payload = buildPlanPayload(inputs, cards, { cap: CAP });
     const slots = [...payload.nextMoves, ...payload.rows.flatMap((r) => r.slots)];
     const revealed = new Set(slots.flatMap((s) => (s.locked ? [] : [s.card.id])));
     const json = JSON.stringify(payload);
@@ -319,4 +322,9 @@ describe("parseExploreView", () => {
     assert.equal(parseExploreView("map"), "plan");
     assert.equal(parseExploreView("garbage"), "plan");
   });
+});
+
+test("the Funding Plan's Free cap is the list's ranked depth", async () => {
+  const { FREE_RANKED_RESULTS } = await import("@/lib/feed-trim");
+  assert.equal(PLAN_FREE_CARD_CAP, FREE_RANKED_RESULTS);
 });

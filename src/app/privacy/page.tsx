@@ -89,6 +89,14 @@ export default function PrivacyPage() {
             why="the tracker"
           />
           <Row
+            what="Which free tool allowances you have used, and when"
+            why="so a Free allowance renews 30 days after it starts and an earned result can be reopened without charging again. For each use we keep the tool, the time, and what it was used on: a fingerprint of the resume revision (a hash, not the text), the GitHub username audited, the listing a cover letter is for, or simply that a LinkedIn or essay session was started. Never essay or profile text"
+          />
+          <Row
+            what="When you last asked for an AI cover-letter generation"
+            why="a timestamp per request, kept for an hour's rate limit (30 an hour on every plan). No content"
+          />
+          <Row
             what="Which deadline reminders we have already sent you"
             why="without it the daily job would mail you about the same award every morning"
           />
@@ -110,7 +118,7 @@ export default function PrivacyPage() {
       <Section title="what we count, and what we deliberately do not">
         <p style={{ marginBottom: 12 }}>
           There is no analytics script on any page here — no Google, no PostHog, no Vercel
-          Analytics, nothing that phones a third party when you load something. We count three
+          Analytics, nothing that phones a third party when you load something. We count a few
           things, into a table in our own database, and that table holds{" "}
           <em>no user id, no IP address and no browser fingerprint</em>. It cannot be joined back
           to a person, because there is nothing in it to join on.
@@ -128,14 +136,19 @@ export default function PrivacyPage() {
             what="That a GitHub audit ran"
             why="with the score it produced. Not the username"
           />
+          <Row
+            what="That an upgrade prompt was shown, or a checkout was opened"
+            why="with which feature it was about. Not who saw it"
+          />
         </ul>
         <p style={{ marginTop: 12 }}>
           Everything else we report — signups, applications tracked, resumes, cover letters — is
           counted from the tables that already exist because a feature needed them, rather than
-          from a second log of what people did. And the LinkedIn checker and the essay reviewer
-          are counted <em>nowhere</em>: both run entirely in your browser, both pages say so, and
-          adding even a content-free usage ping would put a network call on a page that currently
-          makes none. We would rather not know how often they are used.
+          from a second log of what people did. The LinkedIn checker and the essay reviewer still
+          run entirely in your browser: the text you paste is never sent anywhere. On the Free
+          plan, opening one of them makes a single request when you press &ldquo;start&rdquo;,
+          which tells us only that a session started, so the allowance can be kept. On Pro
+          they make no request at all.
         </p>
       </Section>
 

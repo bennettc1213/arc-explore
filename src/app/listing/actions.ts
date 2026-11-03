@@ -10,7 +10,8 @@ import {
   generateDraft,
   regenerateParagraph,
 } from "@/lib/cover-letter/generate";
-import { getCoverLetter, listCoverLetters, saveCoverLetter } from "@/lib/cover-letter/store";
+import { getCoverLetter, saveCoverLetter } from "@/lib/cover-letter/store";
+import { recordEvent } from "@/lib/analytics/record";
 import {
   CoverLetterValidationError,
   LETTER_ROLES,
@@ -20,7 +21,8 @@ import {
 } from "@/lib/cover-letter/types";
 import { getPosting, type FeedItem } from "@/lib/feed";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { evaluateFeature } from "@/lib/pricing/tiers";
+import { formatRenewal } from "@/lib/pricing/allowance";
+import { AI_REQUESTS_PER_HOUR, throttleAiRequest, withAllowance } from "@/lib/pricing/grants";
 import { ensureProfile, getLatestResume, getProfile } from "@/lib/profile/store";
 import { type UserProfile } from "@/lib/profile/types";
 import { toScoringProfile as toScoreProfile } from "@/lib/score/v2/profile";
@@ -69,6 +71,20 @@ async function loadGrounding(userId: string, postingId: string): Promise<Groundi
   };
 }
 
+/**
+ * The operational limit on AI calls, on every plan. Unlimited Pro drafts are
+ * still bounded per hour so one account cannot run up provider cost without
+ * limit; the number is disclosed on the pricing page. Null means proceed.
+ */
+async function throttleMessage(userId: string): Promise<string | null> {
+  const result = await throttleAiRequest(userId, "cover_letter");
+  if (result === "duplicate") return "that request is already being written — give it a moment";
+  if (result === "hourly_limit") {
+    return `you've reached ${AI_REQUESTS_PER_HOUR} letter generations in the last hour — this protects the service on every plan; try again shortly`;
+  }
+  return null;
+}
+
 function contextOf(g: Grounding) {
   return buildCoverLetterContext({ profile: g.profile, parsed: g.parsed, posting: g.item });
 }
@@ -90,40 +106,50 @@ export async function generateCoverLetterAction(
     return { status: "error", message: "upload a resume on your profile first — every claim in the letter must come from it" };
   }
 
-  // Quantity cap, not fidelity — the other of the roadmap's two gating
-  // patterns. Only a NEW posting's draft counts against it: regenerating a
-  // letter the student already has is not a second draft, it is the same
-  // one. `listCoverLetters` reads the real table rather than a usage
-  // counter, because a cover letter already has exactly one row per unit —
-  // counting it twice in a separate table would be the second, driftable
-  // copy `USAGE_FEATURE_KEYS`'s own comment warns against.
+  // One draft for a DISTINCT opportunity per 30-day allowance period on Free.
+  // Regenerating a letter the student already has is revising earned work,
+  // not a new use: an existing draft, or an earlier grant for this posting
+  // (e.g. a deleted and re-drafted letter), replays for free. Usage lives in
+  // feature_grants, not in a count of cover_letters rows, because rows can be
+  // edited and deleted. The unit is reserved before the model call and given
+  // back if the provider fails.
   const existingLetter = await getCoverLetter(user.id, postingId);
-  if (!existingLetter) {
-    const tier = await getUserTier(user.id);
-    const draftCount = (await listCoverLetters(user.id)).length;
-    const access = evaluateFeature(tier, "cover_letter", draftCount);
-    if (!access.usable) {
-      return {
-        status: "error",
-        message:
-          access.reason === "limit_reached"
-            ? `you've used your free cover letter draft — upgrade to ${PAID} for unlimited drafts`
-            : `cover letter drafts require the ${PAID} plan`,
-      };
-    }
-  }
+  const tier = await getUserTier(user.id);
+
+  const throttled = await throttleMessage(user.id);
+  if (throttled) return { status: "error", message: throttled };
 
   await ensureProfile(user.id);
 
-  let draft: CoverLetterDraft;
+  let draft: CoverLetterDraft | null;
   try {
-    draft = await generateDraft(contextOf(grounding));
+    if (existingLetter) {
+      draft = await generateDraft(contextOf(grounding));
+    } else {
+      const run = await withAllowance(
+        { userId: user.id, tier, feature: "cover_letter", keys: [postingId] },
+        () => generateDraft(contextOf(grounding)),
+      );
+      if (run.begin.outcome === "in_flight") {
+        return { status: "error", message: "this letter is already being written — give it a moment" };
+      }
+      if (run.begin.outcome === "blocked") {
+        void recordEvent("upgrade_prompt_viewed", { feature: "cover_letter" });
+        const renews = run.begin.renewsAt ? ` Your next free draft is available ${formatRenewal(run.begin.renewsAt)}.` : "";
+        return {
+          status: "error",
+          message: `this period's free cover letter was used on another opportunity — your existing drafts stay editable.${renews} ${PAID} drafts without a limit.`,
+        };
+      }
+      draft = run.value;
+    }
   } catch (err) {
     if (err instanceof CoverLetterGenerateError) {
       return { status: "error", message: err.message };
     }
     throw err;
   }
+  if (!draft) return { status: "error", message: "the draft could not be generated" };
 
   await saveCoverLetter(user.id, postingId, draft);
   revalidatePath(`/listing/${postingId}`);
@@ -187,6 +213,11 @@ export async function regenerateParagraphAction(
   }
   const target = existing.paragraphs.find((p) => p.id === paragraphId);
   if (!target) return { status: "error", message: "that paragraph no longer exists" };
+
+  // Rewriting one paragraph of an earned draft never uses the allowance, on
+  // any plan — only the hourly AI limit applies.
+  const throttled = await throttleMessage(user.id);
+  if (throttled) return { status: "error", message: throttled };
 
   let rewritten;
   try {

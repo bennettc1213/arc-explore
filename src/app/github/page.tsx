@@ -9,7 +9,7 @@ import { fetchGitHubSnapshot } from "@/lib/github/client";
 import { generateProfileReadme, type GeneratedReadme } from "@/lib/github/readme";
 import { GitHubFetchError, parseGitHubUsername, type GhFetchFailure } from "@/lib/github/types";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { consumeUsage, type ConsumeResult } from "@/lib/pricing/usage";
+import { withAllowance, type BeginResult } from "@/lib/pricing/grants";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { coerceParsedResume } from "@/lib/resume/types";
 
@@ -87,60 +87,58 @@ export default async function GitHubPage({
   let audit: GitHubAudit | null = null;
   let readme: GeneratedReadme | null = null;
   let failure: GhFetchFailure | null = null;
-  let usage: ConsumeResult | null = null;
+  let usage: BeginResult | null = null;
 
   if (typed) {
     if (!username) {
       failure = { kind: "invalid_username" };
     } else {
-      // Run-capped for a signed-in free viewer, keyed on the username: two
-      // audits of the SAME account are one use, not two — see
-      // src/lib/pricing/usage.ts. Signed-out visitors are deliberately left
-      // unmetered here, which is a real, documented gap (FIXES.md): there is
-      // no account to attach a quota to, and this page is open signed-out on
-      // purpose (everything it reads is already public — see the module
-      // comment above). Metering by IP or fingerprint was ruled out as its
-      // own privacy problem, not attempted quietly.
-      // Through `getUserTier` on both branches, never a literal "free" — see
-      // the note in `app/page.tsx`: the shortcut reads as equivalent and
-      // silently sheds the DEV_TIER override the function carries.
+      // One GitHub workflow (audit + README builder) per account per 30-day
+      // allowance period for a signed-in Free viewer, keyed on the username:
+      // re-opening the same account's audit is a replay, never a second use.
+      // The unit is reserved before the fetch and released if GitHub fails, so
+      // a rate limit or a typo never costs the allowance. Signed-out visitors
+      // stay unmetered — a documented gap (FIXES.md): there is no account to
+      // attach a quota to, and fingerprinting was ruled out on privacy grounds.
       const tier = await getUserTier(user?.id);
-      usage = user ? await consumeUsage(user.id, tier, "github_tools", username) : null;
-
-      if (user && usage && !usage.access.usable) {
-        failure = null;
-      } else {
-        try {
-          const snapshot = await fetchGitHubSnapshot(username);
-          audit = auditGitHub(snapshot);
-
-          // Only a completed fetch counts. A typo costs zero GitHub requests and
-          // should cost zero events too, or the number stops meaning "audits run"
-          // and starts meaning "times the form was submitted". The username is
-          // not recorded — the count is the metric, not who was looked up.
-          await recordEvent("github_audited", { score: audit.score });
-
-          // Signed in, the README is filled from the profile and resume as well.
-          // Signed out it is thinner, not broken — every gap is a visible slot.
-          const storedResume = user ? await getLatestResume(user.id) : null;
-
-          readme = generateProfileReadme({
-            snapshot,
-            profile: storedProfile,
-            resume: storedResume ? coerceParsedResume(storedResume.parsed) : null,
-            accountEmail: user?.email ?? null,
-          });
-        } catch (err) {
-          failure =
-            err instanceof GitHubFetchError
-              ? err.failure
-              : { kind: "network", detail: err instanceof Error ? err.message : "request failed" };
+      const run = async () => {
+        const snapshot = await fetchGitHubSnapshot(username);
+        const result = auditGitHub(snapshot);
+        // Only a completed fetch counts. The username is not recorded.
+        await recordEvent("github_audited", { score: result.score });
+        // Signed in, the README is filled from the profile and resume as well.
+        // Signed out it is thinner, not broken — every gap is a visible slot.
+        const storedResume = user ? await getLatestResume(user.id) : null;
+        const built = generateProfileReadme({
+          snapshot,
+          profile: storedProfile,
+          resume: storedResume ? coerceParsedResume(storedResume.parsed) : null,
+          accountEmail: user?.email ?? null,
+        });
+        return { result, built };
+      };
+      try {
+        if (user) {
+          const metered = await withAllowance(
+            { userId: user.id, tier, feature: "github_tools", keys: [username.toLowerCase(), username] },
+            run,
+          );
+          usage = metered.begin;
+          if (metered.value) ({ result: audit, built: readme } = metered.value);
+        } else {
+          ({ result: audit, built: readme } = await run());
         }
+      } catch (err) {
+        failure =
+          err instanceof GitHubFetchError
+            ? err.failure
+            : { kind: "network", detail: err instanceof Error ? err.message : "request failed" };
       }
     }
   }
 
-  const locked = Boolean(user && usage && !usage.access.usable);
+  const locked = Boolean(user && usage && (usage.outcome === "blocked" || usage.outcome === "in_flight"));
+  if (usage?.outcome === "blocked") void recordEvent("upgrade_prompt_viewed", { feature: "github_tools" });
 
   return (
     <main className="wrap tool-page" style={{ paddingBlock: "48px 96px" }}>
@@ -204,7 +202,12 @@ export default async function GitHubPage({
         <UpgradeWall
           feature="github_tools"
           access={usage.access}
-          reasonNote="you've used your free GitHub audit"
+          renewsAt={usage.renewsAt}
+          reasonNote={
+            usage.outcome === "in_flight"
+              ? "this audit is already running — reload in a moment"
+              : "this period's free GitHub audit was used on another account"
+          }
         />
       )}
 

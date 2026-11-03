@@ -10,15 +10,17 @@
 import { POSTING_KINDS, type PostingKind } from "@/db/schema";
 
 /**
- * How many ranked matches the free plan shows.
+ * How many ranked matches the free plan shows, per search/filter combination.
  *
- * Ten is the public promise across the homepage, pricing, portal, onboarding,
- * and emails — and every one of those reads this constant rather than a
- * number of its own. Set to ten by the owner on 2026-11-02 (it was twenty); the
- * ranking now orders a student's results by relevance, so ten well-matched rows
- * demonstrate that it works, and the full list stays a clear next step.
+ * A RANKED-DEPTH LIMIT, NOT A VIEW COUNTER. Free sees the top twenty of
+ * whatever it searched for; changing the filters ranks a different set, and
+ * opening listings is never counted. Nothing resets at midnight and no
+ * number of new rows per day is promised: the set moves when ingestion adds
+ * rows and when timing changes, which is what the copy must say. Every
+ * surface (list, Funding Plan, Scout, API, pricing, landing, portal, emails)
+ * reads this constant. Twenty since 2026-11-03, the approved Free/Pro matrix.
  */
-export const FREE_DAILY_RESULTS = 10;
+export const FREE_RANKED_RESULTS = 20;
 
 /**
  * Slots held for each kind inside a capped list.

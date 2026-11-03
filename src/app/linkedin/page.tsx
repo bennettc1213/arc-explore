@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { recordEvent } from "@/lib/analytics/record";
 
 import { BackLink } from "@/components/BackLink";
 import { UpgradeWall } from "@/components/pricing/UpgradeGate";
 import { getSessionUser } from "@/lib/auth";
 import { buildLinkedInDraft } from "@/lib/linkedin/build";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { checkUsage } from "@/lib/pricing/usage";
+import { sessionGate } from "@/lib/pricing/grants";
+import { StartSession } from "@/components/pricing/StartSession";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { coerceParsedResume } from "@/lib/resume/types";
 import { topDemandedSkills } from "@/lib/score/competitiveness";
@@ -27,7 +29,8 @@ export const dynamic = "force-dynamic";
  * profile URL. LinkedIn sued Proxycurl in N.D. Cal. and it shut down in July
  * 2026; a fetch here is the one thing that could end this project. The checker
  * goes further than the rule requires and runs entirely in the browser, so the
- * pasted text is not sent to us either.
+ * pasted text is not sent to us either. The only request it makes is the
+ * content-free "start session" press on a Free account.
  */
 
 export default async function LinkedInPage() {
@@ -42,15 +45,13 @@ export default async function LinkedInPage() {
   const resume = storedResume ? coerceParsedResume(storedResume.parsed) : null;
   const draft = buildLinkedInDraft({ profile, resume, accountEmail: user?.email ?? null });
 
-  // Read-only check — does not spend a unit. The actual consumption happens
-  // client-side, from the checker's first keystroke (see LinkedInChecker and
-  // linkedin/actions.ts) — a page view is not a "run" of a tool that scores
-  // as you type, so gating access here and metering usage there are
-  // deliberately two different moments.
-  // Through `getUserTier` on both branches, never a literal "free" — see the
-  // note in `app/page.tsx`.
+  // Read-only. A Free account opens one 72-hour session per 30-day allowance
+  // period with a button press (StartSession → tool-session-actions.ts); the
+  // request carries no profile text. Through `getUserTier` on both branches,
+  // never a literal "free" — see the note in `app/page.tsx`.
   const tier = await getUserTier(user?.id);
-  const linkedInAccess = user ? await checkUsage(user.id, tier, "linkedin_tools") : null;
+  const gate = user ? await sessionGate(user.id, tier, "linkedin_tools") : null;
+  if (gate?.mode === "blocked") void recordEvent("upgrade_prompt_viewed", { feature: "linkedin_tools" });
 
   return (
     <main className="wrap tool-page" style={{ paddingBlock: "48px 96px" }}>
@@ -81,18 +82,33 @@ export default async function LinkedInPage() {
         </p>
       </div>
 
-      {user && linkedInAccess?.usable && (
+      {gate?.mode === "open" && (
         <>
+          {gate.expiresAt && (
+            <p className="mono" style={{ color: "var(--faint-readable)", marginBottom: 12 }}>
+              your free session is open until{" "}
+              {gate.expiresAt.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "UTC" })} UTC
+            </p>
+          )}
           <LinkedInBuilder draft={draft} signedIn={Boolean(user)} hasResume={Boolean(resume)} />
           <LinkedInChecker demand={demand} />
         </>
       )}
 
-      {user && linkedInAccess && !linkedInAccess.usable && (
+      {gate?.mode === "start" && (
+        <StartSession
+          feature="linkedin_tools"
+          label="start my free LinkedIn session"
+          explanation="Free includes one LinkedIn session every 30 days. It stays open for 72 hours, across reloads, for drafting and checking as many times as you like. Starting it sends us only that you started — none of your profile text."
+        />
+      )}
+
+      {gate?.mode === "blocked" && (
         <UpgradeWall
           feature="linkedin_tools"
-          access={linkedInAccess}
-          reasonNote="you've used your free LinkedIn run"
+          access={gate.access}
+          renewsAt={gate.renewsAt}
+          reasonNote="this period's free LinkedIn session is used"
         />
       )}
 
@@ -102,7 +118,7 @@ export default async function LinkedInPage() {
             <Link href={`/login?next=/linkedin`} style={{ color: "var(--accent)" }}>
               sign in
             </Link>{" "}
-            to use the builder and checker — free accounts get one run
+            to use the builder and checker — Free includes one 72-hour session every 30 days
           </span>
         </div>
       )}

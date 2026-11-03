@@ -4,16 +4,15 @@ import { revalidatePath } from "next/cache";
 import { TIER_LABELS } from "@/lib/pricing/tiers";
 
 import { requireUser } from "@/lib/auth";
+import { recordEvent } from "@/lib/analytics/record";
 import {
-  countApplications,
   removeApplication,
-  setStatus,
-  statusesForPostings,
+  setStatusWithinCapacity,
   updateDetails,
 } from "@/lib/applications/store";
 import { isApplicationStatus } from "@/lib/applications/types";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { evaluateFeature } from "@/lib/pricing/tiers";
+import { FEATURES } from "@/lib/pricing/tiers";
 import { maybeRecordActivation } from "@/lib/profile/activation";
 import { FEED_PATH } from "@/lib/routes";
 
@@ -47,23 +46,21 @@ export async function setStatusAction(
   if (!postingId) return { status: "error", message: "missing posting" };
   if (!isApplicationStatus(next)) return { status: "error", message: "unknown status" };
 
-  // Quantity cap on distinct tracked postings, not on status moves — a
-  // student already tracking 5 postings on free must still be able to move
-  // one from "saved" to "applied"; the cap only blocks tracking a SIXTH.
-  const already = await statusesForPostings(user.id, [postingId]);
-  if (!already.has(postingId)) {
-    const tier = await getUserTier(user.id);
-    const trackedCount = await countApplications(user.id);
-    const access = evaluateFeature(tier, "tracker", trackedCount);
-    if (!access.usable) {
-      return {
-        status: "error",
-        message: `you're tracking ${access.limit} postings on the free plan — upgrade to ${PAID} to track more`,
-      };
-    }
+  // The plan limit counts ACTIVE opportunities only (see occupiesActiveSlot).
+  // Only a move INTO the active set can be refused — saving a new one, or
+  // reopening a finished one. Status moves within the active set, moves into
+  // history, notes and removal always work, so a student at capacity (or
+  // downgraded with more than the limit) never has to delete history.
+  const tier = await getUserTier(user.id);
+  const result = await setStatusWithinCapacity(user.id, postingId, next, FEATURES.tracker.limits[tier]);
+  if (result === "missing_posting") return { status: "error", message: "that listing is no longer available" };
+  if (result === "at_capacity") {
+    void recordEvent("upgrade_prompt_viewed", { feature: "tracker" });
+    return {
+      status: "error",
+      message: `you have ${FEATURES.tracker.limits[tier]} active opportunities on ${TIER_LABELS[tier]} — finish or remove one, or upgrade to ${PAID} for unlimited`,
+    };
   }
-
-  await setStatus(user.id, postingId, next);
 
   // Saving a posting is the engagement half of the activation definition.
   // The helper is idempotent, so it is safe to call on every status change.

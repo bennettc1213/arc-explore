@@ -4,7 +4,7 @@ import Stripe from "stripe";
 
 import { db } from "@/db/client";
 import { billingWebhookEvents, profiles } from "@/db/schema";
-import { stripe, stripeConfig } from "@/lib/stripe";
+import { getStripe, stripeConfig } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 
@@ -12,7 +12,11 @@ function paidStatus(status: Stripe.Subscription.Status): boolean {
   return status === "active" || status === "trialing";
 }
 
-async function syncSubscription(subscription: Stripe.Subscription) {
+async function syncSubscription(fromEvent: Stripe.Subscription) {
+  // Stripe does not guarantee event order. Re-read the subscription so a late
+  // "updated: active" arriving after "deleted" cannot re-grant Pro; a deleted
+  // subscription still retrieves, with status "canceled".
+  const subscription = await getStripe().subscriptions.retrieve(fromEvent.id).catch(() => fromEvent);
   const customerId = typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
   const userId = subscription.metadata.userId;
   const where = userId
@@ -35,6 +39,14 @@ async function handleEvent(event: Stripe.Event) {
       const customerId = typeof session.customer === "string" ? session.customer : session.customer?.id;
       const subscriptionId = typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
       if (!userId || !customerId || !subscriptionId) return;
+      // A completed session is not necessarily a paid one (delayed payment
+      // methods complete as "unpaid"). Grant Pro only once Stripe says paid;
+      // otherwise record the ids and let the subscription event decide.
+      const paid = session.payment_status === "paid" || session.payment_status === "no_payment_required";
+      if (!paid) {
+        await db.update(profiles).set({ stripeCustomerId: customerId, stripeSubscriptionId: subscriptionId }).where(eq(profiles.id, userId));
+        return;
+      }
       await db.update(profiles).set({
         stripeCustomerId: customerId, stripeSubscriptionId: subscriptionId, plan: "apply", planUpdatedAt: new Date(),
       }).where(eq(profiles.id, userId));
@@ -52,7 +64,7 @@ export async function POST(request: Request) {
   if (!signature) return new NextResponse("Missing Stripe signature", { status: 400 });
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(await request.text(), signature, stripeConfig.webhookSecret());
+    event = getStripe().webhooks.constructEvent(await request.text(), signature, stripeConfig.webhookSecret());
   } catch {
     return new NextResponse("Invalid Stripe signature", { status: 400 });
   }

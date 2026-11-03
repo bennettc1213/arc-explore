@@ -9,8 +9,8 @@ import { TIER_LABELS } from "@/lib/pricing/tiers";
  * `access` says what a click actually costs, because the tools are NOT all
  * open signed-out, and an earlier version of this comment said they were
  * (FIXES.md §2). Verified on production: `/github` audits with no session;
- * `/linkedin` renders no textarea until you sign in; `/essay` mounts nothing
- * below the Apply plan. A tools menu is a promise about what happens when you
+ * `/linkedin` and `/essay` render nothing until you sign in, and on Free until
+ * you start a 72-hour session. A tools menu is a promise about what happens when you
  * click, so the caveat travels with the link rather than waiting on the page.
  *
  * `status` separates working tools from ones that are built but unverified —
@@ -24,7 +24,7 @@ export const TOOLS = [
     label: "github",
     title: "GitHub audit",
     blurb: "audit what a recruiter sees — fetched from the public api",
-    access: "open to everyone",
+    access: "open to everyone · signed-in Free: 1 account every 30 days",
     status: "available",
   },
   {
@@ -32,7 +32,7 @@ export const TOOLS = [
     label: "linkedin",
     title: "LinkedIn tools",
     blurb: "build the headline and summary recruiters search",
-    access: "free account · 1 run",
+    access: "free account · 1 session every 30 days",
     status: "available",
   },
   {
@@ -40,7 +40,7 @@ export const TOOLS = [
     label: "essay",
     title: "Essay review",
     blurb: "four mechanical checks, on text that stays in your browser",
-    access: `${TIER_LABELS.apply} plan`,
+    access: "free account · 1 session every 30 days",
     status: "available",
   },
   {

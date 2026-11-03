@@ -10,12 +10,13 @@ import { recordEvent } from "@/lib/analytics/record";
 import { statusesForPostings } from "@/lib/applications/store";
 import { getSessionUser } from "@/lib/auth";
 import { getAvailableTerms, getFeed, getFeedStats, getLotteryAwards, newSinceFromDays } from "@/lib/feed";
-import { FREE_DAILY_RESULTS, reservationFor } from "@/lib/feed-trim";
+import { FREE_RANKED_RESULTS, reservationFor } from "@/lib/feed-trim";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { evaluateFeature, TIER_PRICE_USD, TIMING_PRIORITY_POINTS } from "@/lib/pricing/tiers";
+import { ALERT_CADENCE_LABEL, evaluateFeature, TIER_LABELS, TIER_PRICE_USD, TIMING_PRIORITY_POINTS } from "@/lib/pricing/tiers";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 import { listSearches } from "@/lib/searches/store";
+import { alertingSearchIds, freeAlertSlot, savedSearchLimit } from "@/lib/searches/alerting";
 import { filtersFromParams, isEmptyFilters } from "@/lib/searches/types";
 import {
   INTEREST_OPTIONS,
@@ -250,24 +251,21 @@ export default async function FeedPage({
     Number.isFinite(showRaw) && showRaw > 0 ? Math.min(Math.round(showRaw), 500) : FEED_PAGE_SIZE;
 
   /*
-   * THE FREE PLAN'S DAILY SET.
+   * THE FREE PLAN'S RANKED DEPTH.
    *
-   * Free sees the top `FREE_DAILY_RESULTS` ranked matches; paid sees the whole
-   * list, a page at a time. Deliberately a **depth** cap rather than a
-   * per-listing view counter: a counter needs a row written on every listing
-   * open, punishes exploring, resets awkwardly, and would be the first
-   * behavioural log of what a named student looked at — which is exactly what
-   * `events` was designed not to be (see its schema comment). This needs no
-   * new table and cannot be gamed by refreshing.
+   * Free sees the top `FREE_RANKED_RESULTS` ranked matches for this exact
+   * search and filter combination; Pro sees the whole list, a page at a time.
+   * A **depth** cap rather than a per-listing view counter: a counter needs a
+   * row written on every listing open, punishes exploring, and would be the
+   * first behavioural log of what a named student looked at — exactly what
+   * `events` was designed not to be. Changing the filters ranks a different
+   * set; opening listings is never counted.
    *
-   * It is genuinely a *daily* set without any date arithmetic: the ranking
-   * reads timing, timing now moves every day (deadlines approach, postings
-   * age), and `ingest-fast` adds rows every 20 minutes. So the twenty change
-   * on their own. The UI says that rather than claiming a midnight reset,
-   * which would be a schedule we do not actually run.
+   * The set moves as ingestion adds rows and timing changes. The UI says that,
+   * and never promises a midnight reset or a number of new rows per day.
    */
   const dailyCapped = !evaluateFeature(tier, "feed_full_depth").usable;
-  const show = dailyCapped ? FREE_DAILY_RESULTS : requested;
+  const show = dailyCapped ? FREE_RANKED_RESULTS : requested;
 
   const [listFeed, stats, terms, lotteryAwards, plan, funding] = await Promise.all([
     // The Plan view ranks through getFeed itself (inside getScholarshipPlan),
@@ -409,6 +407,11 @@ export default async function FeedPage({
       // one request than the answer needs.
       results: resultCount === 0 ? "none" : resultCount < 10 ? "few" : "many",
     });
+  }
+
+  // The Free ranked-depth prompt is about to render: counted by feature only.
+  if (dailyCapped && total > items.length) {
+    void recordEvent("upgrade_prompt_viewed", { feature: "feed_full_depth" });
   }
 
   const guestVerticals = new Set(profile.targetVerticals ?? []);
@@ -585,13 +588,21 @@ export default async function FeedPage({
         <SavedSearches
           current={currentFilters}
           currentIsEmpty={isEmptyFilters(currentFilters)}
-          canSave={evaluateFeature(tier, "saved_search_alerts").usable}
-          searches={savedSearches.map((s) => ({
-            id: s.id,
-            name: s.name,
-            filters: s.filters,
-            notify: s.notify,
-          }))}
+          limit={savedSearchLimit(tier)}
+          cadence={ALERT_CADENCE_LABEL[tier]}
+          onFree={tier === "free"}
+          searches={(() => {
+            const alerting = alertingSearchIds(savedSearches, tier);
+            const slot = tier === "free" ? freeAlertSlot(savedSearches) : null;
+            return savedSearches.map((s) => ({
+              id: s.id,
+              name: s.name,
+              filters: s.filters,
+              notify: s.notify,
+              alerting: alerting.has(s.id),
+              holdsFreeSlot: slot === s.id,
+            }));
+          })()}
         />
       )}
 
@@ -638,23 +649,21 @@ export default async function FeedPage({
               style={{ borderColor: "var(--accent)", padding: "16px 18px", marginTop: 18 }}
             >
               <div className="mono-strong" style={{ color: "var(--accent)" }}>
-                your top {items.length} of {total.toLocaleString()} matches
+                your top {items.length} ranked matches for this search, of {total.toLocaleString()}
               </div>
               <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "64ch" }}>
-                {/* Says what actually changes the set, rather than promising a
-                    midnight reset we do not run. Ingest is every 20 minutes and
-                    timing moves daily, so these twenty genuinely turn over. */}
-                The free plan shows your {FREE_DAILY_RESULTS} highest-ranked matches. They re-rank as we poll
-                each employer&rsquo;s board and as deadlines approach, so this set changes day to
-                day{stats.newToday > 0 ? ` — ${stats.newToday.toLocaleString()} of the corpus was found in the last day` : ""}.
-                Searching, filtering and opening any listing are never limited.
+                {TIER_LABELS.free} shows the top {FREE_RANKED_RESULTS} for each search. Change the
+                filters or the search and you get that search&rsquo;s top {FREE_RANKED_RESULTS}.
+                The set moves as we find new listings and as deadlines approach. Searching,
+                filtering and opening any listing are never limited, and every warning and source
+                fact shows on every plan.
               </p>
               <Link
                 href="/pricing?feature=feed_full_depth"
                 className="btn btn-primary press"
                 style={{ textDecoration: "none", display: "inline-block", marginTop: 12 }}
               >
-                see all {total.toLocaleString()} — ${TIER_PRICE_USD.apply}/mo
+                see all {total.toLocaleString()} with {TIER_LABELS.apply} — ${TIER_PRICE_USD.apply}/mo
               </Link>
             </div>
           )}

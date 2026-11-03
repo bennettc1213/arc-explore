@@ -18,7 +18,7 @@ import "dotenv/config";
 
 import { closeDb } from "../src/db/client";
 import { getFeed } from "../src/lib/feed";
-import { FREE_DAILY_RESULTS, reservationFor } from "../src/lib/feed-trim";
+import { FREE_RANKED_RESULTS, reservationFor } from "../src/lib/feed-trim";
 import { TIMING_PRIORITY_POINTS } from "../src/lib/pricing/tiers";
 import type { ScoreProfile } from "../src/lib/score/fit";
 import { dayIndex } from "../src/lib/score/rotation";
@@ -37,7 +37,7 @@ const FILLED: ScoreProfile = {
   skills: ["python", "javascript", "react", "sql", "typescript", "aws", "docker", "git"],
 };
 
-const WINDOWS = [FREE_DAILY_RESULTS, 20, 50];
+const WINDOWS = [FREE_RANKED_RESULTS, 20, 50];
 
 async function head(profile: ScoreProfile, timingPoints: number, day: number, limit: number) {
   const r = await getFeed(profile, {
@@ -63,7 +63,7 @@ async function report(label: string, profile: ScoreProfile, timingPoints: number
     console.log(`  window ${String(limit).padStart(2)} unchanged:  ${parts.join("   ")}`);
   }
 
-  for (const limit of [FREE_DAILY_RESULTS, 50]) {
+  for (const limit of [FREE_RANKED_RESULTS, 50]) {
     const seen = new Set<string>();
     for (let d = 0; d < 30; d++) {
       for (const i of await head(profile, timingPoints, today + d, limit)) seen.add(i.id);

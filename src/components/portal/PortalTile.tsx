@@ -16,7 +16,7 @@ import { PortalArt } from "./PortalArt";
  *  - `soon`: not a link at all. There is nothing to open, so there is nothing to
  *    focus; it is announced as disabled rather than silently doing nothing.
  *  - everything else: a link to the tool, with the plan's allowance in words
- *    when there is one ("Free: 1 run").
+ *    when there is one ("Free: 1 every 30 days").
  */
 export function PortalTile({ tile, bento = false }: { tile: Tile; bento?: boolean }) {
   const className = [

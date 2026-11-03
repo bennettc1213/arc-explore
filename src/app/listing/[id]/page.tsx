@@ -207,7 +207,7 @@ export default async function ListingPage({
                 className="btn press"
                 style={{ textDecoration: "none" }}
               >
-                🔒 autofill &amp; apply — Apply plan
+                🔒 autofill &amp; apply — {TIER_LABELS.apply}
               </Link>
             )}
             {user && (

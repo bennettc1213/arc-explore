@@ -15,7 +15,7 @@ export interface PortalHomeProps {
   activity: PortalActivity | null;
   /** First name only, or null when the profile has none. */
   firstName: string | null;
-  /** Display label of the current plan ("Pro", "See it"). */
+  /** Display label of the current plan ("Free", "Pro"). */
   planLabel: string;
   paid: boolean;
   /** Monthly price of the paid plan, as stated in the pricing catalog. */

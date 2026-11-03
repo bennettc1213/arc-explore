@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/db/client";
 import { profiles } from "@/db/schema";
 import { marketReadyFlags } from "@/lib/market-ready/flags";
-import { stripe, stripeConfig } from "@/lib/stripe";
+import { getStripe, stripeConfig } from "@/lib/stripe";
 
 export const runtime = "nodejs";
 
@@ -19,7 +19,7 @@ export async function POST() {
     .limit(1);
   if (!profile?.stripeCustomerId) return NextResponse.json({ error: "No billing account found." }, { status: 409 });
 
-  const session = await stripe.billingPortal.sessions.create({
+  const session = await getStripe().billingPortal.sessions.create({
     customer: profile.stripeCustomerId,
     return_url: `${stripeConfig.appUrl()}/pricing`,
   });

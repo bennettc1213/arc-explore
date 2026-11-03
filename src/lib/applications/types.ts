@@ -113,3 +113,43 @@ export function responseRate(
   const responded = submitted.filter((r) => r.status !== "applied" && r.status !== "ghosted");
   return { rate: Math.round((responded.length / submitted.length) * 100), of: submitted.length };
 }
+
+/* ------------------------------------------------------------------ *
+ * Active capacity — the one definition the tracker limit reads
+ * ------------------------------------------------------------------ */
+
+/**
+ * Whether a tracked row occupies one of the plan's active slots.
+ *
+ * Built from the lifecycle above, not a second list of statuses: a terminal
+ * status (offer, rejected, ghosted, withdrawn) is history and never counts. A
+ * `saved` row on a listing that has closed is history too — there is nothing
+ * left to apply to. A submitted application stays active even after its
+ * listing closes, because the student is still waiting on an answer.
+ */
+export function occupiesActiveSlot(status: ApplicationStatus, listingClosed: boolean): boolean {
+  const meta = statusMeta(status);
+  if (meta.terminal) return false;
+  if (!meta.submitted && listingClosed) return false;
+  return true;
+}
+
+export function countActiveSlots(
+  rows: readonly { status: ApplicationStatus; closed: boolean }[],
+): number {
+  return rows.filter((r) => occupiesActiveSlot(r.status, r.closed)).length;
+}
+
+/**
+ * Whether moving a row needs a free active slot: only when it goes from not
+ * occupying one (new, or historical) to occupying one. Moves between active
+ * statuses, and moves into history, never need capacity.
+ */
+export function transitionNeedsSlot(
+  current: ApplicationStatus | null,
+  next: ApplicationStatus,
+  listingClosed: boolean,
+): boolean {
+  const before = current !== null && occupiesActiveSlot(current, listingClosed);
+  return !before && occupiesActiveSlot(next, listingClosed);
+}

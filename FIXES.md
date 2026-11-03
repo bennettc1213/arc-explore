@@ -1,6 +1,16 @@
 # Fixes & Open Items
 
-- [ ] **Scout handoff production-build validation needs the existing billing environment (2026-11-03).** The isolated committed snapshot compiled and passed TypeScript with `next build --webpack`, then page-data collection failed in the pre-existing `/api/stripe/checkout` route because `STRIPE_SECRET_KEY` is unset on this computer. Verify billing environment on the receiving/deployment computer and rerun the full build. No credentials were added, billing behavior was unchanged, and nothing was deployed.
+- [ ] **Free/Pro redesign is built locally and unapplied (2026-11-03).** Matrix, semantics and rollout are in `docs/free-pro-plans.md`. Migration `0032_recurring_allowances` (feature_grants, tool_request_log, saved_searches.free_alert_picked_at, backfill from cover_letters and feature_usage) has **not** been run anywhere: there is no staging database (§7) and the local `.env` points at the shared live one. Until it is applied, every page that reads `feature_grants` (profile critique, GitHub signed in, LinkedIn, essay, cover-letter generation) fails, so code and migration must ship together. **Never driven signed in:** resume critique replay, GitHub reserve/release on a failed fetch, LinkedIn/essay session start, cover-letter allowance and hourly throttle, tracker capacity at 10 with reactivation, the Free alert pick, and the digest for a Free profile. Verified in a browser signed out only (pricing at 1440/390px, Free list at 20 rows including `?show=500` and a second filter set, Funding Plan API `cap: 20`, essay/LinkedIn sign-in prompts, landing copy); everything else is unit-tested (allowance policy with a controlled clock, tracker capacity, alert slot and cadence, quote reconciliation).
+
+- [ ] **The local Stripe test price is $20.00/month; the page says $5.99 (2026-11-03).** Read-only check against Stripe test mode: `STRIPE_PRICE_APPLY_MONTHLY` = 2000 USD monthly. `getCheckoutQuote` now refuses checkout on any mismatch, so local checkout shows "not available". `STRIPE_PRICE_INSTELLA_PRO_MONTHLY` appears twice in `.env` and names a price that does not exist; no code reads it. No coupons exist, so no student price is offered. To close: point the env var at a $5.99 monthly USD price (and optionally create a `forever` 50% coupon as `STRIPE_COUPON_STUDENT`), then run one test-mode checkout per path. **Confirm the half-cent rounding** of 50% of $5.99 ($2.99 computed) on that checkout before showing it. Production Stripe/Vercel values were not inspected.
+
+- [ ] **The live database's migration records do not match the journal, so `npm run db:migrate` is unsafe (2026-11-03).** `drizzle.__drizzle_migrations` holds 31 rows whose newest `created_at` is `1795809600001`, while the journal stamps 0027–0031 as `…0001`–`…0005`. The objects from 0028–0031 exist (merit aid, `profiles.funding_goal`, student discount claims, Stripe columns), but drizzle applies every journal entry newer than the newest record, so a plain `db:migrate` would try to re-run 0028–0031. 0032 was therefore applied by hand in one transaction and recorded with its journal timestamp (`…0006`) and file hash, which also moves the watermark past 0028–0031. Before the next migration, compare records to the journal and confirm each step is a no-op or real.
+
+- [ ] **Production has no `STRIPE_PRICE_APPLY_MONTHLY` (2026-11-03).** Vercel production carries `STRIPE_PRICE_ID` (172 days old), which no code reads, and `MARKET_READY_BILLING` is set. The checkout code reads `STRIPE_PRICE_APPLY_MONTHLY`, so live checkout has never been able to open a session; with this release `getCheckoutQuote` reports it unconfigured and the pricing page shows "checkout not available yet" instead of a button that fails. To open checkout: set `STRIPE_PRICE_APPLY_MONTHLY` in Vercel to a live $5.99 monthly USD price and redeploy. Values were not read.
+
+- [ ] **Free-plan analytics can count limit exposures but not attribute them (2026-11-03).** `upgrade_prompt_viewed {feature}` and `checkout_started {student}` are counts with no user id, keeping `/privacy`'s promise. Paid conversion after a specific limit is therefore measurable only for the five allowance tools (their grants carry user ids), not for the tracker, saved searches or feed depth. Day-7 return can only be a lower bound from user-owned writes; sign-in alone is invisible. `tool_request_log` has no retention job yet (it only needs an hour). Definitions in `docs/free-pro-plans.md` §9.
+
+- [~] **Scout handoff production-build validation needs the existing billing environment (2026-11-03).** _The likely cause is fixed: `lib/stripe.ts` constructed the Stripe client at import and threw without `STRIPE_SECRET_KEY`, so page-data collection for `/api/stripe/checkout` failed. The client is now created on first use (`getStripe()`), behind the billing flag. A full `next build` was not rerun in this session (a dev server held the build directory), so the build itself is still unverified._ The isolated committed snapshot compiled and passed TypeScript with `next build --webpack`, then page-data collection failed in the pre-existing `/api/stripe/checkout` route because `STRIPE_SECRET_KEY` is unset on this computer. Verify billing environment on the receiving/deployment computer and rerun the full build. No credentials were added, billing behavior was unchanged, and nothing was deployed.
 
 - [x] **Scout follow-up: stale checks looked current and category grouping discarded results after twelve (2026-11-03).** Freshness now distinguishes recent, older, and unverified source observations, with separate first-discovery labels. All admitted feed results survive categorization; the loading receipt counts only displayed items. The preview adapts its source examples to the selected field, and students can open completed results before the animation ends. Focused freshness/retention tests and desktop/mobile browser checks cover this pass.
 
@@ -1492,8 +1502,11 @@ Things that are currently true but should not stay true.
   with a deadline) are where hand-entered or parsed counts would pay off first.
   "Almost eligible" is hidden too: no helper computes it.
 
-- [ ] **Signed out, the Plan view shows 10 scholarships but the List view
-  shows 20.** The Plan cap (`SIGNED_OUT_CARD_CAP`) was specified for the Plan
+- [x] **Signed out, the Plan view shows 10 scholarships but the List view
+  shows 20.** _Fixed 2026-11-03: both follow the tier, not the session. Any
+  viewer without full depth (signed out or Free) gets `FREE_RANKED_RESULTS`
+  (20) ranked rows in the list and 20 distinct cards in the Funding Plan;
+  Pro is uncapped in both. Signed-in Free was previously uncapped in the Plan._ The Plan cap (`SIGNED_OUT_CARD_CAP`) was specified for the Plan
   view only, and the List view keeps the existing free depth
   (`FREE_DAILY_RESULTS = 20`) — so a visitor who wants more than the locked
   plan can switch to List and see twice as many, titles and links included.
@@ -1730,7 +1743,7 @@ refused, not merely hidden):
 
 **UI-only, or otherwise incomplete — these are the gaps:**
 
-- [ ] **The LinkedIn checker's cap is not enforceable, by construction.**
+- [~] **The LinkedIn checker's cap is not enforceable, by construction.** _2026-11-03: the old metering also locked a Free user out on reload (it charged the first keystroke with no replay key). Replaced by a content-free "start a 72-hour session" grant per 30 days, checked server-side before the tool renders; the essay reviewer uses the same mechanism. Inside an open session nothing is metered and the server cannot tell one essay from the next — still true by construction, now stated on the pricing doc._
   Access to the tool is gated server-side (the component does not render for a
   free account that has used its run), but the *metering* is a client-fired
   Server Action, because the tool scores entirely in the browser and there is
@@ -1744,21 +1757,21 @@ refused, not merely hidden):
   account to attach a quota to. Metering by IP or fingerprint was rejected as
   its own privacy problem rather than attempted quietly. A determined free user
   signs out and keeps auditing.
-- [ ] **Quotas are lifetime, not monthly.** There is no billing cycle to reset
+- [x] **Quotas are lifetime, not monthly.** _Fixed 2026-11-03: every Free tool allowance renews 30 days after its period starts (`allowance.ts`), independent of Stripe; lifetime counts were not carried over (`docs/free-pro-plans.md` §4, §8)._ There is no billing cycle to reset
   against — no subscription, no renewal timestamp — so "1 free run" currently
   means "1 ever". Enforcing a monthly cap this codebase cannot observe would be
   inventing a number. Reset on the renewal date once a provider supplies one.
-- [ ] **`consumeUsage` is read-then-write, not atomic.** Two simultaneous
+- [x] **`consumeUsage` is read-then-write, not atomic.** _Fixed 2026-11-03: `consumeUsage` is gone. Allowance reservations and tracker capacity checks run in a transaction under a per-user advisory lock; failed work releases its reservation._ Two simultaneous
   requests at a free user's last unit could both succeed. Accepted: the cost of
   losing that race is one extra free run, not a security boundary. Worth the
   stricter single-statement `UPDATE ... WHERE count < limit` once real money is
   behind it.
-- [ ] **Deleting a cover letter frees its slot.** The cap counts rows in
+- [x] **Deleting a cover letter frees its slot.** _Fixed 2026-11-03: usage is a `feature_grants` row keyed on the posting, separate from the editable `cover_letters` row. Deleting a draft frees nothing; re-drafting the same posting is a free replay._ The cap counts rows in
   `cover_letters` rather than a monotonic counter, so a free user can delete and
   re-draft indefinitely. Deliberate — counting drafts in a second table would be
   the driftable duplicate the schema comment warns against — but it does mean
   the cap is "1 stored draft", not "1 draft ever".
-- [ ] **Nothing ever sets `profiles.plan` to anything but `free`.** No Stripe,
+- [~] **Nothing ever sets `profiles.plan` to anything but `free`.** _Stale as of 2026-11-03: a signed Stripe webhook sets it behind `MARKET_READY_BILLING`. It now grants Pro only on a paid checkout session and re-reads subscriptions so out-of-order events cannot re-grant after cancellation. Still never exercised with a real payment; see the $20 price entry at the top._ No Stripe,
   no checkout, no webhook — out of scope by instruction. The column and
   `plan_updated_at` are the seam; `/pricing`'s upgrade buttons are visibly inert
   and say so. **All 10 live profiles are on `free`**, so every paid path above is

@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { TIER_LABELS } from "@/lib/pricing/tiers";
 
 import { requireUser } from "@/lib/auth";
+import { recordEvent } from "@/lib/analytics/record";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { evaluateFeature } from "@/lib/pricing/tiers";
-import { deleteSearch, saveSearch, setNotify } from "@/lib/searches/store";
-import { MAX_SAVED_SEARCHES, isEmptyFilters, saveSearchSchema } from "@/lib/searches/types";
+import { savedSearchLimit } from "@/lib/searches/alerting";
+import { deleteSearch, pickFreeAlert, saveSearch, setNotify } from "@/lib/searches/store";
+import { isEmptyFilters, saveSearchSchema } from "@/lib/searches/types";
 import { FEED_PATH } from "@/lib/routes";
 
 /** The single paid plan's display name — never hardcoded. */
@@ -31,16 +32,11 @@ export async function saveSearchAction(
 ): Promise<SaveSearchState> {
   const user = await requireUser(FEED_PATH);
 
-  // A saved search only exists to be alerted on, and alerts are Edge+ (see
-  // "saved_search_alerts" in src/lib/pricing/tiers.ts and the plan filter in
-  // lib/searches/store.ts's alertCandidates). Refusing the save rather than
-  // silently accepting a search that can never notify is the honest failure
-  // — a free user who saved one would reasonably assume it works.
+  // Saving works on every plan, with or without email configured: the search
+  // reopens from the feed either way. The plan sets how many may exist (one
+  // on Free) and how often they alert (lib/searches/alerting.ts).
   const tier = await getUserTier(user.id);
-  const access = evaluateFeature(tier, "saved_search_alerts");
-  if (!access.usable) {
-    return { status: "error", message: `saved-search alerts are a ${PAID} feature — upgrade to save this search` };
-  }
+  const limit = savedSearchLimit(tier);
 
   let raw: unknown;
   try {
@@ -63,11 +59,15 @@ export async function saveSearchAction(
     return { status: "error", message: "narrow the feed first — an empty search matches everything" };
   }
 
-  const result = await saveSearch(user.id, parsed.data.name, parsed.data.filters);
+  const result = await saveSearch(user.id, parsed.data.name, parsed.data.filters, limit);
   if (result === "at_limit") {
+    if (tier === "free") void recordEvent("upgrade_prompt_viewed", { feature: "saved_search_alerts" });
     return {
       status: "error",
-      message: `you already have ${MAX_SAVED_SEARCHES} saved — delete one first`,
+      message:
+        tier === "free"
+          ? `${TIER_LABELS.free} keeps ${limit} saved search — delete it to save this one, or ${PAID} saves several and alerts daily`
+          : `you already have ${limit} saved — delete one first`,
     };
   }
 
@@ -86,5 +86,13 @@ export async function toggleNotifyAction(formData: FormData): Promise<void> {
   const user = await requireUser(FEED_PATH);
   const id = String(formData.get("id") ?? "");
   if (id) await setNotify(user.id, id, formData.get("notify") === "1");
+  revalidatePath(FEED_PATH);
+}
+
+/** Choose which saved search alerts while the account is on Free. */
+export async function pickFreeAlertAction(formData: FormData): Promise<void> {
+  const user = await requireUser(FEED_PATH);
+  const id = String(formData.get("id") ?? "");
+  if (id) await pickFreeAlert(user.id, id);
   revalidatePath(FEED_PATH);
 }

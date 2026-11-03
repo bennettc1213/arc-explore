@@ -2,7 +2,8 @@ import { getFeed } from "../feed";
 import { getLatestResume, getProfile } from "../profile/store";
 import { isProfileUsable } from "../profile/types";
 import { toScoringProfile as toScoreProfile } from "../score/v2/profile";
-import { TIMING_PRIORITY_POINTS } from "../pricing/tiers";
+import { TIMING_PRIORITY_POINTS, FIT_BUCKET_LABELS, bucketFitScore, evaluateFeature } from "../pricing/tiers";
+import { alertingSearchIds } from "../searches/alerting";
 import { skillsFromParsedResume } from "../score/skills";
 import { listSearches } from "../searches/store";
 
@@ -60,6 +61,7 @@ export interface DigestPlan {
 }
 
 export type SkipReason =
+  | "not_entitled"
   | "not_due"
   | "empty_profile"
   | "nothing_new"
@@ -94,7 +96,12 @@ async function coveredIds(
   candidate: DigestCandidate,
   scoreProfile: Parameters<typeof getFeed>[0],
 ): Promise<Set<string>> {
-  const searches = (await listSearches(candidate.userId)).filter((s) => s.notify);
+  // Only searches that actually alert on this plan cover anything: a Free
+  // account's paused extras send nothing, so their rows must stay eligible
+  // for the digest rather than being suppressed by an email that never goes.
+  const all = await listSearches(candidate.userId);
+  const alerting = alertingSearchIds(all, candidate.plan);
+  const searches = all.filter((s) => alerting.has(s.id));
   const covered = new Set<string>();
 
   for (const search of searches) {
@@ -119,6 +126,7 @@ export async function planDigests(
 ): Promise<{ plans: DigestPlan[]; skipped: Record<SkipReason, number>; due: number }> {
   const plans: DigestPlan[] = [];
   const skipped: Record<SkipReason, number> = {
+    not_entitled: 0,
     not_due: 0,
     empty_profile: 0,
     nothing_new: 0,
@@ -127,6 +135,10 @@ export async function planDigests(
   let due = 0;
 
   for (const candidate of candidates) {
+    if (!evaluateFeature(candidate.plan, "weekly_digest").usable) {
+      skipped.not_entitled++;
+      continue;
+    }
     if (!digestDue(candidate.lastDigestAt, now)) {
       skipped.not_due++;
       continue;
@@ -178,6 +190,7 @@ export async function planDigests(
       continue;
     }
 
+    const fullScore = evaluateFeature(candidate.plan, "fit_score_full").usable;
     plans.push({
       userId: candidate.userId,
       email: candidate.email,
@@ -190,7 +203,10 @@ export async function planDigests(
         company: i.company ?? "",
         kind: i.kind,
         deadlineAt: i.deadlineAt,
-        score: i.fit.score,
+        // The same server-side shaping as the feed: Free gets the label, never
+        // the number. An email is a surface like any other.
+        score: fullScore ? i.fit.score : null,
+        label: !fullScore && i.fit.score !== null ? FIT_BUCKET_LABELS[bucketFitScore(i.fit.score)] : null,
         knownDimensions: i.fit.knownDimensions,
         totalDimensions: i.fit.totalDimensions,
       })),

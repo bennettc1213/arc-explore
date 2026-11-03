@@ -31,8 +31,11 @@ export interface DigestItem {
   company: string;
   kind: string;
   deadlineAt: Date | null;
-  /** The displayed fit score, or null when we could not score it. */
+  /** The displayed fit score, or null when we could not score it or the
+   *  plan shows a label instead. */
   score: number | null;
+  /** Free's Strong / Good / Low label, when the number is withheld. */
+  label?: string | null;
   knownDimensions: number;
   totalDimensions: number;
 }
@@ -55,7 +58,9 @@ function trimTitle(title: string): string {
  * last place that distinction may quietly go missing.
  */
 function scoreLine(item: DigestItem): string {
-  if (item.score === null) return "";
+  if (item.score === null) {
+    return item.label ? ` — ${item.label} (on ${item.knownDimensions} of ${item.totalDimensions})` : "";
+  }
   return ` — fit ${item.score} (on ${item.knownDimensions} of ${item.totalDimensions})`;
 }
 

@@ -4,7 +4,7 @@
  * GET /api/explore/scholarships?<the same params /explore takes>
  *
  * The same `getScholarshipPlan` the page renders from, through the same viewer
- * resolution, so a signed-out request gets the same cap and the same locked
+ * resolution, so a Free or signed-out request gets the same cap and the same locked
  * slots — positional keys and nothing else. Reading this endpoint directly is
  * therefore no way around the blur.
  *

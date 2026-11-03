@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { FEED_MIN_PER_KIND, FREE_DAILY_RESULTS, trimWithReservation } from "./feed-trim";
+import { FEED_MIN_PER_KIND, FREE_RANKED_RESULTS, trimWithReservation } from "./feed-trim";
 
 type Row = { id: number; kind: "internship" | "scholarship" };
 
@@ -33,9 +33,9 @@ test("the crowded-out kind is guaranteed its slots", () => {
    * product to twenty scholarships and no internships at all.
    */
   const rows = [...scholarships(40), ...internships(40)];
-  const out = trimWithReservation(rows, FREE_DAILY_RESULTS, FEED_MIN_PER_KIND);
+  const out = trimWithReservation(rows, FREE_RANKED_RESULTS, FEED_MIN_PER_KIND);
 
-  assert.equal(out.length, FREE_DAILY_RESULTS);
+  assert.equal(out.length, FREE_RANKED_RESULTS);
   assert.ok(
     out.filter((r) => r.kind === "internship").length >= FEED_MIN_PER_KIND,
     "internships were crowded out entirely",
@@ -45,7 +45,7 @@ test("the crowded-out kind is guaranteed its slots", () => {
 
 test("it promotes, never reorders — output stays in rank order", () => {
   const rows = [...scholarships(40), ...internships(40)];
-  const out = trimWithReservation(rows, FREE_DAILY_RESULTS, FEED_MIN_PER_KIND);
+  const out = trimWithReservation(rows, FREE_RANKED_RESULTS, FEED_MIN_PER_KIND);
   const positions = out.map((r) => rows.indexOf(r));
   assert.deepEqual(positions, [...positions].sort((a, b) => a - b), "rank order was disturbed");
 });
@@ -53,7 +53,7 @@ test("it promotes, never reorders — output stays in rank order", () => {
 test("promoted rows are the BEST of their kind, not an arbitrary few", () => {
   // A guarantee that surfaced the wrong internships would be worse than none.
   const rows = [...scholarships(40), ...internships(40)];
-  const out = trimWithReservation(rows, FREE_DAILY_RESULTS, FEED_MIN_PER_KIND);
+  const out = trimWithReservation(rows, FREE_RANKED_RESULTS, FEED_MIN_PER_KIND);
   const promoted = out.filter((r) => r.kind === "internship").map((r) => r.id);
   const bestInternships = internships(40).slice(0, promoted.length).map((r) => r.id);
   assert.deepEqual(promoted, bestInternships);
@@ -61,8 +61,8 @@ test("promoted rows are the BEST of their kind, not an arbitrary few", () => {
 
 test("one kind alone is not padded with rows that do not exist", () => {
   const rows = scholarships(40);
-  const out = trimWithReservation(rows, FREE_DAILY_RESULTS, FEED_MIN_PER_KIND);
-  assert.equal(out.length, FREE_DAILY_RESULTS);
+  const out = trimWithReservation(rows, FREE_RANKED_RESULTS, FEED_MIN_PER_KIND);
+  assert.equal(out.length, FREE_RANKED_RESULTS);
   assert.ok(out.every((r) => r.kind === "scholarship"));
 });
 

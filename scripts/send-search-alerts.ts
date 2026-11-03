@@ -30,7 +30,8 @@ async function main() {
 
   console.log(
     `${summary.considered} search${summary.considered === 1 ? "" : "es"} watching · ` +
-      `${summary.withMatches} with new matches`,
+      `${summary.withMatches} with new matches · ` +
+      `${summary.notDue} not due on their plan's cadence · ${summary.paused} paused by plan`,
   );
 
   for (const plan of summary.plans) {
