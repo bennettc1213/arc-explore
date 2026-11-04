@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { preparePosting, reconcile, termUpdateForReopen, termUpdateForTouch, termUpdateFromDescription, type ExistingPosting } from "./reconcile";
+import { preparePosting, reconcile, sourceIdentityKey, termUpdateForReopen, termUpdateForTouch, termUpdateFromDescription, type ExistingPosting } from "./reconcile";
 import type { SourcePosting } from "./types";
 
 function existingRow(
@@ -67,6 +67,28 @@ describe("preparePosting", () => {
 });
 
 describe("reconcile", () => {
+  it("keeps a source's stable identity when optional details or the title change", () => {
+    const original = posting({ source: "workday", sourceId: "acme/External/1", descriptionText: "Summer 2027 internship", locations: ["Boston, MA"] });
+    const hash = preparePosting(original).canonicalHash;
+    const incoming = { ...original, title: "Engineering Internship", descriptionText: null, locations: [] };
+    const plan = reconcile({ incoming: [incoming], existing: [existingRow(hash)], totalOnBoard: 1, absenceAuthoritative: false,
+      knownSourceHashes: new Map([[sourceIdentityKey(original), hash]]) });
+    assert.equal(plan.toInsert.length, 0);
+    assert.equal(plan.toTouch.length, 1);
+    assert.equal(plan.toTouch[0].canonicalHash, hash);
+  });
+  it("a successful keyword search ingests observations but never advances absence, even after repeated polls", () => {
+    const seen = posting({ source: "workday", sourceId: "acme/External/1" });
+    const existing = [existingRow("missing-from-search", { missingStrikes: 1, missingSince: new Date() })];
+    for (let poll = 0; poll < 3; poll++) {
+      const plan = reconcile({ incoming: [seen], existing, totalOnBoard: 1, successfulComplete: true, absenceAuthoritative: false });
+      assert.equal(plan.toInsert.length, 1);
+      assert.equal(plan.toClose.length, 0);
+      assert.equal(plan.toIncrementMissing.length, 0);
+      assert.equal(plan.closeSuppressed, true);
+      assert.equal(plan.closeSuppressedReason, "search_scope");
+    }
+  });
   it("detects a brand-new posting", () => {
     const plan = reconcile({ incoming: [posting()], existing: [], totalOnBoard: 50 });
     assert.equal(plan.toInsert.length, 1);

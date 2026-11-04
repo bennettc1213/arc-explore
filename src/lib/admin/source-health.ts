@@ -53,6 +53,19 @@ export const SOURCE_CATALOGUE: readonly SourceDefinition[] = [
     cadence: "every 20 min",
   })),
   {
+    key: "workday", label: "Workday", kind: "internship",
+    method: "employer careers search, public API; manual rollout",
+    runTier: "workday-manual", runSource: "workday",
+    staleAfterHours: 24 * 365, cadence: "manual; scheduling deferred",
+  },
+  ...(["oracle", "taleo", "rippling", "jobvite"] as const).map(key => ({
+    key, label: { oracle: "Oracle Recruiting Cloud", taleo: "Taleo (discovered job pages)", rippling: "Rippling", jobvite: "Jobvite" }[key],
+    kind: "internship" as const, method: "employer careers data; manual connection",
+    runTier: `${key}-manual`, runSource: key, staleAfterHours: 24 * 365, cadence: "manual; scheduling deferred",
+  })),
+  { key: "cfbroward", label: "Community Foundation of Broward", kind: "scholarship", method: "foundation's own scholarship page",
+    runTier: "scholarships-manual", runSource: "cfbroward", staleAfterHours: 24 * 365, cadence: "manual; scheduling deferred" },
+  {
     key: "usajobs",
     label: "USAJobs",
     kind: "internship",

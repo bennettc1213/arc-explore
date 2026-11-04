@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.local/source-connections/
 
 # next.js
 /.next/

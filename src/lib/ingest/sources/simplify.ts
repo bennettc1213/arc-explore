@@ -25,6 +25,8 @@
 import { getJson } from "../http";
 import { normalizeCompanyName } from "../normalize";
 import type { AtsType } from "@/db/schema";
+import { workdayBoardFromUrl } from "./workday-board";
+import { oracleBoardFromUrl, taleoBoardFromUrl } from "./public-board";
 
 const LISTINGS_URL =
   "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json";
@@ -39,6 +41,8 @@ interface SimplifyRecord {
 }
 
 export interface DiscoveredOrg {
+  /** Direct employer job URLs used only for a seed-page connector such as Taleo. */
+  seedUrls?: string[];
   name: string;
   normalizedName: string;
   atsType: AtsType;
@@ -85,11 +89,22 @@ export function inferAts(rawUrl: string | null | undefined): {
   }
 
   const host = u.hostname.toLowerCase();
+  const workdayBoard = workdayBoardFromUrl(rawUrl);
+  if (workdayBoard) return { atsType: "workday", atsSlug: workdayBoard };
+  const oracleBoard = oracleBoardFromUrl(rawUrl);
+  if (oracleBoard) return { atsType: "oracle", atsSlug: oracleBoard };
+  const taleoBoard = taleoBoardFromUrl(rawUrl);
+  if (taleoBoard) return { atsType: "taleo", atsSlug: taleoBoard };
   // `URL.pathname` is percent-ENCODED. A board slug containing a space arrives
   // as "Tools%20for%20Humanity", and every adapter encodes the slug again when
   // building its request — producing "Tools%2520for%2520Humanity" and a 404 on
   // every poll, forever. Decode once here so what we store is the real slug.
   const segments = u.pathname.split("/").filter(Boolean).map(decodeSegment);
+  if ((host === "ats.rippling.com" || host === "ats.us1.rippling.com") && segments.length >= 2) {
+    const board = /^[a-z]{2}-[A-Z]{2}$/.test(segments[0]) ? segments[1] : segments[0];
+    if (/^[a-zA-Z0-9_-]+$/.test(board)) return { atsType: "rippling", atsSlug: board };
+  }
+  if (host === "jobs.jobvite.com" && segments[0] && /^[a-zA-Z0-9_-]+$/.test(segments[0])) return { atsType: "jobvite", atsSlug: segments[0] };
 
   if (host.endsWith("greenhouse.io")) {
     // embed/job_board?for={slug} is an older embed form.
@@ -175,7 +190,10 @@ export async function discoverOrgs(
 
     const { atsType, atsSlug } = inferAts(r.url ?? r.company_url);
     const key = `${normalizeCompanyName(name)}::${atsType}::${atsSlug ?? ""}`;
-    if (seen.has(key)) continue;
+    if (seen.has(key)) {
+      if (atsType === "taleo" && r.url && !seen.get(key)!.seedUrls?.includes(r.url)) seen.get(key)!.seedUrls?.push(r.url);
+      continue;
+    }
 
     seen.set(key, {
       name,
@@ -183,6 +201,7 @@ export async function discoverOrgs(
       atsType,
       atsSlug,
       discoveredVia: "simplify-discovery",
+      ...(atsType === "taleo" && r.url ? { seedUrls: [r.url] } : {}),
     });
     byAts[atsType] = (byAts[atsType] ?? 0) + 1;
   }

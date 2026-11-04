@@ -7,7 +7,7 @@
  * (already heavily tested) matching/dedup logic above it.
  */
 
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { timestamptz } from "@/db/fragments";
@@ -26,6 +26,7 @@ import { detectWorkAuth } from "./normalize";
 import { extractSkills } from "../score/skills";
 import {
   reconcile,
+  sourceIdentityKey,
   termUpdateForReopen,
   termUpdateFromDescription,
   termUpdateForTouch,
@@ -154,7 +155,7 @@ export interface PollOutcome {
   /** True when the board returned 304 and nothing was re-examined. */
   notModified?: boolean;
   /** Reason the close was suppressed, in the case where we want to log it. */
-  closeSuppressedReason?: "poll_incomplete" | "empty_scrape";
+  closeSuppressedReason?: "poll_incomplete" | "empty_scrape" | "search_scope";
   /** True when this call was a replay of a run already applied to this org. */
   replayed?: boolean;
 }
@@ -166,6 +167,10 @@ export interface PollOutcome {
  * inserted postings out of sync with each other.
  */
 export interface PersistPollOptions {
+  /** Override cadence for an explicitly manual source during rollout. */
+  pollIntervalSec?: number;
+  /** Keep keyword searches from accruing missing strikes or closing rows. */
+  absenceAuthoritative?: boolean;
   /**
    * How strong a freshness claim these rows may carry. Defaults to
    * `live_polled`, which is only true for Tier A: those boards are re-fetched
@@ -267,6 +272,15 @@ export async function persistPoll(
       }
     }
 
+    // Search adapters may return less detail on later imports. Match the
+    // source's durable id before hashing location/description-derived terms.
+    const identities = opts?.absenceAuthoritative === false && incoming.length
+      ? await tx.select({ source: postingSources.source, sourceId: postingSources.sourceId, postingId: postings.id, hash: postings.canonicalHash })
+          .from(postingSources).innerJoin(postings, eq(postings.id, postingSources.postingId))
+          .where(and(inArray(postingSources.source, [...new Set(incoming.map(p => p.source))]), inArray(postingSources.sourceId, incoming.map(p => p.sourceId))))
+      : [];
+    const knownSourceHashes = new Map(identities.map(p => [JSON.stringify([p.source, p.sourceId]), p.hash]));
+    const knownIds = identities.filter(p => incoming.some(row => sourceIdentityKey(row) === JSON.stringify([p.source, p.sourceId]))).map(p => p.postingId);
     const existingRows = await tx
       .select({
         id: postings.id,
@@ -295,7 +309,7 @@ export async function persistPoll(
         termEndedFlagAt: postings.termEndedFlagAt,
       })
       .from(postings)
-      .where(eq(postings.orgId, orgId));
+      .where(knownIds.length ? or(eq(postings.orgId, orgId), inArray(postings.id, knownIds)) : eq(postings.orgId, orgId));
 
     /*
      * Build the "would this write anything?" predicate over the row we already
@@ -328,6 +342,8 @@ export async function persistPoll(
       existing,
       totalOnBoard,
       successfulComplete: opts?.successfulComplete ?? true,
+      absenceAuthoritative: opts?.absenceAuthoritative,
+      knownSourceHashes,
       now,
     });
 
@@ -437,7 +453,7 @@ export async function persistPoll(
         lastPollError: null,
         consecutiveFailures: 0,
         // A board that recovered goes straight back to full cadence.
-        pollIntervalSec: DEFAULT_POLL_INTERVAL_SEC,
+        pollIntervalSec: opts?.pollIntervalSec ?? DEFAULT_POLL_INTERVAL_SEC,
         // Stored so the next poll can send If-None-Match. Without this the
         // conditional-request path never activates and we re-download every
         // board in full on every cycle.
@@ -452,7 +468,7 @@ export async function persistPoll(
      * truncated read advance it would be a lie in the one place the word
      * "complete" appears.
      */
-    if (sourceRow && (opts?.successfulComplete ?? true)) {
+    if (sourceRow && (opts?.successfulComplete ?? true) && opts?.absenceAuthoritative !== false) {
       await tx
         .update(sources)
         .set({ lastCompletePollAt: now })
@@ -906,8 +922,8 @@ async function touchPostings(
         // Employer-editable fields, refreshed each poll.
         title: p.title,
         url: p.url,
-        locations: p.locations,
-        isRemote: p.isRemote,
+        ...(opts?.absenceAuthoritative === false && !p.locations.length ? {} : { locations: p.locations }),
+        ...(opts?.absenceAuthoritative === false && !p.workArrangement && !p.isRemote ? {} : { isRemote: p.isRemote }),
         ...(p.workArrangement ? { workArrangement: p.workArrangement } : {}),
         ...(p.compensationMinCents !== null ? { compensationMinCents: p.compensationMinCents } : {}),
         ...(p.compensationMaxCents !== null ? { compensationMaxCents: p.compensationMaxCents } : {}),
@@ -1193,7 +1209,7 @@ export interface OrgUpsert {
  * null-slug row, silently duplicating an org on every re-run of discovery.
  * `isNull` is required here.
  */
-export async function upsertOrg(o: OrgUpsert): Promise<{ id: string; created: boolean }> {
+export async function upsertOrg(o: OrgUpsert, initialPolling?: { lastPolledAt: Date; pollIntervalSec: number }): Promise<{ id: string; created: boolean }> {
   const slugMatch = o.atsSlug === null ? isNull(organizations.atsSlug) : eq(organizations.atsSlug, o.atsSlug);
 
   const existing = await db
@@ -1212,6 +1228,7 @@ export async function upsertOrg(o: OrgUpsert): Promise<{ id: string; created: bo
       atsType: o.atsType,
       atsSlug: o.atsSlug,
       discoveredVia: o.discoveredVia,
+      ...initialPolling,
     })
     .returning({ id: organizations.id });
 

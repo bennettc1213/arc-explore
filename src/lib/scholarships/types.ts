@@ -19,6 +19,7 @@ export type ScholarshipSource =
   | "unl"
   | "unr"
   | "iup"
+  | "cfbroward"
   | "scholarshipscom"
   | "scholarshipportal";
 

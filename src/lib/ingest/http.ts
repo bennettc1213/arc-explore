@@ -40,6 +40,8 @@ export class HttpError extends Error {
 }
 
 export interface GetJsonOptions {
+  /** Public read-only search APIs sometimes require a JSON POST. */
+  jsonBody?: unknown;
   etag?: string | null;
   timeoutMs?: number;
   /** Total attempts including the first. */
@@ -91,7 +93,11 @@ export async function getJson<T = unknown>(
       };
       if (etag) headers["If-None-Match"] = etag;
 
-      const res = await fetch(url, { headers, signal: controller.signal, redirect: "follow" });
+      if (opts.jsonBody !== undefined) headers["Content-Type"] = "application/json";
+      const res = await fetch(url, {
+        headers, signal: controller.signal, redirect: "follow",
+        ...(opts.jsonBody !== undefined ? { method: "POST", body: JSON.stringify(opts.jsonBody) } : {}),
+      });
 
       if (res.status === 304) {
         return { data: null, etag: etag ?? null, status: 304, notModified: true };

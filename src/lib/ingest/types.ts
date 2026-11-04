@@ -11,6 +11,11 @@ export type SourceName =
   | "lever"
   | "smartrecruiters"
   | "workable"
+  | "workday"
+  | "oracle"
+  | "rippling"
+  | "jobvite"
+  | "taleo"
   | "simplify"
   | "usajobs";
 
@@ -63,6 +68,8 @@ export interface SourcePosting {
 }
 
 export interface FetchBoardResult {
+  /** False for a search: successful observations do not prove absent jobs closed. */
+  absenceAuthoritative?: boolean;
   postings: SourcePosting[];
   /** ETag to send next poll, when the source supports conditional requests. */
   etag: string | null;
@@ -84,7 +91,8 @@ export interface FetchBoardResult {
    * Provenance of the result itself: how many pages were read, what total the
    * source claimed, and why the read is incomplete when it is. Recorded on the
    * lifecycle event and the run so "the board shrank" is distinguishable from
-   * "we failed to read the board".
+   * "we failed to read the board". For search adapters this describes the
+   * bounded search scope; absenceAuthoritative remains false even on success.
    */
   completeness?: FetchCompleteness;
   /** Rows dropped for failing minimum validation, per requirement 5. */
@@ -94,5 +102,5 @@ export interface FetchBoardResult {
 export interface BoardAdapter {
   name: SourceName;
   /** Fetch every posting on one company's board. */
-  fetchBoard(slug: string, opts?: { etag?: string | null }): Promise<FetchBoardResult>;
+  fetchBoard(slug: string, opts?: { etag?: string | null; companyName?: string }): Promise<FetchBoardResult>;
 }
