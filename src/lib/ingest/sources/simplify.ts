@@ -57,6 +57,8 @@ export interface DiscoveredOrg {
  *   jobs.ashbyhq.com/{slug}/{uuid}
  *   {slug}.jobs.ashbyhq.com/...
  *   jobs.smartrecruiters.com/{Slug}/123
+ *   apply.workable.com/{slug}/j/{shortcode}
+ *   {slug}.workable.com/...   (Workable's older per-account subdomain)
  *   any host with ?gh_jid= — a Greenhouse-backed careers page whose slug we
  *   cannot see, so we record the type and leave the slug null.
  */
@@ -115,6 +117,18 @@ export function inferAts(rawUrl: string | null | undefined): {
 
   if (host.endsWith("smartrecruiters.com")) {
     return { atsType: "smartrecruiters", atsSlug: segments[0] ?? null };
+  }
+
+  if (host === "apply.workable.com") {
+    // apply.workable.com/j/{shortcode} is a bare job link with no account in
+    // it; "j" is not a board slug, and guessing one 404s on every poll.
+    const first = segments[0];
+    if (!first || first === "j") return { atsType: "workable", atsSlug: null };
+    return { atsType: "workable", atsSlug: first };
+  }
+
+  if (host.endsWith(".workable.com") && host !== "www.workable.com" && host !== "jobs.workable.com") {
+    return { atsType: "workable", atsSlug: host.slice(0, -".workable.com".length) };
   }
 
   // A company-hosted careers page backed by Greenhouse. We know the ATS but not
