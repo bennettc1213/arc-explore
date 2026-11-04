@@ -297,6 +297,8 @@ only you can make, and the feature on the other side of it is already written.
   exact-tie breaker. Two missing repo secrets are holding up the best timing
   data in the corpus._
 
+- [x] **Workable is connected as a fifth job-board source (2026-11-03).** Of 689 active intern-hiring companies in discovery whose board we could not read, 411 use Workday, 59 Oracle/Taleo, 38 Workable, 0 Recruitee. Workable shipped first (`sources/workable.ts`, commit `a24b062`, cherry-picked alone onto `origin/master` as `7329d59` so the cron could poll it without taking this branch's unreleased Free/Pro work). Discovery enrolled 83 Workable boards; the next n8n-triggered poll read **83/83 successfully and stored 172 open internships**. **Workday is next and is the larger prize**: its public careers search works and `robots.txt` blocks only `/refreshFacet/`, but boards run to 1,374 jobs at 20 per request, so it must be read by searching "intern" and paging until a page has no internships. A search read cannot prove a job is gone, so Workday rows should never close on absence, only via the link checker.
+
 - [ ] **108 of 1,104 employer boards have failed 5+ consecutive polls**
   (measured 2026-08-26; `ingest:status` reports 155 failing / 151 backed off at
   the ≥1 threshold). Spread across all four ATS families rather than
