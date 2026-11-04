@@ -21,6 +21,7 @@ import { ashby } from "./sources/ashby";
 import { greenhouse } from "./sources/greenhouse";
 import { lever } from "./sources/lever";
 import { smartrecruiters } from "./sources/smartrecruiters";
+import { workable } from "./sources/workable";
 
 /** One stubbed HTTP reply, keyed by a substring of the request URL. */
 interface StubbedResponse {
@@ -216,6 +217,83 @@ itBehavesLikeABoardAdapter("smartrecruiters", () => smartrecruiters, {
   },
   notABoard: { message: "company not found" },
   conditionalRequests: false,
+});
+
+itBehavesLikeABoardAdapter("workable", () => workable, {
+  // Shape copied from a live board (apply.workable.com, 2026-11-03), trimmed.
+  healthy: {
+    name: "Acme",
+    jobs: [
+      {
+        title: "Software Engineering Intern",
+        shortcode: "ABC123DEF4",
+        employment_type: "Temporary",
+        experience: "Internship",
+        telecommuting: false,
+        shortlink: "https://apply.workable.com/j/ABC123DEF4",
+        published_on: "2026-10-14",
+        locations: [{ country: "United States", city: "Austin", region: "Texas", hidden: false }],
+        description: "<p>Build things.</p>",
+      },
+    ],
+  },
+  notABoard: { message: "Not Found" },
+  // Workable publishes no ETag, so every poll is a full read.
+  conditionalRequests: false,
+});
+
+describe("workable rows", () => {
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  it("reads the internship signal from `experience`, and the company from the account name", async () => {
+    // On live boards an intern role reads employment_type "Temporary" or
+    // "Other" beside experience "Internship"; the employment type alone would
+    // hide it from the classifier's hint path.
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          name: "TWG Global",
+          jobs: [
+            {
+              title: "Summer Analyst",
+              shortcode: "263B34D737",
+              employment_type: "Temporary",
+              experience: "Internship",
+              telecommuting: true,
+              shortlink: "https://apply.workable.com/j/263B34D737",
+              published_on: "2026-10-14",
+              locations: [
+                { city: "New York", region: "New York", country: "United States", hidden: false },
+                { city: "Secret", region: null, country: "Nowhere", hidden: true },
+              ],
+              description: "<p>Hello <strong>world</strong></p>",
+            },
+          ],
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      )) as typeof fetch;
+
+    const [p] = (await workable.fetchBoard("twgai")).postings;
+    assert.equal(p.companyName, "TWG Global");
+    assert.equal(p.employmentHint, "Internship");
+    assert.deepEqual(p.locations, ["New York, New York, United States"]);
+    assert.equal(p.workArrangement, "remote");
+    assert.equal(p.postedAt?.toISOString(), "2026-10-14T00:00:00.000Z");
+    assert.match(p.descriptionText ?? "", /Hello world/);
+  });
+
+  it("never invents on-site from a missing remote flag", async () => {
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({ name: "Acme", jobs: [{ title: "Intern", shortcode: "X1", telecommuting: false, shortlink: "https://apply.workable.com/j/X1" }] }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      )) as typeof fetch;
+    const [p] = (await workable.fetchBoard("acme")).postings;
+    assert.equal(p.workArrangement, null);
+    assert.equal(p.isRemote, false);
+  });
 });
 
 describe("adapter contract: pagination", () => {

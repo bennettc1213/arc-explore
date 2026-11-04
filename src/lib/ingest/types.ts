@@ -10,6 +10,7 @@ export type SourceName =
   | "ashby"
   | "lever"
   | "smartrecruiters"
+  | "workable"
   | "simplify"
   | "usajobs";
 

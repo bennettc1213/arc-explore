@@ -61,6 +61,7 @@ export const ATS_TYPES = [
   "ashby",
   "lever",
   "smartrecruiters",
+  "workable",
   "unknown",
 ] as const;
 export type AtsType = (typeof ATS_TYPES)[number];

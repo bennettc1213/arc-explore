@@ -38,6 +38,28 @@ describe("inferAts", () => {
     });
   });
 
+  it("reads workable account slugs, and refuses the bare /j/ job link", () => {
+    // The shape every one of the 38 Workable URLs in discovery takes (2026-11-03).
+    assert.deepEqual(inferAts("https://apply.workable.com/pony-dot-ai/j/4C1F53EF5D/apply"), {
+      atsType: "workable",
+      atsSlug: "pony-dot-ai",
+    });
+    assert.deepEqual(inferAts("https://acme.workable.com/jobs/123"), {
+      atsType: "workable",
+      atsSlug: "acme",
+    });
+    // No account in the path: record the ATS, never guess "j" as a slug.
+    assert.deepEqual(inferAts("https://apply.workable.com/j/501082DA03"), {
+      atsType: "workable",
+      atsSlug: null,
+    });
+    // Workable's own marketing site is not anyone's board.
+    assert.deepEqual(inferAts("https://www.workable.com/careers"), {
+      atsType: "unknown",
+      atsSlug: null,
+    });
+  });
+
   /*
    * The regression this file exists for.
    *

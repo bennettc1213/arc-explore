@@ -22,6 +22,7 @@ import { ashby } from "./sources/ashby";
 import { fetchGreenhouseDescription, greenhouse } from "./sources/greenhouse";
 import { fetchSmartRecruitersDescription, smartrecruiters } from "./sources/smartrecruiters";
 import { lever } from "./sources/lever";
+import { workable } from "./sources/workable";
 import type { BoardAdapter, SourcePosting } from "./types";
 
 export const ADAPTERS: Record<string, BoardAdapter> = {
@@ -29,6 +30,7 @@ export const ADAPTERS: Record<string, BoardAdapter> = {
   ashby,
   lever,
   smartrecruiters,
+  workable,
 };
 
 /** Parallel description fetches per board. Deliberately low — we are a guest. */
