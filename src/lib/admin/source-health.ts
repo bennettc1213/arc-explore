@@ -41,9 +41,9 @@ export interface SourceDefinition {
  * adapter cannot go unwatched just because nobody added it to this list.
  */
 export const SOURCE_CATALOGUE: readonly SourceDefinition[] = [
-  ...(["greenhouse", "lever", "ashby", "smartrecruiters"] as const).map((key) => ({
+  ...(["greenhouse", "lever", "ashby", "smartrecruiters", "workable"] as const).map((key) => ({
     key,
-    label: { greenhouse: "Greenhouse", lever: "Lever", ashby: "Ashby", smartrecruiters: "SmartRecruiters" }[key],
+    label: { greenhouse: "Greenhouse", lever: "Lever", ashby: "Ashby", smartrecruiters: "SmartRecruiters", workable: "Workable" }[key],
     kind: "internship" as const,
     method: "employer job boards, public API",
     runTier: "A",
