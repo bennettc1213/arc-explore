@@ -23,3 +23,14 @@ export function parseWorkdayBoard(slug: string) {
   const origin = `https://${host}`;
   return { origin, site, tenant: host.split(".")[0], api: `${origin}/wday/cxs/${host.split(".")[0]}/${site}` };
 }
+
+/** Read the public shell's internal tenant without changing stable source ids. */
+export function workdayApiFromShell(slug: string, html: string): string {
+  const board = parseWorkdayBoard(slug);
+  const tenant = html.match(/\btenant:\s*"([a-z0-9_-]+)"/)?.[1];
+  const site = html.match(/\bsiteId:\s*"([a-zA-Z0-9_-]+)"/)?.[1];
+  if (!tenant || tenant.replaceAll("_", "-") !== board.tenant || site !== board.site) {
+    throw new Error("Workday public configuration does not match board");
+  }
+  return `${board.origin}/wday/cxs/${tenant}/${site}`;
+}

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { inferAts } from "./sources/simplify";
 import { workday, workdayRobotsAllows } from "./sources/workday";
-import { parseWorkdayBoard, workdayBoardFromUrl } from "./sources/workday-board";
+import { parseWorkdayBoard, workdayApiFromShell, workdayBoardFromUrl } from "./sources/workday-board";
 
 const originalFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = originalFetch; });
@@ -39,6 +39,38 @@ describe("Workday robots", () => {
 });
 
 describe("Workday search", () => {
+  it("uses the public shell tenant after 422 while preserving source identity", async () => {
+    const board = "sallie-mae.wd5.myworkdayjobs.com/Careers";
+    const calls: string[] = [];
+    globalThis.fetch = async input => {
+      const url = String(input); calls.push(url);
+      if (url.endsWith("robots.txt")) return new Response("");
+      if (url.endsWith("/Careers/")) return new Response('tenant: "sallie_mae", siteId: "Careers",');
+      if (url.includes("/cxs/sallie-mae/")) return json({}, 422);
+      if (url.endsWith("/jobs")) return json({ total: 1, jobPostings: [job(1)] });
+      return json({}, 404);
+    };
+    const result = await workday.fetchBoard(board);
+    assert.equal(result.successfulComplete, true);
+    assert.equal(result.absenceAuthoritative, false);
+    assert.equal(result.postings[0].sourceId, "sallie-mae/Careers/REQ1");
+    assert.ok(calls.some(u => u.endsWith("/cxs/sallie_mae/Careers/jobs")));
+    assert.ok(calls.some(u => u.includes("/cxs/sallie_mae/Careers/job/")));
+    assert.throws(() => workdayApiFromShell(board, 'tenant: "other", siteId: "Careers"'));
+    assert.throws(() => workdayApiFromShell(board, 'tenant: "sallie_mae", siteId: "Private"'));
+  });
+
+  it("checks robots for the shell-configured API before retrying", async () => {
+    globalThis.fetch = async input => {
+      const url = String(input);
+      if (url.endsWith("robots.txt")) return new Response("User-agent: *\nDisallow: /wday/cxs/sallie_mae/");
+      if (url.endsWith("/Careers/")) return new Response('tenant: "sallie_mae", siteId: "Careers"');
+      assert.ok(url.includes("/cxs/sallie-mae/"));
+      return json({}, 422);
+    };
+    await assert.rejects(workday.fetchBoard("sallie-mae.wd5.myworkdayjobs.com/Careers"), /robots/);
+  });
+
   it("drops a hidden job's identifier-only placeholder without losing visible jobs", async () => {
     globalThis.fetch = async input => String(input).endsWith("robots.txt") ? new Response("") : String(input).endsWith("/jobs")
       ? json({ total: 2, jobPostings: [{ bulletFields: ["HIDDEN"] }, job(1)] }) : json({}, 404);
@@ -51,6 +83,7 @@ describe("Workday search", () => {
     globalThis.fetch = async (input, init) => {
       const url = String(input);
       if (url.endsWith("robots.txt")) return new Response("User-agent: *\nDisallow: /refreshFacet/");
+      assert.equal((init?.headers as Record<string, string>)["Accept-Language"], "en-US");
       if (url.endsWith("/jobs")) {
         assert.equal(init?.method, "POST");
         const body = JSON.parse(String(init.body)); offsets.push(body.offset);

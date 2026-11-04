@@ -5,6 +5,7 @@ import { classifyOpportunity } from "../normalize";
 import { checkPublicRobots, robotsAllows } from "../robots";
 import type { BoardAdapter, SourcePosting } from "../types";
 import { parseNextData, scopedResult, sourcePosting, text } from "./public-board";
+import { fetchRipplingCorporate } from "./rippling-corporate";
 
 interface Location { name?: string; workplaceType?: string }
 interface Job { id?: string; name?: string; locations?: Location[] }
@@ -20,7 +21,12 @@ export const rippling: BoardAdapter = {
     let total: number | null = null;
     let failure: ReturnType<typeof incomplete> | undefined;
     const signatures = new Set<string>();
-    for (let page = 0; page < 10; page++) {
+    if (slug === "rippling") {
+      const corporate = await fetchRipplingCorporate();
+      pages = corporate.pages; total = corporate.total; failure = corporate.failure;
+      company = "Rippling";
+      for (const job of corporate.jobs) if (classifyOpportunity(job.name) !== "other") jobs.set(job.id, job);
+    } else for (let page = 0; page < 10; page++) {
       let data: Page;
       try { data = parseNextData(await getText(`${origin}/${slug}/jobs${page ? `?page=${page}` : ""}`, { attempts: 1, timeoutMs: 20_000 })) as Page; }
       catch (e) { if (!pages) throw e; failure = incomplete("page_failed", pages, total); break; }

@@ -9,10 +9,10 @@ manual cadence and their listings use `periodic_check`.
 
 | Source | Connection and scope | Distinct listings linked to source |
 | --- | --- | ---: |
-| Workday | Public employer careers search; broad import and recovery passes | 10,186 linked listings |
+| Workday | Public employer careers search; broad import and recovery passes | 10,278 linked listings |
 | Oracle Recruiting Cloud | 53 discovered boards checked; 52 readable after pagination recovery | 1,491 linked listings |
 | Taleo | 4 boards; discovered public job pages, not a full-board crawl | 14 linked listings |
-| Rippling | 14 boards checked; 13 readable, with careers-page pagination | 27 linked listings |
+| Rippling | All 14 discovered boards readable, including the migrated corporate careers page | 32 linked listings |
 | Jobvite | 6 public customer boards | 28 linked listings |
 | Community Foundation of Broward | Foundation's own administered scholarship page | 5 programs; 3 accepting applications |
 | USAJobs | Existing local credentials verified; 168 student-scope announcements fetched | 86 linked listings after title filtering and refresh |
@@ -76,13 +76,62 @@ Reports are generated locally under the git-ignored
 and aggregate import results, not credentials or applicant data. Do not use
 these reports as a license to fetch providers recorded below as restricted.
 
+## Recovery investigation: seven Workday boards and Rippling
+
+The follow-up investigation recovered all eight connections. Castleton and
+Sallie Mae publish `osv_cci` and `sallie_mae` as their internal CXS tenants,
+although their hostnames use hyphens. On a first-page 422, the connector now
+reads and validates that public configuration, checks robots for the corrected
+API path, and retries. Public URLs and stable source ids keep their original
+hostname identity.
+
+Charter Manufacturing, Zurn Elkay, Wawa, Huntington and Signet require an
+explicit `Accept-Language: en-US` header. Their empty and internship searches
+returned 500 without it and 200 with it. Search and detail requests now supply
+the header. The employers' public pages still advertise the same Workday boards;
+these were configuration errors, not verified board closures.
+
+Rippling's [new corporate careers page](https://www.rippling.com/careers/open-roles)
+uses Algolia rather than the ATS board hydration format. The connector reads
+the index name and public browser search-client configuration from that page
+and its published app bundle, then makes bounded, read-only internship queries.
+It does not evaluate scripts or make any index-management requests. Duplicate
+location hits merge under the original ATS job id, and public ATS detail pages
+still provide descriptions. Unexpected configuration or job URLs fail closed.
+Other employers' Rippling boards retain their existing path.
+
+| Recovered board | Internship observations |
+| --- | ---: |
+| Castleton Commodities International | 1 |
+| Charter Manufacturing | 27 |
+| Zurn Elkay Water Solutions | 34 |
+| Wawa | 15 |
+| Huntington Bancshares | 11 |
+| Sallie Mae | 2 |
+| Signet Jewelers | 6 |
+| Rippling | 5 |
+
+All passed dry runs before import. The 96 Workday observations linked 92
+distinct listings; Rippling added five, all with descriptions. The source-family
+total is now 11,848 distinct linked opportunities. The earlier 18:59 UTC snapshot
+above remains the historical pre-recovery measurement. All eight new employer
+organizations retain manual cadence, bringing the held employer total to 438.
+Repeat imports refreshed the same 92 Workday and five Rippling listings with
+zero additions. No missing strikes or closures occurred.
+
+Local reports are `workday-investigation-{dry,import,repeat}.json` and
+`rippling-corporate-{dry,import,repeat}.json` under `.local/source-connections/`.
+The Workday retry input combines earlier board reports and excludes the already
+resolved Intel alias. Regression coverage checks tenant identity, robots on
+corrected routes, the language header, corporate location merging, unexpected
+job links and repeated search pages. `npm run check` passed: 1,227 tests pass,
+four skip, with the same two existing lint warnings.
+
 ## Remaining connection holds
 
 | Source or board | Observed hold |
 | --- | --- |
-| Seven Workday boards | Castleton Commodities and Sallie Mae return HTTP 422; Charter Manufacturing, Zurn Elkay, Wawa, Huntington and Signet return HTTP 500. They were retried and remained held. |
 | JPMorgan Chase on Oracle | Its robots endpoint returns HTTP 403. No bypass was attempted; that board was not imported. |
-| Rippling's own company board | The old ATS URL redirects to a different careers product, so the structured ATS adapter does not claim success. Other Rippling customer boards work. |
 | Arbeitnow UK | The public API responded during a probe, but robots review returns HTTP 403. Automated import remains held. |
 | The Muse | Owner must register an app and supply its key before use beyond testing. |
 | Adzuna | No app id/key configured locally. |

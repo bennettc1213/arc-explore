@@ -7,12 +7,12 @@
  */
 import { incomplete } from "../contract";
 import { htmlToText } from "../html";
-import { getJson, mapLimit } from "../http";
+import { getJson, getText, HttpError, mapLimit } from "../http";
 import { checkPublicRobots as checkRobots, robotsAllows as workdayRobotsAllows } from "../robots";
 export { robotsAllows as workdayRobotsAllows } from "../robots";
 import { classifyOpportunity } from "../normalize";
 import type { BoardAdapter, FetchBoardResult, SourcePosting } from "../types";
-import { parseWorkdayBoard } from "./workday-board";
+import { parseWorkdayBoard, workdayApiFromShell } from "./workday-board";
 
 const PAGE_SIZE = 20;
 const MAX_PAGES = 10;
@@ -52,7 +52,8 @@ if (!Number.isInteger(detailLimit) || detailLimit < 0 || detailLimit > 100 || !N
 return {
   name: "workday",
   async fetchBoard(slug, opts): Promise<FetchBoardResult> {
-    const { origin, api, site, tenant } = parseWorkdayBoard(slug);
+    const { origin, site, tenant, api: initialApi } = parseWorkdayBoard(slug);
+    let api = initialApi;
     const robots = await checkRobots(origin, [`/${site}/`, new URL(api).pathname + "/jobs"]);
     const jobs = new Map<string, SearchJob>();
     const pageSignatures = new Set<string>();
@@ -63,10 +64,21 @@ return {
     for (let page = 0; page < maxPages; page++) {
       let data: SearchResponse | null;
       try {
-        data = (await getJson<SearchResponse>(`${api}/jobs`, {
+        const search = () => getJson<SearchResponse>(`${api}/jobs`, {
+          headers: { "Accept-Language": "en-US" },
           jsonBody: { appliedFacets: {}, limit: PAGE_SIZE, offset: page * PAGE_SIZE, searchText: "intern" },
           attempts: 2, timeoutMs: 20_000,
-        })).data;
+        });
+        try { data = (await search()).data; }
+        catch (e) {
+          if (page !== 0 || !(e instanceof HttpError) || e.status !== 422) throw e;
+          // Some public hostnames use hyphens while CXS uses underscores.
+          // Read the employer's published configuration rather than guessing.
+          api = workdayApiFromShell(slug, await getText(`${origin}/${site}/`, { attempts: 1, timeoutMs: 15_000 }));
+          if (api === initialApi) throw e;
+          if (!workdayRobotsAllows(robots, new URL(api).pathname + "/jobs")) throw new Error("Workday robots excludes configured search");
+          data = (await search()).data;
+        }
       } catch (e) {
         if (pages === 0) throw e;
         failure = incomplete("page_failed", pages, total); break;
@@ -104,7 +116,7 @@ return {
     await mapLimit(entries.slice(0, detailLimit), 2, async job => {
       try {
         if (!workdayRobotsAllows(robots, new URL(`${api}${job.externalPath}`).pathname)) return;
-        const info = (await getJson<DetailResponse>(`${api}${job.externalPath}`, { attempts: 1, timeoutMs: 15_000 })).data?.jobPostingInfo;
+        const info = (await getJson<DetailResponse>(`${api}${job.externalPath}`, { headers: { "Accept-Language": "en-US" }, attempts: 1, timeoutMs: 15_000 })).data?.jobPostingInfo;
         if (info && typeof info.title === "string") details.set(job.externalPath!, info);
       } catch { /* Search itself still confirms the job; enrichment may be absent. */ }
     });
