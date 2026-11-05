@@ -15,7 +15,7 @@ import { exploreBrowseHref, scoutButtonLabel, scoutCopy, scoutHref, type ScoutFo
  * without waiting on the feed.
  */
 const STEPS = [
-  ["Tell it what you're after", "A field, a place, and a few details if you like. Only the field is required, and merit awards don't need even that."],
+  ["Tell it what you're after", "Choose your preferences, or rerun a remembered Scout with one click. You can explore broadly, too."],
   ["It looks through the index", "Your Scout reads the listings Instela has collected and keeps the ones that fit what you stated."],
   ["You get a short list", "Each result shows where it came from and when we last saw it. Free shows up to 10 matches."],
 ] as const;

@@ -22,6 +22,7 @@ import { coerceParsedResume } from "@/lib/resume/types";
 import { resolveViewer, type SearchParams } from "@/app/explore/viewer";
 import { ScoringDetails } from "@/components/discovery/ScoringDetails";
 import { FEED_PATH } from "@/lib/routes";
+import { scoutReturnPath } from "@/lib/scout/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -50,7 +51,9 @@ export default async function ListingPage({
 }) {
   const { id } = await params;
 
-  const { user, stored, resume, tier, profile, profileReady } = await resolveViewer(await searchParams);
+  const sp = await searchParams;
+  const returnTo = scoutReturnPath(sp.returnTo);
+  const { user, stored, resume, tier, profile, profileReady } = await resolveViewer(sp);
   const item = await getPosting(id, profile);
   if (!item) notFound();
 
@@ -110,7 +113,7 @@ export default async function ListingPage({
 
   return (
     <main className="wrap listing-page" style={{ paddingBlock: "40px 96px" }}>
-      <BackLink href={FEED_PATH} label="back to feed" />
+      <BackLink href={returnTo ?? FEED_PATH} label={returnTo ? "Back to Scout results" : "back to feed"} />
 
       <header className="print-hide" style={{ marginBottom: 24 }}>
           <div className="eyebrow chrome">04 — opportunity</div>
@@ -212,7 +215,7 @@ export default async function ListingPage({
             )}
             {user && (
               <Link
-                href={`/listing/${item.id}/apply`}
+                href={`/listing/${item.id}/apply${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`}
                 className="btn press"
                 style={{ textDecoration: "none" }}
               >

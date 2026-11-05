@@ -11,5 +11,5 @@ export default async function ScoutPage({ searchParams }: { searchParams: Promis
   const recentScouts = user ? await listRecentScouts(user.id).catch(() => []) : [];
   // `?for=` says which tool the student came from. Parsed in a tested module,
   // never in the page, and anything unrecognised is a plain Scout.
-  return <ScoutWorkspace focus={scoutFocusFrom(sp.for)} recentScouts={recentScouts} />;
+  return <ScoutWorkspace key={`${user?.id ?? "guest"}:${scoutFocusFrom(sp.for) ?? "all"}`} memoryOwner={user?.id ?? "guest"} focus={scoutFocusFrom(sp.for)} recentScouts={recentScouts} />;
 }

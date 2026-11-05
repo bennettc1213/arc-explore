@@ -4,9 +4,9 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Radar, GraduationCap, BriefcaseBusiness, Layers, Check, SlidersHorizontal, ExternalLink, Bookmark, RefreshCw, BookOpen, ShieldCheck, Clock3, CircleHelp } from "lucide-react";
 import { runScout, type ScoutData } from "@/app/scout/actions";
-import { focusPreferences, scoutCopy, type ScoutFocus } from "@/lib/scout/focus";
+import { focusPreferences, scoutCopy, scoutHref, type ScoutFocus } from "@/lib/scout/focus";
 import { defaultScout, scoutSchema, type ScoutPreferences } from "@/lib/scout/types";
-import { describeScout } from "@/lib/scout/history";
+import { describeScout, scoutFingerprint } from "@/lib/scout/history";
 import type { RecentScout } from "@/lib/scout/history-store";
 import { ScoutMap } from "./ScoutMap";
 
@@ -29,7 +29,7 @@ function sourceAge(checkedAt: string, observedAt: string) {
   return `${Math.floor(seconds / 86400)} ${Math.floor(seconds / 86400) === 1 ? "day" : "days"}`;
 }
 
-export function ScoutWorkspace({ focus = null, recentScouts = [] }: { focus?: ScoutFocus | null; recentScouts?: RecentScout[] }) {
+export function ScoutWorkspace({ focus = null, recentScouts = [], memoryOwner = "guest" }: { focus?: ScoutFocus | null; recentScouts?: RecentScout[]; memoryOwner?: string }) {
   const copy = scoutCopy(focus);
   const [prefs, setPrefs] = useState<ScoutPreferences>(focus ? { ...defaultScout, ...focusPreferences(focus) } : defaultScout);
   const [step, setStep] = useState(0);
@@ -43,28 +43,84 @@ export function ScoutWorkspace({ focus = null, recentScouts = [] }: { focus?: Sc
   const [customLocationMode, setCustomLocationMode] = useState(false);
   const [customResidencyMode, setCustomResidencyMode] = useState(false);
   const runId = useRef(0);
+  const [memories, setMemories] = useState(recentScouts);
+  const [resultPath, setResultPath] = useState(scoutHref(focus));
+  const snapshotId = useRef<string | null>(null);
+  const snapshotKey = `instela.scout.results.v1:${memoryOwner}:`;
+  const memoryKey = `${storageKey}:${memoryOwner}`;
+  const recentKey = `instela.scout.history.v1:${memoryOwner}`;
+  function rememberLocally(preferences: ScoutPreferences) {
+    const entry = { id: scoutFingerprint(preferences), preferences, updatedAt: new Date().toISOString() };
+    setMemories(previous => {
+      const next = [entry, ...previous.filter(item => scoutFingerprint(item.preferences) !== entry.id)].slice(0, 5);
+      try { localStorage.setItem(recentKey, JSON.stringify(next)); } catch { /* Optional browser memory. */ }
+      return next;
+    });
+  }
   const fieldChoice = customFieldMode ? CUSTOM_OPTION : selectedChoice(prefs.field, FIELD_OPTIONS);
   const locationChoice = customLocationMode ? CUSTOM_OPTION : selectedChoice(prefs.location, STATE_OPTIONS);
   const residencyChoice = customResidencyMode ? CUSTOM_OPTION : selectedChoice(prefs.residency, STATE_OPTIONS);
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       try {
-        const raw = localStorage.getItem(storageKey);
+        const localHistory: unknown = JSON.parse(localStorage.getItem(recentKey) || "[]");
+        const entries = [...recentScouts];
+        if (Array.isArray(localHistory)) for (const entry of localHistory) {
+          const parsed = scoutSchema.safeParse(entry?.preferences);
+          if (parsed.success && !entries.some(item => scoutFingerprint(item.preferences) === scoutFingerprint(parsed.data))) entries.push({ id: scoutFingerprint(parsed.data), preferences: parsed.data, updatedAt: String(entry.updatedAt) });
+        }
+        entries.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+        setMemories(entries.slice(0, 5));
+        const latest = entries.find(item => !focus || (item.preferences.kind === focusPreferences(focus).kind && item.preferences.merit === focusPreferences(focus).merit));
+        const raw = localStorage.getItem(memoryKey);
         if (raw) {
           const parsed = scoutSchema.safeParse(JSON.parse(raw));
-          // The tool the student came from decides the kind and the merit filter.
-          // With no tool, a merit setting left over from an earlier Scout is dropped,
-          // since a plain Scout has nowhere to show or undo it.
-          // A merit Scout also starts without the remembered field: the open merit
-          // awards are few enough that a field from an earlier Scout empties them.
-          if (parsed.success) setPrefs(focus ? { ...parsed.data, ...focusPreferences(focus), ...(focus === "merit" ? { field: "" } : {}) } : { ...parsed.data, merit: false, college: "" });
+          // The selected tool fixes the opportunity type; other preferences persist.
+          if (parsed.success) { setPrefs(focus ? { ...parsed.data, ...focusPreferences(focus) } : parsed.data); setStep(3); }
         }
+        if (latest) { setPrefs(latest.preferences); setStep(3); }
         const bookmarks: unknown = JSON.parse(localStorage.getItem("instela.scout.bookmarks.v1") || "[]");
         if (Array.isArray(bookmarks)) setSaved(bookmarks.filter((id): id is string => typeof id === "string"));
       } catch { /* Storage may be disabled. */ }
+      // Restore the exact result set represented by this browser history entry.
+      try {
+        const id = new URL(window.location.href).searchParams.get("run");
+        if (id) {
+          const snapshot = JSON.parse(sessionStorage.getItem(snapshotKey + id) || "null");
+          const parsed = scoutSchema.safeParse(snapshot?.preferences);
+          if (parsed.success && Array.isArray(snapshot?.data?.sections)) {
+            snapshotId.current = id;
+            setPrefs(parsed.data); setData(snapshot.data); setFilter(snapshot.filter || "all"); setPhase("results");
+            setResultPath(window.location.pathname + window.location.search);
+            requestAnimationFrame(() => window.scrollTo(0, snapshot.scrollY || 0));
+          }
+        }
+      } catch { /* An expired or unavailable result snapshot can be rerun from memory. */ }
     });
     return () => cancelAnimationFrame(frame);
-  }, [focus]);
+  }, [focus, memoryKey, recentKey, recentScouts, snapshotKey]);
+  useEffect(() => {
+    if (phase !== "results" || !data || !snapshotId.current) return;
+    const key = snapshotKey + snapshotId.current;
+    const persist = () => {
+      try { sessionStorage.setItem(key, JSON.stringify({ preferences: prefs, data, filter, scrollY: window.scrollY })); }
+      catch { /* Returning still works when the browser disallows storage. */ }
+    };
+    persist();
+    window.addEventListener("scroll", persist, { passive: true });
+    window.addEventListener("pagehide", persist);
+    return () => { window.removeEventListener("scroll", persist); window.removeEventListener("pagehide", persist); };
+  }, [data, filter, phase, prefs, snapshotKey]);
+  function enterResults() {
+    const id = crypto.randomUUID();
+    snapshotId.current = id;
+    const url = new URL(scoutHref(focus), window.location.origin);
+    url.searchParams.set("run", id);
+    const path = url.pathname + url.search;
+    window.history.replaceState(null, "", path);
+    setResultPath(path);
+    setProgress(100); setFilter("all"); setPhase("results");
+  }
   function toggleBookmark(id: string) {
     const next = saved.includes(id) ? saved.filter(value => value !== id) : [...saved, id];
     try { localStorage.setItem("instela.scout.bookmarks.v1", JSON.stringify(next)); setSaved(next); }
@@ -84,10 +140,12 @@ export function ScoutWorkspace({ focus = null, recentScouts = [] }: { focus?: Sc
     setStep(3);
     setError("");
   }
-  async function launch() {
-    const valid = scoutSchema.safeParse(prefs);
+  async function launch(preferences: ScoutPreferences = prefs) {
+    const valid = scoutSchema.safeParse(preferences);
     if (!valid.success) { setError(valid.error.issues[0].message); setStep(0); return; }
-    try { localStorage.setItem(storageKey, JSON.stringify(valid.data)); } catch { /* Running does not depend on storage. */ }
+    setPrefs(valid.data);
+    try { localStorage.setItem(memoryKey, JSON.stringify(valid.data)); } catch { /* Running does not depend on storage. */ }
+    rememberLocally(valid.data);
     setError(""); setProgress(0); setData(null); setPhase("running");
     const current = ++runId.current;
     const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 700 : 11000;
@@ -104,14 +162,12 @@ export function ScoutWorkspace({ focus = null, recentScouts = [] }: { focus?: Sc
     } finally { clearTimeout(timeout); }
     if (current !== runId.current) return;
     if (result.error || !result.data) { setError(result.error || "Please try again."); setPhase("setup"); return; }
-    setData(result.data); setProgress(100); setFilter("all"); setPhase("results");
+    setData(result.data); enterResults();
   }
   function showResults() {
     if (!data) return;
     runId.current++;
-    setProgress(100);
-    setFilter("all");
-    setPhase("results");
+    enterResults();
   }
   const allCount = data?.sections.reduce((n, section) => n + section.items.length, 0) ?? 0;
   const resultTabs = [
@@ -129,7 +185,7 @@ export function ScoutWorkspace({ focus = null, recentScouts = [] }: { focus?: Sc
     <header className="scout-heading"><div className="scout-kicker"><Radar size={16} /> {copy.kicker} <span>SEARCH WORKSPACE</span></div><h1>{phase === "results" ? "Look what turned up." : phase === "running" ? "Following your interests." : copy.heading}</h1><p>{phase === "results" ? `${prefs.field ? `${prefs.field} / ` : ""}${prefs.location ? `${prefs.location} / ` : ""}${prefs.merit && prefs.college ? `${prefs.college} / ` : ""}${prefs.merit ? "College merit awards" : prefs.kind === "both" ? "Internships + scholarships" : prefs.kind === "internship" ? "Internships" : "Scholarships"}` : phase === "running" ? "Matching your preferences with source-backed opportunities in the Instela index." : copy.intro}</p></header>
 
     {phase === "setup" && <div className="scout-setup-grid"><section className="scout-form-surface">
-      {!focus && recentScouts.length > 0 && <section className="recent-scouts" aria-label="Recent Scouts"><div><span className="scout-step-label">RECENT SCOUTS</span><p>Pick up a previous search without rebuilding its filters.</p></div><div className="recent-scout-list">{recentScouts.map(scout => <button type="button" key={scout.id} onClick={() => reuseScout(scout.preferences)}><strong>{describeScout(scout.preferences)}</strong><span>Use this Scout <ArrowRight size={12} /></span></button>)}</div></section>}
+      {memories.length > 0 && <section className="recent-scouts" aria-label="Scout memory"><div><span className="scout-step-label">SCOUT MEMORY</span><p>{memoryOwner === "guest" ? "Remembered on this browser." : "Your recent Scouts are saved to your account."} Run the same search again or edit its preferences.</p></div><div className="recent-scout-list">{memories.map(scout => <div key={scout.id}><button type="button" onClick={() => void launch(scout.preferences)}><strong>{describeScout(scout.preferences)}</strong><span>Run this Scout <ArrowRight size={12} /></span></button><button type="button" onClick={() => reuseScout(scout.preferences)}>Edit preferences</button></div>)}</div></section>}
       <ol className="scout-steps">{steps.map((label, index) => <li key={label} className={index === step ? "current" : index < step ? "complete" : ""}><span>{index < step ? <Check size={12} /> : index + 1}</span><small>{label}</small></li>)}</ol>
       <form onSubmit={event => { event.preventDefault(); setError(""); if (step < 3) setStep(step + 1); else void launch(); }}>
         <div className="scout-step-content">
@@ -145,7 +201,7 @@ export function ScoutWorkspace({ focus = null, recentScouts = [] }: { focus?: Sc
 
     {phase === "results" && data && <section className="scout-results">{error && <p role="alert" className="scout-error">{error}</p>}<div className="scout-result-toolbar"><div><strong>{allCount} opportunities</strong><span>{data.total} match your search</span></div><div><button className="btn" onClick={() => setPhase("setup")}><SlidersHorizontal size={15} /> Edit Scout</button><button className="btn" onClick={() => void launch()} title="Run Scout again" aria-label="Run Scout again"><RefreshCw size={16} /></button></div></div><nav className="scout-result-tabs" aria-label="Result categories">{resultTabs.map(tab => <button key={tab.id} aria-pressed={filter === tab.id} onClick={() => setFilter(tab.id)}>{tab.label}<span>{tab.count}</span></button>)}</nav>{allCount > 0 && visibleSections.length === 0 && <div className="scout-empty"><Radar size={32} /><h2>{filter === "new" ? "Nothing newly discovered in this set." : "No matches in this category yet."}</h2><p>Try another category, or adjust your Scout to widen the search.</p><button className="btn" onClick={() => setFilter("all")}>See all my matches <ArrowRight size={16} /></button></div>}
       {!allCount && <div className="scout-empty"><Radar size={40} /><h2>No current opportunities fit those must-have filters.</h2><p>{prefs.merit ? "Merit awards and a named college are strict filters. Try clearing the college to see all available merit awards." : prefs.remote ? "No remote-only opportunities are in the current index. Switch Work setting to Flexible to include every work setting." : "Your field and location only rank results; they do not exclude them. Try another opportunity type or check back as sources refresh."}</p><button className="btn btn-primary" onClick={() => { setStep(0); setPhase("setup"); }}>Adjust my Scout <ArrowRight size={16} /></button></div>}
-      {visibleSections.map(section => <section key={section.id} className="scout-result-section"><header><h2>{section.title}</h2><p>{section.description}</p></header>{section.items.map(card => <article key={card.id} className="scout-result-row"><div className={`scout-result-symbol ${card.kind}`} >{card.kind === "scholarship" ? <GraduationCap size={23} /> : <BriefcaseBusiness size={23} />}</div><div className="scout-result-main"><div className="scout-result-meta"><span>{card.company}</span><span>{card.kind === "scholarship" ? "Scholarship" : "Internship"}</span></div><Link className="scout-result-title" href={`/listing/${card.id}`}>{card.title}</Link><div className="scout-result-facts"><span>{card.locations.join(" / ") || "Location not stated"}</span><span>{card.award || card.compensation}</span>{card.deadline && <span>Apply by {card.deadline}</span>}</div><div className={`scout-freshness freshness-${card.freshness.state}`}>{card.freshness.state === "recent" ? <Check size={13} /> : card.freshness.state === "older" ? <Clock3 size={13} /> : <CircleHelp size={13} />}<span>{card.verified}</span>{card.freshness.foundLabel && <span className="scout-found-label">{card.freshness.foundLabel}</span>}{card.bucketLabel && <span className="scout-fit-label">{card.bucketLabel}</span>}</div>{card.warnings.length > 0 && <p className="scout-warning">{card.warnings[0]}</p>}</div><div className="scout-result-actions"><Link className="btn" href={`/listing/${card.id}/apply`}>Prepare <ArrowRight size={14} /></Link><a href={card.url} target="_blank" rel="noopener noreferrer" title="Open listing source" aria-label={`Open source for ${card.title}`}><ExternalLink size={16} /></a><button title={saved.includes(card.id) ? "Remove browser bookmark" : "Bookmark on this browser"} aria-label={saved.includes(card.id) ? "Remove browser bookmark" : "Bookmark on this browser"} aria-pressed={saved.includes(card.id)} onClick={() => toggleBookmark(card.id)}><Bookmark size={16} fill={saved.includes(card.id) ? "currentColor" : "none"} /></button></div></article>)}</section>)}
+      {visibleSections.map(section => <section key={section.id} className="scout-result-section"><header><h2>{section.title}</h2><p>{section.description}</p></header>{section.items.map(card => <article key={card.id} className="scout-result-row"><div className={`scout-result-symbol ${card.kind}`} >{card.kind === "scholarship" ? <GraduationCap size={23} /> : <BriefcaseBusiness size={23} />}</div><div className="scout-result-main"><div className="scout-result-meta"><span>{card.company}</span><span>{card.kind === "scholarship" ? "Scholarship" : "Internship"}</span></div><Link className="scout-result-title" href={`/listing/${card.id}?returnTo=${encodeURIComponent(resultPath)}`}>{card.title}</Link><div className="scout-result-facts"><span>{card.locations.join(" / ") || "Location not stated"}</span><span>{card.award || card.compensation}</span>{card.deadline && <span>Apply by {card.deadline}</span>}</div><div className={`scout-freshness freshness-${card.freshness.state}`}>{card.freshness.state === "recent" ? <Check size={13} /> : card.freshness.state === "older" ? <Clock3 size={13} /> : <CircleHelp size={13} />}<span>{card.verified}</span>{card.freshness.foundLabel && <span className="scout-found-label">{card.freshness.foundLabel}</span>}{card.bucketLabel && <span className="scout-fit-label">{card.bucketLabel}</span>}</div>{card.warnings.length > 0 && <p className="scout-warning">{card.warnings[0]}</p>}</div><div className="scout-result-actions"><Link className="btn" href={`/listing/${card.id}/apply?returnTo=${encodeURIComponent(resultPath)}`}>Prepare <ArrowRight size={14} /></Link><a href={card.url} target="_blank" rel="noopener noreferrer" title="Open listing source" aria-label={`Open source for ${card.title}`}><ExternalLink size={16} /></a><button title={saved.includes(card.id) ? "Remove browser bookmark" : "Bookmark on this browser"} aria-label={saved.includes(card.id) ? "Remove browser bookmark" : "Bookmark on this browser"} aria-pressed={saved.includes(card.id)} onClick={() => toggleBookmark(card.id)}><Bookmark size={16} fill={saved.includes(card.id) ? "currentColor" : "none"} /></button></div></article>)}</section>)}
       {!data.full && data.total > allCount && <div className="scout-upgrade"><p>Your free Scout shows up to 10 matches. Pro unlocks the full result set.</p><Link className="btn" href="/pricing">See Pro <ArrowRight size={15} /></Link></div>}<p className="scout-storage-note">Fit describes alignment with available evidence. It does not predict selection or scholarship awards.</p>
     </section>}
   </main>;
