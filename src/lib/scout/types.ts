@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const scoutSchema = z.object({
   kind: z.enum(["both", "internship", "scholarship"]),
-  /** Required, except for merit awards: there are few enough of those that a field usually empties the result. */
+  /** A ranking preference. It deliberately does not act as a hard text filter. */
   field: z.string().trim().max(100),
   location: z.string().trim().max(100),
   remote: z.boolean(),
@@ -16,6 +16,6 @@ export const scoutSchema = z.object({
   /** Merit awards only. Defaults keep preferences saved before these existed loadable. */
   merit: z.boolean().default(false),
   college: z.string().trim().max(160).default(""),
-}).refine(p => p.merit || p.field.length >= 2, { message: "Add a field or interest.", path: ["field"] });
+});
 export type ScoutPreferences = z.infer<typeof scoutSchema>;
 export const defaultScout: ScoutPreferences = { kind: "both", field: "", location: "", remote: false, priority: "fit", school: "", gradYear: "", workAuth: "", gpa: "", gpaScale: "4", residency: "", merit: false, college: "" };
