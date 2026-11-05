@@ -57,11 +57,11 @@ test("fixed preferences stay valid for the Scout schema", () => {
   }
 });
 
-test("a field is required everywhere except merit awards", () => {
+test("a Scout can start broad without a field", () => {
   const base = { field: "", location: "", remote: false, priority: "fit", school: "", gradYear: "", workAuth: "", gpa: "", gpaScale: "4", residency: "" };
-  assert.equal(scoutSchema.safeParse({ ...base, ...focusPreferences("internships") }).success, false);
-  assert.equal(scoutSchema.safeParse({ ...base, ...focusPreferences("scholarships") }).success, false);
-  assert.equal(scoutSchema.safeParse({ ...base, kind: "both", merit: false }).success, false);
+  assert.equal(scoutSchema.safeParse({ ...base, ...focusPreferences("internships") }).success, true);
+  assert.equal(scoutSchema.safeParse({ ...base, ...focusPreferences("scholarships") }).success, true);
+  assert.equal(scoutSchema.safeParse({ ...base, kind: "both", merit: false }).success, true);
   assert.equal(scoutSchema.safeParse({ ...base, ...focusPreferences("merit") }).success, true);
 });
 

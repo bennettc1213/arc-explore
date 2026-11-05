@@ -147,6 +147,36 @@ function clearMarks() {
   }
 }
 
+/**
+ * Many portals replace or reveal a question after a server-side validation
+ * round trip. Two animation frames catches React's immediate render but not a
+ * form that takes a few hundred milliseconds to add the next control.
+ */
+function waitForFormUpdate() {
+  return new Promise(resolve => {
+    if (typeof MutationObserver === "undefined" || !document.documentElement) {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+      return;
+    }
+    let done = false;
+    let timer;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      observer.disconnect();
+      clearTimeout(timer);
+      resolve();
+    };
+    const observer = new MutationObserver(finish);
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    timer = setTimeout(finish, 450);
+  });
+}
+
+function shouldUseQuickChoices(choices) {
+  return Boolean(choices && choices.length <= 4 && choices.every(choice => choice.text.length <= 32));
+}
+
 /* ------------------------------------------------------------------ *
  * The pass
  * ------------------------------------------------------------------ */
@@ -169,7 +199,8 @@ async function fill(values) {
   const report = { filled: 0, known: 0, blocked: 0, unknown: 0, skippedNonEmpty: 0 };
   const blockedLabels = [];
   const seen = new WeakSet();
-  for (let pass = 0; pass < 20; pass++) {
+  let quietScans = 0;
+  for (let pass = 0; pass < 40; pass++) {
   const questions = [];
   const radioGroups = new Set();
 
@@ -246,6 +277,7 @@ async function fill(values) {
     }
   }
 
+  let answersApplied = 0;
   for (const question of questions) {
     if (!question.el.isConnected || question.el.disabled || question.el.readOnly) continue;
     const answer = await askQuestion(question);
@@ -274,11 +306,15 @@ async function fill(values) {
     }
     report.filled++;
     report[question.category]--;
+    answersApplied++;
   }
-  if (!questions.length) break;
-  // Conditional questions may appear after a change event. Scan again after
-  // the site's next render, without navigating or pressing Next for them.
-  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  // Keep looking briefly after the form appears quiet. A portal can reveal
+  // the next question after an asynchronous validation request, and every
+  // answer above may also replace controls wholesale. We never click Next or
+  // Submit; this is only a DOM rescan.
+  quietScans = answersApplied ? 0 : quietScans + 1;
+  if (quietScans >= 4) break;
+  await waitForFormUpdate();
   }
   return { report, blockedLabels };
   } finally { fillInProgress = false; }
@@ -317,7 +353,7 @@ function askQuestion(question) {
     Object.assign(host.style, { position: "fixed", inset: "0", zIndex: "2147483647" });
     const root = host.attachShadow({ mode: "closed" });
     const style = document.createElement("style");
-    style.textContent = `:host{all:initial}.veil{position:fixed;inset:0;background:#10131bb8;display:grid;place-items:center;padding:16px;font:15px/1.5 system-ui;color:#eef0f5}.panel{background:#151922;border:1px solid #454c5a;border-radius:16px;padding:24px;max-width:480px;width:100%;box-sizing:border-box;max-height:95vh;overflow:auto}h2{font-size:20px;margin:12px 0}p{color:#b6becd;font-size:13px}input,textarea,select{box-sizing:border-box;width:100%;background:#222937;border:1px solid #677389;border-radius:8px;color:white;padding:12px;font:inherit}button{background:#ed8544;border:0;border-radius:8px;padding:10px 14px;color:#111;font:inherit;cursor:pointer}button:disabled{opacity:.5}footer{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.secondary{background:#303847;color:white}.error{color:#ffb5b5}a{color:#ffb98e}`;
+    style.textContent = `:host{all:initial}.veil{position:fixed;inset:0;background:#10131bb8;display:grid;place-items:center;padding:16px;font:15px/1.5 system-ui;color:#eef0f5}.panel{background:#151922;border:1px solid #454c5a;border-radius:16px;padding:24px;max-width:480px;width:100%;box-sizing:border-box;max-height:95vh;overflow:auto}h2{font-size:20px;margin:12px 0}p{color:#b6becd;font-size:13px}input,textarea,select{box-sizing:border-box;width:100%;background:#222937;border:1px solid #677389;border-radius:8px;color:white;padding:12px;font:inherit}button{background:#ed8544;border:0;border-radius:8px;padding:10px 14px;color:#111;font:inherit;cursor:pointer}button:disabled{opacity:.5}footer{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.secondary{background:#303847;color:white}.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:12px}.choice{background:#273246;color:white;border:1px solid #677389;text-align:left}.error{color:#ffb5b5}a{color:#ffb98e}`;
     const veil = document.createElement("div"); veil.className = "veil";
     const panel = document.createElement("form"); panel.className = "panel";
     panel.setAttribute("role", "dialog"); panel.setAttribute("aria-modal", "true"); panel.setAttribute("aria-labelledby", "question-title");
@@ -326,50 +362,77 @@ function askQuestion(question) {
     const note = document.createElement("p");
     note.textContent = question.key ? "Save this detail to your Instela profile and reuse it on future applications. You can edit or remove it in your profile." : "Your answer is for this application only. It will not be saved to your Instela profile.";
     const choices = question.radios ? question.radios.map(input => ({ value: input.value, text: labelFor(input) ?? input.value })) : question.el.tagName === "SELECT" ? [...question.el.options].filter(o => o.value && !o.disabled).map(o => ({ value: o.value, text: o.textContent.trim() })) : null;
-    const input = document.createElement(choices ? "select" : !question.key || question.el.tagName === "TEXTAREA" ? "textarea" : "input");
-    input.setAttribute("aria-labelledby", "question-title");
-    input.required = true;
-    if (choices) {
+    // Short choices are faster and clearer as buttons. Long lists, especially
+    // country/region selectors, remain a native dropdown that supports search
+    // and keyboard navigation in the browser.
+    const quickChoices = shouldUseQuickChoices(choices);
+    const input = quickChoices ? null : document.createElement(choices ? "select" : !question.key || question.el.tagName === "TEXTAREA" ? "textarea" : "input");
+    if (input) input.setAttribute("aria-labelledby", "question-title");
+    if (input) input.required = true;
+    if (choices && input) {
       const empty = document.createElement("option"); empty.value = ""; empty.textContent = "Choose an answer"; input.append(empty);
       for (const choice of choices) { const option = document.createElement("option"); option.value = choice.value; option.textContent = choice.text; input.append(option); }
-    } else {
+    } else if (input) {
       input.maxLength = Math.min(question.el.maxLength > 0 ? question.el.maxLength : 20000, question.key ? 500 : 20000);
       if (input.tagName === "TEXTAREA") input.rows = 5;
       else input.type = ["email", "url", "tel", "number", "date"].includes(question.el.type) ? question.el.type : "text";
     }
     const error = document.createElement("p"); error.className = "error"; error.setAttribute("role", "status");
     const footer = document.createElement("footer");
-    const save = document.createElement("button"); save.type = "submit"; save.textContent = question.key ? "Save & autofill" : "Use this answer";
+    const save = input ? document.createElement("button") : null;
+    if (save) { save.type = "submit"; save.textContent = question.key ? "Save & autofill" : "Use this answer"; }
     const skip = document.createElement("button"); skip.type = "button"; skip.className = "secondary"; skip.textContent = "Skip question";
     const stop = document.createElement("button"); stop.type = "button"; stop.className = "secondary"; stop.textContent = "Finish in form";
+    const choiceButtons = [];
     let saving = false;
     function finish(value) { host.remove(); if (previousFocus?.isConnected) previousFocus.focus(); resolve(value); }
-    skip.addEventListener("click", () => { if (!saving) finish(""); });
-    stop.addEventListener("click", () => { if (!saving) finish(null); });
-    panel.addEventListener("keydown", event => {
-      if (event.key === "Escape" && !saving) { event.preventDefault(); finish(null); }
-      if (event.key === "Tab") {
-        if (event.shiftKey && root.activeElement === input) { event.preventDefault(); stop.focus(); }
-        else if (!event.shiftKey && root.activeElement === stop) { event.preventDefault(); input.focus(); }
-      }
-    });
-    panel.addEventListener("submit", async event => {
-      event.preventDefault();
-      const answer = input.value.trim();
+    async function submitAnswer(rawAnswer) {
+      const answer = rawAnswer.trim();
       if (!answer || saving) return;
-      saving = true; save.disabled = skip.disabled = stop.disabled = true; error.textContent = "";
+      saving = true;
+      for (const control of [save, skip, stop, ...choiceButtons]) if (control) control.disabled = true;
+      error.textContent = "";
       if (question.key) {
         try {
           const value = choices?.find(choice => choice.value === answer)?.text ?? answer;
           const result = await chrome.runtime.sendMessage({ type: "INSTELA_SAVE_MEMORY", key: question.key, value });
           if (!result?.ok) throw new Error(result?.error ?? "Could not save this answer.");
         } catch (err) {
-          error.textContent = err.message; saving = false; save.disabled = skip.disabled = stop.disabled = false; return;
+          error.textContent = err?.message ?? "Could not save this answer.";
+          saving = false;
+          for (const control of [save, skip, stop, ...choiceButtons]) if (control) control.disabled = false;
+          return;
         }
       }
       finish(answer);
+    }
+    let choiceGrid = null;
+    if (quickChoices) {
+      choiceGrid = document.createElement("div"); choiceGrid.className = "choices";
+      for (const choice of choices) {
+        const button = document.createElement("button"); button.type = "button"; button.className = "choice"; button.textContent = choice.text;
+        button.addEventListener("click", () => { void submitAnswer(choice.value); });
+        choiceButtons.push(button); choiceGrid.append(button);
+      }
+    }
+    skip.addEventListener("click", () => { if (!saving) finish(""); });
+    stop.addEventListener("click", () => { if (!saving) finish(null); });
+    panel.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !saving) { event.preventDefault(); finish(null); }
+      if (event.key === "Tab") {
+        const controls = [...choiceButtons, input, save, skip, stop].filter(Boolean);
+        const current = root.activeElement;
+        const index = controls.indexOf(current);
+        if (event.shiftKey && index === 0) { event.preventDefault(); controls.at(-1).focus(); }
+        else if (!event.shiftKey && index === controls.length - 1) { event.preventDefault(); controls[0].focus(); }
+      }
     });
-    footer.append(save, skip, stop); panel.append(brand, title, note, input, error, footer); veil.append(panel); root.append(style, veil); document.documentElement.append(host); input.focus();
+    panel.addEventListener("submit", async event => {
+      event.preventDefault();
+      void submitAnswer(input?.value ?? "");
+    });
+    if (save) footer.append(save);
+    footer.append(skip, stop); panel.append(brand, title, note, ...(choiceGrid ? [choiceGrid] : [input]), error, footer); veil.append(panel); root.append(style, veil); document.documentElement.append(host); (choiceButtons[0] ?? input).focus();
   });
 }
 

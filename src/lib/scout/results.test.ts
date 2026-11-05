@@ -24,9 +24,9 @@ test("each listing appears once and estimated awards remain unconfirmed", () => 
   assert.equal(all[0].confirmedAward, null);
   assert.equal(sections[1].id, "closing");
 });
-test("Scout validation preserves optional unknown GPA and rejects invalid preferences", () => {
+test("Scout validation permits a broad search and rejects invalid preferences", () => {
   assert.equal(scoutSchema.parse({ ...defaultScout, field: "Civil engineering" }).gpa, "");
-  assert.equal(scoutSchema.safeParse({ ...defaultScout, field: "" }).success, false);
+  assert.equal(scoutSchema.safeParse({ ...defaultScout, field: "" }).success, true);
   assert.equal(scoutSchema.safeParse({ ...defaultScout, field: "Engineering", gpa: -1 }).success, false);
 });
 
