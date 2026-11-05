@@ -51,7 +51,7 @@ export function ScoreBadge({
             ? "This conflicts with something in your profile — confirm eligibility before applying."
             : bucketPartial
               ? `Based on ${known} of ${total} factors — the rest are not stated in this posting. Upgrade to ${TIER_LABELS.apply} for the full score and breakdown.`
-              : "Upgrade to Edge to see the full score and factor breakdown"
+              : "Upgrade to Pro to see the full score and factor breakdown"
         }
       >
         <span className="mono">{label}</span>

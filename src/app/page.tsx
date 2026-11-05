@@ -9,7 +9,7 @@ import { TactileHighlight } from "@/components/ui/tactile-highlight";
 import { getSessionUser } from "@/lib/auth";
 import { getLandingStats } from "@/lib/feed";
 import { PORTAL_PATH } from "@/lib/routes";
-import { FreePlan, LandingFAQ, LiveMatchPreview, PreviewSkeleton, SourceProof } from "@/components/landing/LandingSections";
+import { FreePlan, LandingFAQ, LiveMatchPreview, PreviewSkeleton, SourceNetwork, SourceProof } from "@/components/landing/LandingSections";
 
 export const dynamic = "force-dynamic";
 
@@ -151,6 +151,8 @@ export default async function LandingPage() {
         &ldquo;found&rdquo; means first seen by us, not the date an employer says they posted it.
         &ldquo;open&rdquo; means not closed, hidden or past its term. the open count moves every time we poll.
       </p>
+
+      <Suspense fallback={<section className="landing-block landing-section-loading" aria-busy="true" aria-label="Loading source network"><div className="eyebrow">Always looking</div><h2>Connecting to our sources…</h2></section>}><SourceNetwork /></Suspense>
 
       <Suspense fallback={<PreviewSkeleton />}><LiveMatchPreview /></Suspense>
 

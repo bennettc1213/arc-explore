@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+import { hasSessionCookie } from "@/lib/auth-cookie";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import { Mascot } from "./Mascot";
 import { ToolsMenu } from "./ToolsMenu";
@@ -23,8 +24,46 @@ const toolLinks: { href: string; label: string; icon: IconName }[] = [
   { href: "/extension", label: "Autofill extension", icon: "extension" },
 ];
 
+/** The admin's source-health page. Shown only to admins; everyone else gets the 404 a wrong URL gets. */
+const DEV_PORTAL_PATH = "/admin/sources";
+
+/**
+ * Redraw the shell when it disagrees with the browser's session cookie.
+ *
+ * The shell is rendered by the root layout, which Next keeps across client
+ * navigation, so a shell drawn signed out stays signed out after a sign-in in
+ * another tab or a back-button return (see `lib/auth-cookie.ts`). The cookie is
+ * only a hint; `router.refresh()` asks the server, which decides. One refresh
+ * per page and cookie state, so a cookie the server rejects cannot loop.
+ */
+function useShellSessionSync(signedIn: boolean, pathname: string) {
+  const router = useRouter();
+  const tried = useRef<string | null>(null);
+  useEffect(() => {
+    const check = () => {
+      const has = hasSessionCookie(document.cookie);
+      if (has === signedIn) { tried.current = null; return; }
+      const key = `${pathname}:${has}`;
+      if (tried.current === key) return;
+      tried.current = key;
+      router.refresh();
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") check(); };
+    check();
+    window.addEventListener("pageshow", check);
+    window.addEventListener("focus", check);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("pageshow", check);
+      window.removeEventListener("focus", check);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [signedIn, pathname, router]);
+}
+
 export function SiteShell(props: ShellProps) {
   const pathname = usePathname();
+  useShellSessionSync(props.signedIn, pathname);
   const workspace = [...workspaceLinks, ...toolLinks, { href: "/profile" }, { href: "/compare" }, { href: "/listing" }, { href: "/admin" }].some(({ href }) => pathname === href || pathname.startsWith(`${href}/`));
   return <div className={workspace ? "site-shell workspace-shell" : "site-shell public-shell"}>
     <a className="skip-link" href="#page-content">Skip to content</a>
@@ -38,14 +77,14 @@ function Brand() {
 function DevMarker({ dev }: Pick<ShellProps, "dev">) {
   return dev ? <Link href="/dev" className={`dev-marker ${dev.forced ? "is-forced" : ""}`}>{dev.forced ? `Dev mode · ${dev.label} plan` : "Dev settings"}</Link> : null;
 }
-function PublicNavigation({ signedIn, plan, dev }: ShellProps) {
+function PublicNavigation({ signedIn, isAdmin, plan, dev }: ShellProps) {
   const [open, setOpen] = useState(false);
   return <header className="public-header print-hide"><div className="wrap public-header-inner">
     <Brand />
     <nav aria-label="Main navigation" className="public-nav"><Link href="/explore">Explore</Link><ToolsMenu /><Link href="/pricing">{signedIn ? `${plan} plan` : "Pricing"}</Link><Link href="/how-we-verify">How we verify</Link></nav>
-    <div className="public-header-actions"><DevMarker dev={dev} /><Link href={signedIn ? "/profile" : "/login"} className="header-signin">{signedIn ? "Your profile" : "Sign in"}</Link><Link href={PORTAL_PATH} className="btn btn-primary header-start">{signedIn ? "Open workspace" : "Get started"}<Icon name="arrow" size={16} /></Link></div>
+    <div className="public-header-actions"><DevMarker dev={dev} />{isAdmin && <Link href={DEV_PORTAL_PATH} className="header-signin">Dev portal</Link>}<Link href={signedIn ? "/profile" : "/login"} className="header-signin">{signedIn ? "Your profile" : "Sign in"}</Link><Link href={PORTAL_PATH} className="btn btn-primary header-start">{signedIn ? "Open workspace" : "Get started"}<Icon name="arrow" size={16} /></Link></div>
     <button className="shell-menu-toggle" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="public-mobile-menu" aria-label={open ? "Close navigation" : "Open navigation"}><Icon name={open ? "close" : "menu"} /></button>
-  </div>{open && <nav className="public-mobile-menu" id="public-mobile-menu" aria-label="Mobile navigation"><Link href="/explore">Explore opportunities</Link>{toolLinks.map(l => <Link key={l.href} href={l.href}>{l.label}</Link>)}<Link href="/pricing">Pricing</Link><Link href="/how-we-verify">How we verify</Link><Link href={signedIn ? "/profile" : "/login"}>{signedIn ? "Your profile" : "Sign in"}</Link><DevMarker dev={dev} /></nav>}</header>;
+  </div>{open && <nav className="public-mobile-menu" id="public-mobile-menu" aria-label="Mobile navigation"><Link href="/explore">Explore opportunities</Link>{toolLinks.map(l => <Link key={l.href} href={l.href}>{l.label}</Link>)}<Link href="/pricing">Pricing</Link><Link href="/how-we-verify">How we verify</Link>{isAdmin && <Link href={DEV_PORTAL_PATH}>Dev portal</Link>}<Link href={signedIn ? "/profile" : "/login"}>{signedIn ? "Your profile" : "Sign in"}</Link><DevMarker dev={dev} /></nav>}</header>;
 }
 function WorkspaceNavigation({ pathname, signedIn, email, isAdmin, plan, paid, dev }: ShellProps & { pathname: string }) {
   const [open, setOpen] = useState(false);
@@ -56,7 +95,7 @@ function WorkspaceNavigation({ pathname, signedIn, email, isAdmin, plan, paid, d
     document.addEventListener("keydown", escape);
     return () => document.removeEventListener("keydown", escape);
   }, [open]);
-  const current = [...workspaceLinks, ...toolLinks, { href: "/portal/navigate", label: "Portal · Navigate" }, { href: "/profile", label: "Profile & settings" }, { href: "/compare", label: "Compare opportunities" }, { href: "/admin", label: "Administration" }].find(l => l.href === pathname)?.label ?? "Opportunity details";
+  const current = [...workspaceLinks, ...toolLinks, { href: "/portal/navigate", label: "Portal · Navigate" }, { href: "/profile", label: "Profile & settings" }, { href: "/compare", label: "Compare opportunities" }, { href: "/admin", label: "Administration" }, { href: DEV_PORTAL_PATH, label: "Dev portal" }].find(l => l.href === pathname)?.label ?? "Opportunity details";
   function navLink(l: { href: string; label: string; icon: IconName }) {
     if (l.href === "/explore") return <Suspense key={l.href} fallback={<Link href="/explore" className="sidebar-link"><Icon name="explore" size={18} />Explore</Link>}><ExploreMenu onNavigate={() => setOpen(false)} /></Suspense>;
     const active = pathname === l.href || (l.href === "/explore" && pathname.startsWith("/listing/")) || (l.href === "/portal" && pathname.startsWith("/portal/"));
@@ -66,6 +105,6 @@ function WorkspaceNavigation({ pathname, signedIn, email, isAdmin, plan, paid, d
   return <>
     <header className="workspace-topbar print-hide"><div className="workspace-breadcrumb"><span>Workspace</span><Icon name="chevron" size={13} /><span>{current}</span></div><div className="workspace-topbar-right"><Link href="/how-we-verify" className="source-assurance"><Icon name="shield" size={15} />Checked at the source</Link><DevMarker dev={dev} /><Link href={signedIn ? "/profile" : "/login"} className="account-avatar" aria-label={signedIn ? "Your profile" : "Sign in"}>{signedIn ? (email?.[0] ?? "S").toUpperCase() : <Icon name="profile" size={16} />}</Link><button ref={toggleRef} className="shell-menu-toggle" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="workspace-sidebar" aria-label={open ? "Close workspace navigation" : "Open workspace navigation"}><Icon name={open ? "close" : "menu"} /></button></div></header>
     {open && <button className="sidebar-backdrop print-hide" onClick={() => setOpen(false)} aria-label="Close workspace navigation" />}
-    <aside className={`workspace-sidebar print-hide ${open ? "is-open" : ""}`} id="workspace-sidebar" aria-label="Workspace navigation"><div className="sidebar-brand"><Brand /><span className="workspace-tag">Workspace</span></div><nav aria-label="Workspace"><p className="sidebar-section-label">Discover & apply</p>{workspaceLinks.map(navLink)}<p className="sidebar-section-label tools-section-label">Your toolkit</p>{toolLinks.map(navLink)}{isAdmin && navLink({ href: "/admin", label: "Admin", icon: "tools" })}</nav><div className="sidebar-bottom"><div className="sidebar-plan"><span className="plan-icon"><Icon name="tools" size={17} /></span><div><strong>{plan}</strong><span>Your current plan</span></div><Link href="/pricing" aria-label="View plans"><Icon name="chevron" size={16} /></Link></div>{navLink({ href: "/profile", label: "Profile & settings", icon: "profile" })}<Link href="/" className="sidebar-link"><Icon name="home" size={18} />Back to home</Link>{!signedIn && <Link href="/login" className="btn btn-primary sidebar-signin">Sign in to save your progress<Icon name="arrow" size={16} /></Link>}<div className="sidebar-footnote">Every opportunity starts somewhere.</div></div></aside>
+    <aside className={`workspace-sidebar print-hide ${open ? "is-open" : ""}`} id="workspace-sidebar" aria-label="Workspace navigation"><div className="sidebar-brand"><Brand /><span className="workspace-tag">Workspace</span></div><nav aria-label="Workspace"><p className="sidebar-section-label">Discover & apply</p>{workspaceLinks.map(navLink)}<p className="sidebar-section-label tools-section-label">Your toolkit</p>{toolLinks.map(navLink)}{isAdmin && navLink({ href: "/admin", label: "Admin", icon: "tools" })}{isAdmin && navLink({ href: DEV_PORTAL_PATH, label: "Dev portal", icon: "tools" })}</nav><div className="sidebar-bottom"><div className="sidebar-plan"><span className="plan-icon"><Icon name="tools" size={17} /></span><div><strong>{plan}</strong><span>Your current plan</span></div><Link href="/pricing" aria-label="View plans"><Icon name="chevron" size={16} /></Link></div>{navLink({ href: "/profile", label: "Profile & settings", icon: "profile" })}<Link href="/" className="sidebar-link"><Icon name="home" size={18} />Back to home</Link>{!signedIn && <Link href="/login" className="btn btn-primary sidebar-signin">Sign in to save your progress<Icon name="arrow" size={16} /></Link>}<div className="sidebar-footnote">Every opportunity starts somewhere.</div></div></aside>
   </>;
 }

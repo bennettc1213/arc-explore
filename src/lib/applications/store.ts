@@ -1,9 +1,9 @@
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { applications, organizations, postings, type ApplicationStatus } from "@/db/schema";
 
-import { shouldStampAppliedAt } from "./types";
+import { countActiveSlots, shouldStampAppliedAt, transitionNeedsSlot } from "./types";
 
 /**
  * Application tracker persistence.
@@ -67,13 +67,53 @@ export async function listApplications(userId: string): Promise<TrackedApplicati
     .orderBy(desc(applications.updatedAt));
 }
 
-/** How many postings this user is tracking, for the tracker's tier cap. */
-export async function countApplications(userId: string): Promise<number> {
-  const [row] = await db
-    .select({ n: count() })
+type Exec = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Every tracked row's status and whether its listing has closed. */
+async function capacityRows(exec: Exec, userId: string) {
+  const rows = await exec
+    .select({ postingId: applications.postingId, status: applications.status, closedAt: postings.closedAt })
     .from(applications)
+    .innerJoin(postings, eq(applications.postingId, postings.id))
     .where(eq(applications.userId, userId));
-  return row?.n ?? 0;
+  return rows.map((r) => ({ postingId: r.postingId, status: r.status, closed: r.closedAt !== null }));
+}
+
+/** Active tracked opportunities — what the plan's tracker limit counts. */
+export async function countActiveApplications(userId: string): Promise<number> {
+  return countActiveSlots(await capacityRows(db, userId));
+}
+
+export type CapacityResult = "ok" | "at_capacity" | "missing_posting";
+
+/**
+ * Create or move an application, refusing only a move that would push active
+ * rows past `limit` (null = unlimited).
+ *
+ * Check and write happen in one transaction under a per-user advisory lock,
+ * so two saves racing for the last slot cannot both land. Moves into history,
+ * between active statuses, notes and removal never need a slot.
+ */
+export async function setStatusWithinCapacity(
+  userId: string,
+  postingId: string,
+  status: ApplicationStatus,
+  limit: number | null,
+): Promise<CapacityResult> {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${`tracker:${userId}`}, 0))`);
+    const [posting] = await tx.select({ closedAt: postings.closedAt }).from(postings).where(eq(postings.id, postingId)).limit(1);
+    if (!posting) return "missing_posting";
+    if (limit !== null) {
+      const rows = await capacityRows(tx, userId);
+      const current = rows.find((r) => r.postingId === postingId)?.status ?? null;
+      if (transitionNeedsSlot(current, status, posting.closedAt !== null) && countActiveSlots(rows) >= limit) {
+        return "at_capacity";
+      }
+    }
+    await setStatus(userId, postingId, status, tx);
+    return "ok";
+  });
 }
 
 /** Status of the given postings for this user, for rendering feed rows. */
@@ -103,8 +143,9 @@ export async function setStatus(
   userId: string,
   postingId: string,
   status: ApplicationStatus,
+  exec: Exec = db,
 ): Promise<void> {
-  const [existing] = await db
+  const [existing] = await exec
     .select({ appliedAt: applications.appliedAt })
     .from(applications)
     .where(and(eq(applications.userId, userId), eq(applications.postingId, postingId)))
@@ -114,7 +155,7 @@ export async function setStatus(
     ? new Date()
     : undefined;
 
-  await db
+  await exec
     .insert(applications)
     .values({
       userId,

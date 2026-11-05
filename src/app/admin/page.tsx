@@ -73,7 +73,10 @@ export default async function AdminPage() {
           something, plus everything a student reported.
         </p>
         <p className="mono" style={{ marginTop: 10, color: "var(--faint-readable)" }}>
-          signed in as {admin.email}
+          signed in as {admin.email} ·{" "}
+          <Link href="/admin/sources" className="navlink">
+            sources &amp; scraping health →
+          </Link>
         </p>
       </header>
 

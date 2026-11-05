@@ -34,18 +34,15 @@ export function ExploreMenu({ onNavigate }: { onNavigate: () => void }) {
   }, [expanded]);
 
   function selectCategory(value: string) {
-    const params = new URLSearchParams(pathname === "/explore" ? search.toString() : "");
-    const oldCollege = params.get("college");
-    ["kind", "focus", "college", "show"].forEach(key => params.delete(key));
-    params.set("view", "deck");
-    if (value === "merit") {
-      params.set("kind", "scholarship"); params.set("focus", "merit");
-      if (oldCollege) params.set("college", oldCollege);
-    } else if (value !== "all") params.set("kind", value);
-    if (value === "internship") { params.delete("minAmount"); params.delete("includeUnknownAmounts"); }
+    // A category starts clean. It opens the Scout start screen for that tool, and
+    // a filter or view carried over from the page we were on would turn it back
+    // into a results page.
+    const params = new URLSearchParams();
+    if (value === "merit") { params.set("kind", "scholarship"); params.set("focus", "merit"); }
+    else if (value !== "all") params.set("kind", value);
     setNextLabel(value === "internship" ? "internships" : value === "all" ? "opportunities" : value === "merit" ? "college merit awards" : "scholarships");
     onNavigate();
-    startTransition(() => router.push(`/explore?${params}`, { scroll: true }));
+    startTransition(() => router.push(params.size ? `/explore?${params}` : "/explore", { scroll: true }));
   }
 
   return <div className="explore-nav-dropdown">

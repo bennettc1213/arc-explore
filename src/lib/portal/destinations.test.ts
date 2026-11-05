@@ -45,7 +45,8 @@ describe("a free plan", () => {
   const tiles = resolvePortalTiles("free");
 
   it("locks what the plan does not include and routes it to pricing, not the tool", () => {
-    for (const id of ["essay", "extension"]) {
+    // The essay reviewer joined Free on 2026-11-03 (one session every 30 days).
+    for (const id of ["extension"]) {
       const tile = byId(tiles, id);
       assert.equal(tile.state, "locked", id);
       assert.equal(tile.pill, "Pro", id);
@@ -56,10 +57,11 @@ describe("a free plan", () => {
 
   it("keeps the capped free tools open, and says what the cap is", () => {
     assert.equal(byId(tiles, "tracker").state, "limited");
-    assert.equal(byId(tiles, "tracker").note, "Free: up to 5 tracked listings");
-    assert.equal(byId(tiles, "github").note, "Free: 1 run");
-    assert.equal(byId(tiles, "linkedin").note, "Free: 1 run");
-    assert.equal(byId(tiles, "resume").note, "Free: 1 critique");
+    assert.equal(byId(tiles, "tracker").note, "Free: 10 active at a time");
+    assert.equal(byId(tiles, "github").note, "Free: 1 every 30 days");
+    assert.equal(byId(tiles, "linkedin").note, "Free: 1 every 30 days");
+    assert.equal(byId(tiles, "resume").note, "Free: 1 every 30 days");
+    assert.equal(byId(tiles, "essay").note, "Free: 1 every 30 days");
     assert.equal(byId(tiles, "tracker").href, "/tracker");
   });
 
@@ -67,8 +69,24 @@ describe("a free plan", () => {
     for (const id of ["merit", "scholarships", "internships"]) {
       const tile = byId(tiles, id);
       assert.equal(tile.state, "limited", id);
-      assert.match(tile.note ?? "", /top \d+ matches/, id);
-      assert.ok(tile.href?.startsWith("/explore"), id);
+      assert.match(tile.note ?? "", /top 20 ranked matches per search/, id);
+    }
+  });
+
+  it("opens each discovery tool as a tailored Scout, not a screen of results", () => {
+    const expected: Record<string, [string, string]> = {
+      merit: ["/scout?for=merit", "Start a Scout for college merit awards"],
+      scholarships: ["/scout?for=scholarships", "Start a Scout for scholarships"],
+      internships: ["/scout?for=internships", "Start a Scout for internships"],
+    };
+    for (const [id, [href, cta]] of Object.entries(expected)) {
+      const tile = byId(tiles, id);
+      assert.equal(tile.href, href, id);
+      assert.equal(tile.cta, cta, id);
+    }
+    // Only the discovery tools carry a Scout button.
+    for (const tile of tiles) {
+      if (!(tile.id in expected)) assert.equal(tile.cta, null, tile.id);
     }
   });
 

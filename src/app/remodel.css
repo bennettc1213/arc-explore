@@ -406,7 +406,8 @@
    together, and the content width above is in rem too, so it grows with it
    rather than staying capped at 1440px. Screen only: print keeps its own sizes. */
 @media screen and (min-width: 1100px) {
-  html { font-size: clamp(16px, .85vw, 20px); }
+  /* Eased back from clamp(16px, .85vw, 20px): that read slightly too large on wide screens. */
+  html { font-size: clamp(14.5px, .78vw, 18px); }
 }
 /* The top toolbar, larger than the rest of the zoom alone makes it. */
 @media screen and (min-width: 1100px) {

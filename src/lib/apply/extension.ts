@@ -24,6 +24,18 @@ export interface MatchedPosting {
   url: string;
 }
 
+/** Session handoffs keep the listing identity when the form URL changes. */
+export async function findPostingById(id: string): Promise<MatchedPosting | null> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return null;
+  const rows = await db.select({
+    id: postings.id, title: postings.title,
+    company: sql<string | null>`coalesce(${organizations.name}, ${postings.sponsorName})`,
+    kind: postings.kind, url: postings.url,
+  }).from(postings).leftJoin(organizations, eq(postings.orgId, organizations.id))
+    .where(and(eq(postings.id, id), isNull(postings.closedAt), isNull(postings.hiddenAt))).limit(1);
+  return rows[0] ?? null;
+}
+
 /**
  * Find the open posting whose apply URL points at this page.
  *
@@ -60,10 +72,12 @@ export async function findPostingByUrl(pageUrl: string): Promise<MatchedPosting 
         isNull(postings.hiddenAt),
         sql`regexp_replace(
               regexp_replace(
-                regexp_replace(${postings.url}, '^https?://(www\\.)?', ''),
-                '[?#].*$', ''
-              ),
-              '/+$', ''
+                regexp_replace(
+                  regexp_replace(${postings.url}, '^https?://(www\\.)?', ''),
+                  '[?#].*$', ''
+                ),
+                '/(application/submit|apply/submit|application|apply)$', '', 'i'
+              ), '/+$', ''
             ) = ${canonical}`,
       ),
     )

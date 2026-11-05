@@ -1,6 +1,26 @@
 # Fixes & Open Items
 
-- [ ] **Scout handoff production-build validation needs the existing billing environment (2026-11-03).** The isolated committed snapshot compiled and passed TypeScript with `next build --webpack`, then page-data collection failed in the pre-existing `/api/stripe/checkout` route because `STRIPE_SECRET_KEY` is unset on this computer. Verify billing environment on the receiving/deployment computer and rerun the full build. No credentials were added, billing behavior was unchanged, and nothing was deployed.
+- [x] **Manual opportunity source connections expanded (2026-11-04).** Per the owner's clarified order, connections come first and scheduling is deferred. Workday, Oracle Recruiting Cloud, Taleo discovered job pages, Rippling, Jobvite and Broward scholarships now link to 11,751 distinct opportunities in the configured database (10,186 Workday; 1,491 Oracle; 14 Taleo; 27 Rippling; 28 Jobvite; 5 Broward). Two Broward programs are explicitly closed; three accept applications. The local USAJobs credentials were verified and student announcements refreshed. Arbeitnow and Remote OK added 211 employer hints in discovery-only, paused sources, never verified feed listings. All 430 enrolled employer boards remain manual-only; no workflow, trigger, production deployment or automatic source activation changed. HP's original page-cap hold was resolved; CVS completed a bounded one-time 235-page read. Full scope, limitations, publisher references and commands are in `docs/source-connections-2026-11-04.md`. Validation: `npm run check` passed with 1,222 tests passing, four skipped, and the two existing lint warnings.
+
+- [x] **Optional detail changes could duplicate an already known source job (2026-11-04).** A metadata-only Mizuho read lost a description-derived term, changed the canonical hash and created one orphan duplicate. Search imports now resolve stable employer source ids before hashing mutable facts; missing location/remote detail cannot erase known facts. Repeated Workday, Oracle, Taleo, Rippling and Jobvite imports verified zero new rows in their exercised scopes. The one probe-created duplicate was removed only after checking user/application references; its original remains and a recovery copy is at `.local/source-connections/duplicate-recovery.json`.
+
+- [x] **Seven failing Workday boards and Rippling's migrated careers page recovered (2026-11-04).** Castleton and Sallie Mae need the underscore tenant names published in their public page configuration; stable source ids retain the hostname identity. Charter, Zurn Elkay, Wawa, Huntington and Signet return 500 without an explicit language header and succeed with `Accept-Language: en-US`. Rippling's own careers page moved to a public Algolia index; the connector reads its published browser configuration, merges location hits and enriches from the existing public ATS detail URLs. All eight passed dry runs and imported 97 distinct listings (92 Workday, five Rippling); repeat imports added zero rows, with no closures or missing strikes. The source-family total is 11,848 linked opportunities and all 438 enrolled employer boards remain manual-only. Regression tests and `npm run check` pass (1,227 passing, four skipped, two existing lint warnings). See `docs/source-connections-2026-11-04.md` for evidence and local report names.
+
+- [ ] **Remaining source access holds after the broad connection pass (2026-11-04).** JPMorgan's Oracle robots endpoint returns 403; Arbeitnow UK's robots review is blocked. The Muse API passed a one-page connection test but needs app registration before use beyond testing. Adzuna and CareerOneStop lack local API credentials. BambooHR, Scholarship America, Seattle Foundation and SVCF need permission under their published restrictions; Remotive's redistribution conditions need resolution. Parse MCP authentication works, but its available tools do not expose the credit balance, so no metered scraper calls were made. The seven Workday failures and Rippling corporate-page migration are now resolved in the entry above. See the source-connection report for exact providers and references. These are access/configuration holds, not scheduling work.
+
+- [ ] **Detail enrichment remains intentionally deferred after connecting sources (2026-11-04).** Bulk Workday imports are metadata-first (47 of 10,186 linked listings currently have descriptions); Taleo supplies source titles/links only, and Jobvite has descriptions on 9 of 28 rows. Unknown pay, deadlines and descriptions stay unknown. A concurrent Workday import also hit a database deadlock and rolled back; its KLA recovery succeeded. Throughput and contention need attention before future automation. This session did not add new scheduling, ranking, eligibility or notification policy.
+
+- [~] **Free/Pro redesign is live; the signed-in half has never been driven (2026-11-03).** Matrix, semantics and rollout are in `docs/free-pro-plans.md`. Commit `d70eba7` was deployed to instela.org from a clean worktree after migration `0032_recurring_allowances` was applied to the live database by hand (see the migration-records entry below for why not `db:migrate`); the backfill wrote 2 grants, both on the one Pro account. Verified live, signed out: pricing, Free list at 20 rows including `?show=500`, Funding Plan API `cap: 20`. The branch was pushed; **`master` was not**, so the scheduled digest/alert jobs still run the old code (Pro-only digest and alerts). Merging to `master` turns on the weekly digest for Free profiles (all 10 have it enabled) wherever the workflow has a Resend key. **Never driven signed in:** resume critique replay, GitHub reserve/release on a failed fetch, LinkedIn/essay session start, cover-letter allowance and hourly throttle, tracker capacity at 10 with reactivation, the Free alert pick, and the digest for a Free profile. Verified in a browser signed out only (pricing at 1440/390px, Free list at 20 rows including `?show=500` and a second filter set, Funding Plan API `cap: 20`, essay/LinkedIn sign-in prompts, landing copy); everything else is unit-tested (allowance policy with a controlled clock, tracker capacity, alert slot and cadence, quote reconciliation).
+
+- [x] **The local Stripe test price is $20.00/month; the page says $5.99 (2026-11-03).** _Resolved the same day by the owner moving Pro to $20/month: the page and the local test price now agree, so local checkout opens. The text below is what it was._ Read-only check against Stripe test mode: `STRIPE_PRICE_APPLY_MONTHLY` = 2000 USD monthly. `getCheckoutQuote` now refuses checkout on any mismatch, so local checkout shows "not available". `STRIPE_PRICE_INSTELLA_PRO_MONTHLY` appears twice in `.env` and names a price that does not exist; no code reads it. No coupons exist, so no student price is offered. To close: point the env var at a $5.99 monthly USD price (and optionally create a `forever` 50% coupon as `STRIPE_COUPON_STUDENT`), then run one test-mode checkout per path. **Confirm the half-cent rounding** of 50% of $5.99 ($2.99 computed) on that checkout before showing it. Production Stripe/Vercel values were not inspected.
+
+- [ ] **The live database's migration records do not match the journal, so `npm run db:migrate` is unsafe (2026-11-03).** `drizzle.__drizzle_migrations` holds 31 rows whose newest `created_at` is `1795809600001`, while the journal stamps 0027–0031 as `…0001`–`…0005`. The objects from 0028–0031 exist (merit aid, `profiles.funding_goal`, student discount claims, Stripe columns), but drizzle applies every journal entry newer than the newest record, so a plain `db:migrate` would try to re-run 0028–0031. 0032 was therefore applied by hand in one transaction and recorded with its journal timestamp (`…0006`) and file hash, which also moves the watermark past 0028–0031. Before the next migration, compare records to the journal and confirm each step is a no-op or real.
+
+- [ ] **Production has no `STRIPE_PRICE_APPLY_MONTHLY` (2026-11-03).** Vercel production carries `STRIPE_PRICE_ID` (172 days old), which no code reads, and `MARKET_READY_BILLING` is set. The checkout code reads `STRIPE_PRICE_APPLY_MONTHLY`, so live checkout has never been able to open a session; with this release `getCheckoutQuote` reports it unconfigured and the pricing page shows "checkout not available yet" instead of a button that fails. To open checkout: set `STRIPE_PRICE_APPLY_MONTHLY` in Vercel to a live $5.99 monthly USD price and redeploy. Values were not read.
+
+- [ ] **Free-plan analytics can count limit exposures but not attribute them (2026-11-03).** `upgrade_prompt_viewed {feature}` and `checkout_started {student}` are counts with no user id, keeping `/privacy`'s promise. Paid conversion after a specific limit is therefore measurable only for the five allowance tools (their grants carry user ids), not for the tracker, saved searches or feed depth. Day-7 return can only be a lower bound from user-owned writes; sign-in alone is invisible. `tool_request_log` has no retention job yet (it only needs an hour). Definitions in `docs/free-pro-plans.md` §9.
+
+- [~] **Scout handoff production-build validation needs the existing billing environment (2026-11-03).** _The likely cause is fixed: `lib/stripe.ts` constructed the Stripe client at import and threw without `STRIPE_SECRET_KEY`, so page-data collection for `/api/stripe/checkout` failed. The client is now created on first use (`getStripe()`), behind the billing flag. A full `next build` was not rerun in this session (a dev server held the build directory), so the build itself is still unverified._ The isolated committed snapshot compiled and passed TypeScript with `next build --webpack`, then page-data collection failed in the pre-existing `/api/stripe/checkout` route because `STRIPE_SECRET_KEY` is unset on this computer. Verify billing environment on the receiving/deployment computer and rerun the full build. No credentials were added, billing behavior was unchanged, and nothing was deployed.
 
 - [x] **Scout follow-up: stale checks looked current and category grouping discarded results after twelve (2026-11-03).** Freshness now distinguishes recent, older, and unverified source observations, with separate first-discovery labels. All admitted feed results survive categorization; the loading receipt counts only displayed items. The preview adapts its source examples to the selected field, and students can open completed results before the animation ends. Focused freshness/retention tests and desktop/mobile browser checks cover this pass.
 
@@ -232,8 +252,11 @@ only you can make, and the feature on the other side of it is already written.
   and which ATS internships almost never publish. Company discovery is
   unaffected — that step passes._
 
-- [~] **`ingest-fast` is scheduled every 20 minutes and actually runs every
-  3-5 hours.** _2026-11-01: moved the trigger off GitHub's scheduler. n8n
+- [x] **`ingest-fast` is scheduled every 20 minutes and actually runs every
+  3-5 hours.** _Closed 2026-11-03: observed **75 finished tier A runs in 24
+  hours** (target 72; the GitHub cron backup adds a few, and the concurrency
+  group queues them), starting on the :02/:22/:42 marks the n8n trigger fires
+  on. `/admin/sources` now shows this count live. 2026-11-01: moved the trigger off GitHub's scheduler. n8n
   workflow "Instela - Ingest Trigger (every 20 min)" (id `GVzfCnr6kVr254tU`, on
   benchu33.app.n8n.cloud) POSTs `workflow_dispatch` to `ingest-fast.yml`; the
   first test fired run #833 one second after the call. "Instela - Ingest
@@ -283,6 +306,8 @@ only you can make, and the feature on the other side of it is already written.
   change, carries real weight on the free tier rather than acting only as an
   exact-tie breaker. Two missing repo secrets are holding up the best timing
   data in the corpus._
+
+- [x] **Workable is connected as a fifth job-board source (2026-11-03).** Of 689 active intern-hiring companies in discovery whose board we could not read, 411 use Workday, 59 Oracle/Taleo, 38 Workable, 0 Recruitee. Workable shipped first (`sources/workable.ts`, commit `a24b062`, cherry-picked alone onto `origin/master` as `7329d59` so the cron could poll it without taking this branch's unreleased Free/Pro work). Discovery enrolled 83 Workable boards; the next n8n-triggered poll read **83/83 successfully and stored 172 open internships**. **Workday is next and is the larger prize**: its public careers search works and `robots.txt` blocks only `/refreshFacet/`, but boards run to 1,374 jobs at 20 per request, so it must be read by searching "intern" and paging until a page has no internships. A search read cannot prove a job is gone, so Workday rows should never close on absence, only via the link checker.
 
 - [ ] **108 of 1,104 employer boards have failed 5+ consecutive polls**
   (measured 2026-08-26; `ingest:status` reports 155 failing / 151 backed off at
@@ -335,6 +360,14 @@ only you can make, and the feature on the other side of it is already written.
 ---
 
 ## 2. Known bugs
+
+- [x] **Every Google and email sign-in landed on the home page signed out (2026-11-03).** The real cause behind the report above. The owner's account had no successful sign-in since 2026-11-02 20:52 UTC (`auth.users.last_sign_in_at`). Measured on production with a throwaway account: asked to return to `https://instela.org/auth/confirm?next=%2Fprofile`, Supabase refused it as not on the redirect allowlist and fell back to the Site URL, `https://instela.org.`, with the session in a `#fragment` nothing reads; the bare `https://instela.org/auth/confirm` was accepted. _Fixed: the return address is now always bare (`authConfirmUrl`, pinned by a test) and the destination travels in a 30-minute `instela_post_auth_next` cookie scoped to `/auth`, read through `safeNextPath` and cleared on use (`lib/post-auth.ts`). Old `?next=` links still work._ **Two Supabase settings are still worth fixing by hand** (Authentication → URL Configuration): the Site URL has a trailing dot (`https://instela.org.`), and adding `https://instela.org/**` to the redirect list would make query strings acceptable again. Not verified end to end with a real Google account: that needs the owner's sign-in.
+
+- [x] **"When I sign in and go back to the homepage it signs me out" (2026-11-03).** The session was never lost; the header was stale. The site shell lives in the root layout, which Next keeps across client navigation, so a header drawn signed out (before the emailed link was opened in another tab, or on a page restored by the back button) kept saying "Sign in" over a page body that was signed in, and hid the admin link. Reproduced on instela.org with a throwaway account: body "Open your tracker", header "Sign in / Get started". _Fixed in `9d78cb3`: `SiteShell` compares its `signedIn` prop with the session cookie (`lib/auth-cookie.ts`) on mount, navigation, focus, visibility and `pageshow`, and calls `router.refresh()` on a mismatch, once per page and cookie state. Re-run on the live deploy: the same sequence now ends on "Your profile / Open workspace". Not tested: real iOS Safari, and the sign-out direction (signing out in another tab), which uses the same check. The same commit adds a "Dev portal" link for admins; seen only as a non-admin so far (absent, as intended)._
+
+- [ ] **`ingest_runs.status` says `successful_complete` for runs that failed and for runs still in progress (2026-11-03).** Found building `/admin/sources`. The column defaults to `successful_complete` at insert, so an unfinished run carries it; and the scholarship and USAJobs scripts never pass a status, so the 2026-11-01 Scholarships.com and ScholarshipPortal runs (`PARSE_API_KEY is not set`, 0 read, 1 error) and the 2026-11-03 USAJobs run (keys missing) are all stored as successes. Only tier A sets `partial`. `/admin/sources` judges health from rows read, errors and `finished_at` instead (`lib/admin/source-health.ts`), so the page is right, but anything else reading `status` is not. Fix: insert with a `running` status and have `finishRun` derive `failed` when a run read nothing and errored.
+
+- [ ] **CFT Texas returned 48 scholarships on 2026-11-01 and none is open.** `/admin/sources` flags it "needs a look". It may be honest, since CFT states each award's open status directly and the season may simply be closed, but 0 of 48 is also what a changed status field would look like. Check the live page before the next Sunday run.
 
 - [x] **Saved scholarships never appear on `/tracker`.** `listApplications`
   (`lib/applications/store.ts`) inner-joins `organizations`, and scholarships
@@ -1290,7 +1323,9 @@ only you can make, and the feature on the other side of it is already written.
 
 ## 3. Never verified with a real signed-in session
 
-- [ ] **The mobile swipe sheet has only been driven with synthetic pointer events (2026-11-02).** On screens ≤900px the Cards deck (`OpportunityDeck`) is a bottom sheet that rises on its own, with swipe-right-to-save, swipe-left-to-skip and drag-down-to-minimize. Verified in Chromium at an emulated 390×844 touch viewport signed out (save, skip, snap-back on a short drag, minimize, reopen, scroll lock, no console errors; desktop unchanged). Not verified: a real finger on real iOS Safari/Android Chrome (rubber-banding, the `100dvh` sheet height against the collapsing URL bar, vertical-scroll-vs-horizontal-swipe feel inside a long card), and the signed-in save path from a swipe (same §3 gap as the tracker).
+- [ ] **`/admin/sources` (2026-11-03).** The source-health portal. Its report ran against the live database and the page was rendered locally with `requireAdmin` stubbed for one request and then restored; signed out it shows the not-found page. Never loaded by a signed-in admin, and `ADMIN_EMAILS` is still unset on Vercel (§1), so in production it 404s for everyone.
+
+- [x] **The mobile swipe sheet has only been driven with synthetic pointer events (2026-11-02).** _Moot 2026-11-03: the Cards deck was taken out of Explore (pivot to Scout), so nothing renders this sheet. If Cards returns, the unverified items below return with it._ On screens ≤900px the Cards deck (`OpportunityDeck`) is a bottom sheet that rises on its own, with swipe-right-to-save, swipe-left-to-skip and drag-down-to-minimize. Verified in Chromium at an emulated 390×844 touch viewport signed out (save, skip, snap-back on a short drag, minimize, reopen, scroll lock, no console errors; desktop unchanged). Not verified: a real finger on real iOS Safari/Android Chrome (rubber-banding, the `100dvh` sheet height against the collapsing URL bar, vertical-scroll-vs-horizontal-swipe feel inside a long card), and the signed-in save path from a swipe (same §3 gap as the tracker).
 
 - [~] **Guided onboarding: real email verification, authenticated resume parsing, and final account persistence still need a real signed-in walkthrough.** Added 2026-10-26. _Updated: authenticated browser tests created isolated synthetic Supabase users without sending mail, uploaded actual HTML/DOCX/PDF bytes, verified stored resume rows and autofilled school/major/GPA, saved medical/custom interests and the final profile, and cleaned up test accounts. Image and scanned-PDF OCR also passed. Real delivered email-code verification and university SSO still need configured senders/institution connections and real institutional test accounts._
 
@@ -1425,6 +1460,8 @@ closed out and is the largest untested surface in the project.
 
 Things that are currently true but should not stay true.
 
+- [ ] **The merit-awards tools rest on 8 listings (2026-11-03).** "College merit awards" is not a stored category: the feed's merit filter (`lib/feed.ts`, `meritOnly`) keeps scholarships whose title, eligibility or description contains the word "merit". Measured on the live corpus through `/explore?kind=scholarship&focus=merit`: **8 open results**, and **0** once any field such as "Engineering" is added. So the new merit Scout makes its field optional and starts without a remembered one (`lib/scout/focus.ts`, `ScoutWorkspace`), and its empty state says why, but the tool is only as full as that word match. The structured merit-aid data (`0028_merit_aid`, Merit aid Stage 1 in §1) is what would widen it, and is unverified and unapplied. The portal's "College merit awards" tile and the Explore header button both lead to this Scout.
+
 - [x] **No privacy policy.** Fixed — `/privacy`, written from the schema and
   linked from the footer. Writing it surfaced two things worth keeping in mind:
   the upload form's "we keep only the structured result — not the file" was
@@ -1490,8 +1527,11 @@ Things that are currently true but should not stay true.
   with a deadline) are where hand-entered or parsed counts would pay off first.
   "Almost eligible" is hidden too: no helper computes it.
 
-- [ ] **Signed out, the Plan view shows 10 scholarships but the List view
-  shows 20.** The Plan cap (`SIGNED_OUT_CARD_CAP`) was specified for the Plan
+- [x] **Signed out, the Plan view shows 10 scholarships but the List view
+  shows 20.** _Fixed 2026-11-03: both follow the tier, not the session. Any
+  viewer without full depth (signed out or Free) gets `FREE_RANKED_RESULTS`
+  (20) ranked rows in the list and 20 distinct cards in the Funding Plan;
+  Pro is uncapped in both. Signed-in Free was previously uncapped in the Plan._ The Plan cap (`SIGNED_OUT_CARD_CAP`) was specified for the Plan
   view only, and the List view keeps the existing free depth
   (`FREE_DAILY_RESULTS = 20`) — so a visitor who wants more than the locked
   plan can switch to List and see twice as many, titles and links included.
@@ -1728,7 +1768,7 @@ refused, not merely hidden):
 
 **UI-only, or otherwise incomplete — these are the gaps:**
 
-- [ ] **The LinkedIn checker's cap is not enforceable, by construction.**
+- [~] **The LinkedIn checker's cap is not enforceable, by construction.** _2026-11-03: the old metering also locked a Free user out on reload (it charged the first keystroke with no replay key). Replaced by a content-free "start a 72-hour session" grant per 30 days, checked server-side before the tool renders; the essay reviewer uses the same mechanism. Inside an open session nothing is metered and the server cannot tell one essay from the next — still true by construction, now stated on the pricing doc._
   Access to the tool is gated server-side (the component does not render for a
   free account that has used its run), but the *metering* is a client-fired
   Server Action, because the tool scores entirely in the browser and there is
@@ -1742,21 +1782,21 @@ refused, not merely hidden):
   account to attach a quota to. Metering by IP or fingerprint was rejected as
   its own privacy problem rather than attempted quietly. A determined free user
   signs out and keeps auditing.
-- [ ] **Quotas are lifetime, not monthly.** There is no billing cycle to reset
+- [x] **Quotas are lifetime, not monthly.** _Fixed 2026-11-03: every Free tool allowance renews 30 days after its period starts (`allowance.ts`), independent of Stripe; lifetime counts were not carried over (`docs/free-pro-plans.md` §4, §8)._ There is no billing cycle to reset
   against — no subscription, no renewal timestamp — so "1 free run" currently
   means "1 ever". Enforcing a monthly cap this codebase cannot observe would be
   inventing a number. Reset on the renewal date once a provider supplies one.
-- [ ] **`consumeUsage` is read-then-write, not atomic.** Two simultaneous
+- [x] **`consumeUsage` is read-then-write, not atomic.** _Fixed 2026-11-03: `consumeUsage` is gone. Allowance reservations and tracker capacity checks run in a transaction under a per-user advisory lock; failed work releases its reservation._ Two simultaneous
   requests at a free user's last unit could both succeed. Accepted: the cost of
   losing that race is one extra free run, not a security boundary. Worth the
   stricter single-statement `UPDATE ... WHERE count < limit` once real money is
   behind it.
-- [ ] **Deleting a cover letter frees its slot.** The cap counts rows in
+- [x] **Deleting a cover letter frees its slot.** _Fixed 2026-11-03: usage is a `feature_grants` row keyed on the posting, separate from the editable `cover_letters` row. Deleting a draft frees nothing; re-drafting the same posting is a free replay._ The cap counts rows in
   `cover_letters` rather than a monotonic counter, so a free user can delete and
   re-draft indefinitely. Deliberate — counting drafts in a second table would be
   the driftable duplicate the schema comment warns against — but it does mean
   the cap is "1 stored draft", not "1 draft ever".
-- [ ] **Nothing ever sets `profiles.plan` to anything but `free`.** No Stripe,
+- [~] **Nothing ever sets `profiles.plan` to anything but `free`.** _Stale as of 2026-11-03: a signed Stripe webhook sets it behind `MARKET_READY_BILLING`. It now grants Pro only on a paid checkout session and re-reads subscriptions so out-of-order events cannot re-grant after cancellation. Still never exercised with a real payment; see the $20 price entry at the top._ No Stripe,
   no checkout, no webhook — out of scope by instruction. The column and
   `plan_updated_at` are the seam; `/pricing`'s upgrade buttons are visibly inert
   and say so. **All 10 live profiles are on `free`**, so every paid path above is
@@ -2472,6 +2512,10 @@ reason, not an omission.
 ---
 
 ## 7. Housekeeping
+
+- [ ] **Explore's category pages no longer show a list; search and filters are one link deep (2026-11-03).** `/explore`, `?kind=internship`, `?kind=scholarship` and `?kind=scholarship&focus=merit` (and any old `view=deck` link) now return the Scout start screen (`exploreEntryFocus` in `lib/scout/focus.ts`, `ExploreScoutEntry`), before any data loads. Anything carrying a query, filter or explicit view still renders the results, so saved searches, alert emails (`See them in the feed: …/explore?kind=internship`) and shared links that carry filters work as before, **but an alert email's bare `/explore?kind=internship` link now lands on the Scout screen, not the list** (`lib/searches/searches.test.ts` pins that URL shape). The search box, filters and Funding plan are reachable only through the "or browse the full list" link (`view=list`) or a URL. Decide whether the quiet link stays, or whether the list should be removed from Explore for good.
+
+- [ ] **The Cards deck is switched off, not deleted (2026-11-03).** Explore no longer renders `OpportunityDeck`, the "Cards | List | Funding plan" switch is gone, and nothing links to `view=deck` (sidebar Explore menu, portal tiles, "show more"). An old `?view=deck` URL now falls back to the normal default (Funding plan for scholarships, list otherwise). Left in place because the pivot is "for now": `components/discovery/OpportunityDeck.tsx`, the deck rules in `app/discovery.css`, and the `discovery` branches in `FilterPanel.tsx` (which set `view=deck` on submit, but only when `discovery` is passed, and nothing passes it). `lib/discovery/cards.ts` is **not** dead: Scout uses `toDiscoveryCard`. Delete the rest once Cards is definitely not coming back. Not reachable from the nav: Scout itself is linked only from the portal home, not the sidebar.
 
 - [ ] **Dependency advisories surfaced during resume-parser installation.**
   `npm audit` reported 10 advisories, including a critical advisory on the existing

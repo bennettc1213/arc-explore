@@ -2,114 +2,51 @@ import Link from "next/link";
 
 import { BackLink } from "@/components/BackLink";
 import { getSessionUser } from "@/lib/auth";
-import { FREE_DAILY_RESULTS } from "@/lib/feed-trim";
+import { FREE_RANKED_RESULTS } from "@/lib/feed-trim";
+import { marketReadyFlags } from "@/lib/market-ready/flags";
+import { getCheckoutQuote } from "@/lib/pricing/checkout-quote";
+import { allowanceWords, COMPARISON_ROWS } from "@/lib/pricing/describe";
 import { devTier as devTierInForce, getUserTier } from "@/lib/pricing/entitlements";
+import { AI_REQUESTS_PER_HOUR } from "@/lib/pricing/grants";
+import { formatCents } from "@/lib/pricing/quote";
 import {
   FEATURE_KEYS,
   FEATURES,
-  statusNote,
   TIER_IDS,
   TIER_LABELS,
   TIER_PRICE_USD,
   TIER_TAGLINES,
   type FeatureKey,
-  type TierId,
 } from "@/lib/pricing/tiers";
 import { FEED_PATH } from "@/lib/routes";
 import { getStudentClaim } from "@/lib/student-discount";
-import { marketReadyFlags } from "@/lib/market-ready/flags";
+
 import { BillingButton } from "./BillingButton";
 
 export const dynamic = "force-dynamic";
 
 /**
- * The pricing page — rendered entirely from `src/lib/pricing/tiers.ts`, the
- * same config every gate reads, so it cannot advertise a limit the
- * enforcement disagrees with.
+ * The pricing page — rendered from `src/lib/pricing/tiers.ts` and
+ * `describe.ts`, the same config every gate reads, so it cannot advertise a
+ * limit the enforcement disagrees with.
  *
- * THERE IS NO CHECKOUT HERE, AND THE PAGE SAYS SO. No Stripe product, no
- * session, no webhook. The upgrade buttons are visibly inert rather than
- * leading somewhere that fails — a button that cannot do what it says is
- * worse than an honest disabled one.
+ * CHECKOUT IS SHOWN ONLY WHEN IT WOULD CHARGE WHAT THIS PAGE SAYS. Billing
+ * runs through Stripe behind `MARKET_READY_BILLING`; `getCheckoutQuote` reads
+ * the configured price and the page offers checkout only when it matches the
+ * displayed Pro price. A student price is shown as available only for a current
+ * verified claim AND a configured coupon, at the exact amount Stripe charges.
  *
- * WHAT IS AND IS NOT BUILT IS ON THE PAGE, NOT IN A FOOTNOTE. Every feature
- * carries its `status`, and the two caveated states read differently on
- * purpose: "not built yet" means there is no code, while "built, not yet
- * verified end-to-end" means the code exists and passes its tests but no
- * human has watched it work. Collapsing those into one word would be the
- * same failure as collapsing "confirmed live" into "checked as of".
+ * Current benefits and unfinished work are separate lists. Anything not built,
+ * or built but never verified end to end, is never sold as part of a plan.
  */
 
-function priceLabel(t: TierId, student = false): string {
-  const price = TIER_PRICE_USD[t] * (student && t === "apply" ? 0.5 : 1);
-  return price === 0 ? "free" : `$${price.toFixed(2)}/mo`;
-}
-
-/** What this tier gives you for this feature, in words. */
-function allowance(feature: FeatureKey, tier: TierId): string | null {
-  const limit = FEATURES[feature].limits[tier];
-  if (limit === 0) return null;
-  if (limit === null) return null;
-  return `${limit} free`;
-}
-
-/**
- * Every upgrade link sends `?feature=<key>` (UpgradeWall, the portal's locked
- * tiles). Parsed against the real key list so an unknown or hand-edited value
- * is simply ignored rather than echoed onto the page.
- */
 function featureFromParam(value: string | string[] | undefined): FeatureKey | null {
   const raw = Array.isArray(value) ? value[0] : value;
   return raw && (FEATURE_KEYS as readonly string[]).includes(raw) ? (raw as FeatureKey) : null;
 }
 
-/** "1 free", "unlimited", "not included" — the same reading FeatureLine gives. */
-function limitWords(limit: number | null): string {
-  if (limit === null) return "unlimited";
-  if (limit === 0) return "not included";
-  return `${limit} included`;
-}
-
-function FeatureLine({ feature, tier, highlighted }: { feature: FeatureKey; tier: TierId; highlighted: boolean }) {
-  const entry = FEATURES[feature];
-  const note = statusNote(entry.status);
-  const allow = allowance(feature, tier);
-  const dim = entry.status === "coming_soon";
-
-  return (
-    <li
-      style={{
-        marginBottom: 9,
-        ...(highlighted
-          ? { borderLeft: "2px solid var(--accent)", paddingLeft: 8, marginLeft: -10 }
-          : {}),
-      }}
-    >
-      <span
-        className="t-sm"
-        style={{ color: dim ? "var(--faint-readable)" : "var(--text)" }}
-      >
-        {entry.label}
-      </span>
-      {allow && (
-        <span className="mono" style={{ marginLeft: 6, color: "var(--faint-readable)" }}>
-          · {allow}
-        </span>
-      )}
-      {note && (
-        <span
-          className="mono"
-          style={{
-            display: "block",
-            marginTop: 2,
-            color: entry.status === "coming_soon" ? "var(--faint-readable)" : "var(--accent-lite)",
-          }}
-        >
-          {note}
-        </span>
-      )}
-    </li>
-  );
+function one(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 export default async function PricingPage({
@@ -117,37 +54,39 @@ export default async function PricingPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const asked = featureFromParam((await searchParams).feature);
+  const sp = await searchParams;
+  const asked = featureFromParam(sp.feature);
+  const checkoutState = one(sp.checkout);
   const user = await getSessionUser();
   const tier = await getUserTier(user?.id);
   const devTier = await devTierInForce();
   const claim = user ? await getStudentClaim(user.id).catch(() => null) : null;
-  const verifiedStudent = Boolean(claim?.current);
-  const studentPricing = verifiedStudent || claim?.enrollmentStatus === "pending";
   const billingEnabled = marketReadyFlags.billing();
+  const quote = billingEnabled ? await getCheckoutQuote() : null;
+  const checkoutReady = Boolean(quote?.ok);
+  const studentCents = quote?.ok ? quote.studentCents : null;
+  const studentActive = Boolean(claim?.current && studentCents !== null);
+  const studentPending = Boolean(claim && !claim.current);
 
-  const unbuilt = FEATURE_KEYS.filter((k) => FEATURES[k].status === "coming_soon");
+  const notBuilt = FEATURE_KEYS.filter((k) => FEATURES[k].status === "coming_soon");
   const unverified = FEATURE_KEYS.filter((k) => FEATURES[k].status === "unverified");
 
   return (
     <main className="wrap pricing-page" style={{ paddingBlock: "48px 96px" }}>
       <BackLink href={FEED_PATH} label="back to the feed" />
-      <header style={{ marginBottom: 32 }}>
+      <header style={{ marginBottom: 28 }}>
         <div className="eyebrow chrome">pricing</div>
         <h1 className="section-title chrome" style={{ marginTop: 12 }}>
-          see it, generate with it, <span style={{ color: "var(--accent)" }}>apply with it</span>
+          find it free, <span style={{ color: "var(--accent)" }}>prepare without limits</span>
         </h1>
         <p className="t-base" style={{ color: "var(--muted)", maxWidth: "64ch", marginTop: 14 }}>
-          Searching every listing, opening any of them, and deadline reminders on what you save
-          are free and always will be. The free plan shows your{" "}
-          <strong style={{ color: "var(--text)" }}>{FREE_DAILY_RESULTS} highest-ranked matches</strong>,
-          re-ranked as we poll each employer&rsquo;s board and as deadlines approach. Paid plans
-          open the full ranked list and the tools that generate something — a critique, a letter, a
-          README, a filled-in application — rather than just showing you a number.
+          {TIER_LABELS.free} is a complete search: every listing, every warning and source fact,
+          your top {FREE_RANKED_RESULTS} ranked matches for each search, a tracker, reminders, a
+          weekly digest, and one use of each preparation tool every 30 days.{" "}
+          {TIER_LABELS.apply} helps you spend less time applying, with unlimited preparation tools,
+          tracking, detailed fit guidance, and daily alerts. The browser extension adds profile
+          autofill and guided questions on supported forms; it is currently in testing.
         </p>
-        {/* The dev override outranks the real plan, so it has to outrank the
-            sentence naming it — "you are on Apply" would otherwise be a
-            statement about an env var dressed up as a fact about the account. */}
         {devTier ? (
           <p className="mono" style={{ marginTop: 10, color: "var(--accent)" }}>
             dev mode is forcing the {TIER_LABELS[devTier]} plan — nothing has been paid for.{" "}
@@ -164,6 +103,20 @@ export default async function PricingPage({
         )}
       </header>
 
+      {checkoutState === "success" && (
+        <section className="slot" style={{ padding: "14px 16px", marginBottom: 24 }}>
+          <span>
+            Payment submitted. {TIER_LABELS.apply} turns on when Stripe confirms it, usually within a
+            minute — reload this page to check.
+          </span>
+        </section>
+      )}
+      {checkoutState === "cancelled" && (
+        <section className="slot" style={{ padding: "14px 16px", marginBottom: 24 }}>
+          <span>Checkout cancelled. Nothing was charged, and your work is where you left it.</span>
+        </section>
+      )}
+
       {asked && (
         <section
           aria-label="The feature you came from"
@@ -176,132 +129,170 @@ export default async function PricingPage({
             {FEATURES[asked].description}
           </p>
           <p className="mono" style={{ marginTop: 8, color: "var(--text)" }}>
-            {TIER_IDS.map((t) => `${TIER_LABELS[t]}: ${limitWords(FEATURES[asked].limits[t])}`).join("  ·  ")}
+            {TIER_IDS.map((t) => `${TIER_LABELS[t]}: ${allowanceWords(asked, t) ?? "not included"}`).join("  ·  ")}
           </p>
-          {statusNote(FEATURES[asked].status) && (
-            <p className="mono" style={{ marginTop: 4, color: "var(--accent-lite)" }}>
-              {statusNote(FEATURES[asked].status)}
-            </p>
-          )}
+          <Link href={FEED_PATH} className="navlink" style={{ display: "inline-block", marginTop: 8 }}>
+            ← back to what you were doing
+          </Link>
         </section>
       )}
 
-      {studentPricing && (
-        <section style={{ border: "1px solid var(--accent)", background: "var(--accent-dim)", padding: "24px 26px", marginBottom: 28 }}>
-          <div className="eyebrow chrome" style={{ color: "var(--accent-lite)" }}>THE STUDENT ADVANTAGE · 50% OFF PRO</div>
-          <h2 style={{ fontSize: "1.65rem", letterSpacing: "-0.04em", marginTop: 12 }}>Big potential. Student pricing.</h2>
-          <p className="t-sm" style={{ color: "var(--muted)", marginTop: 10, maxWidth: "65ch" }}>
-            {verifiedStudent ? "Your university has verified your student status." : "Your school inbox is verified. Confirm current enrollment through your university to activate student pricing."}{" "}
-            Pro is shown at 50% off the regular monthly price. Student checkout stays unavailable until its Stripe discount is configured.
-          </p>
-          {!verifiedStudent && !user && <Link href="/login?next=%2Fonboarding" className="navlink" style={{ display: "inline-block", marginTop: 16 }}>Sign in with your school email →</Link>}
-          <Link href="/onboarding" className="navlink" style={{ display: "inline-block", marginTop: 16, marginLeft: !verifiedStudent && !user ? 20 : 0 }}>Return to your profile setup →</Link>
-        </section>
-      )}
-
-      {/* Said before the plans, not after them. Someone deciding whether to pay
-          should meet the caveats while they are still deciding. */}
-      {(unbuilt.length > 0 || unverified.length > 0) && (
-        <section
-          className="border"
-          style={{ borderColor: "var(--line-strong)", padding: "16px 18px", marginBottom: 32 }}
-        >
-          <div className="mono chrome">what is not finished yet</div>
-          <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "66ch" }}>
-            This is an honest list rather than a roadmap tease. Anything marked{" "}
-            <span style={{ color: "var(--faint-readable)" }}>not built yet</span> does not exist in
-            the product today and is <strong>disabled on every plan, including the one that pays
-            for it</strong> — you cannot buy your way to it. Anything marked{" "}
-            <span style={{ color: "var(--accent-lite)" }}>built, not yet verified end-to-end</span>{" "}
-            exists and passes its tests, but no human has driven it start to finish, so expect
-            rough edges.
-          </p>
-          {unverified.length > 0 && (
-            <p className="t-sm" style={{ color: "var(--muted)", marginTop: 10 }}>
-              <span className="mono" style={{ color: "var(--accent-lite)" }}>unverified:</span>{" "}
-              {unverified.map((k) => FEATURES[k].label).join(" · ")}
-            </p>
-          )}
-          {unbuilt.length > 0 && (
-            <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6 }}>
-              <span className="mono" style={{ color: "var(--faint-readable)" }}>not built yet:</span>{" "}
-              {unbuilt.map((k) => FEATURES[k].label).join(" · ")}
-            </p>
-          )}
-        </section>
-      )}
-
-      <div className="grid gap-6 md:grid-cols-3 pricing-plans" style={{ marginBottom: 40 }}>
-        {TIER_IDS.map((t) => {
-          const included = FEATURE_KEYS.filter((k) => FEATURES[k].limits[t] !== 0);
-          return (
-            <section
-              key={t}
-              className="border"
-              style={{
-                borderColor: t === tier ? "var(--accent)" : "var(--line-strong)",
-                padding: 22,
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-              }}
-            >
-              <div>
-                <div className="eyebrow chrome">{TIER_TAGLINES[t]}</div>
-                <div className="mono-strong plan-name" style={{ fontSize: "1.4rem", marginTop: 6 }}>
-                  {TIER_LABELS[t]}
-                </div>
-                <div className="mono plan-price" style={{ color: "var(--faint-readable)", marginTop: 2 }}>
-                  {studentPricing && t === "apply" && <><s>{priceLabel(t)}</s>{" → "}</>}
-                  {priceLabel(t, studentPricing)}
-                  {studentPricing && t === "apply" && <span style={{ display: "block", color: "var(--accent-lite)", marginTop: 8 }}>50% student discount{!verifiedStudent ? " · preview" : ""}</span>}
-                </div>
+      <div className="grid gap-6 md:grid-cols-2 pricing-plans" style={{ marginBottom: 28 }}>
+        {TIER_IDS.map((t) => (
+          <section
+            key={t}
+            className="border"
+            style={{
+              borderColor: t === tier ? "var(--accent)" : "var(--line-strong)",
+              padding: 22,
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+            }}
+          >
+            <div>
+              <div className="eyebrow chrome">{TIER_TAGLINES[t]}</div>
+              <div className="mono-strong plan-name" style={{ fontSize: "1.4rem", marginTop: 6 }}>
+                {TIER_LABELS[t]}
               </div>
+              <div className="mono plan-price" style={{ color: "var(--faint-readable)", marginTop: 2 }}>
+                {t === "free" ? (
+                  "free"
+                ) : studentActive && studentCents !== null ? (
+                  <>
+                    <s>${TIER_PRICE_USD.apply.toFixed(2)}</s> → {formatCents(studentCents)}/mo
+                    <span style={{ display: "block", color: "var(--accent-lite)", marginTop: 6 }}>
+                      verified student price{quote?.ok && !quote.studentRecurring ? " · introductory, see checkout for terms" : ""}
+                    </span>
+                  </>
+                ) : (
+                  <>${TIER_PRICE_USD.apply.toFixed(2)}/mo</>
+                )}
+              </div>
+            </div>
 
-              <ul style={{ display: "flex", flexDirection: "column" }}>
-                {included.map((k) => (
-                  <FeatureLine key={k} feature={k} tier={t} highlighted={k === asked} />
-                ))}
-              </ul>
-
-              {t === tier ? (
-                t === "apply" && billingEnabled && user ? <BillingButton portal /> : (
-                  <span className="mono" style={{ color: "var(--accent)", marginTop: "auto" }}>current plan</span>
-                )
-              ) : billingEnabled && t === "apply" && !studentPricing ? (
-                user ? <BillingButton /> : <Link href="/login?next=%2Fpricing" className="btn" style={{ marginTop: "auto", textAlign: "center" }}>sign in to upgrade</Link>
-              ) : (
-                <span
-                  className="btn"
-                  style={{
-                    marginTop: "auto",
-                    textAlign: "center",
-                    opacity: 0.55,
-                    cursor: "not-allowed",
-                  }}
-                  title="No payment provider is connected yet — nothing can be purchased."
-                >
-                  not yet available
-                </span>
+            <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {t === "apply" && (
+                <li className="t-sm" style={{ color: "var(--muted)" }}>
+                  Everything in {TIER_LABELS.free}, plus:
+                </li>
               )}
-            </section>
-          );
-        })}
+              {COMPARISON_ROWS.filter((k) => {
+                const words = allowanceWords(k, t);
+                if (!words) return false;
+                // Pro lists only what it adds or raises.
+                return t === "free" || words !== allowanceWords(k, "free");
+              }).map((k) => (
+                <li key={k} style={k === asked ? { borderLeft: "2px solid var(--accent)", paddingLeft: 8, marginLeft: -10 } : undefined}>
+                  <span className="t-sm" style={{ color: "var(--text)" }}>
+                    {FEATURES[k].label}
+                  </span>
+                  <span className="mono" style={{ marginLeft: 6, color: "var(--faint-readable)" }}>
+                    · {allowanceWords(k, t)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            {t === "apply" && (
+              <p className="mono" style={{ color: "var(--faint-readable)" }}>
+                AI cover-letter generations are limited to {AI_REQUESTS_PER_HOUR} an hour on every
+                plan, to protect the service. A fit score is an explanation of evidence, not a
+                probability of being selected, and no plan changes anyone&rsquo;s odds.
+              </p>
+            )}
+
+            {t === tier ? (
+              t === "apply" && billingEnabled && user ? (
+                <BillingButton portal />
+              ) : (
+                <span className="mono" style={{ color: "var(--accent)", marginTop: "auto" }}>current plan</span>
+              )
+            ) : t === "apply" && checkoutReady ? (
+              user ? (
+                <BillingButton />
+              ) : (
+                <Link href="/login?next=%2Fpricing" className="btn" style={{ marginTop: "auto", textAlign: "center" }}>
+                  sign in to upgrade
+                </Link>
+              )
+            ) : t === "apply" ? (
+              <span
+                className="btn"
+                style={{ marginTop: "auto", textAlign: "center", opacity: 0.55, cursor: "not-allowed" }}
+                title="Checkout is not available yet — nothing can be purchased."
+              >
+                checkout not available yet
+              </span>
+            ) : null}
+          </section>
+        ))}
       </div>
 
-      <section
-        className="border"
-        style={{ borderColor: "var(--line)", padding: "16px 18px", marginBottom: 28 }}
-      >
-        <div className="mono chrome">{billingEnabled ? "secure payments via Stripe" : "no payment is collected anywhere on this site"}</div>
+      {(studentActive || studentPending) && (
+        <section style={{ border: "1px solid var(--line-strong)", padding: "16px 18px", marginBottom: 28 }}>
+          <div className="mono chrome">student pricing</div>
+          <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "66ch" }}>
+            {studentActive && studentCents !== null
+              ? <>Your current enrollment is verified. Checkout applies the student discount: {formatCents(studentCents)}/month.</>
+              : <>Your school inbox is verified, but current enrollment is not yet. A 50% student discount may be available once it is; it is not applied today, and checkout charges the regular price until then.</>}
+          </p>
+        </section>
+      )}
+
+      <section className="border" style={{ borderColor: "var(--line-strong)", padding: "16px 18px", marginBottom: 28 }}>
+        <div className="mono chrome">not part of any plan today</div>
         <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "66ch" }}>
-          {billingEnabled ? <>Payments are handled by Stripe. Card details never enter Instela, and an Apply member can manage or cancel their subscription from this page.</> : <>
-          There is no billing provider connected, no checkout, and no card form — the buttons
-          above are deliberately inert rather than leading somewhere that fails. Every account is
-          currently on {TIER_LABELS.free}. When billing does land, the only thing that changes is
-          which plan your account is set to; the limits on this page are the same ones the code
-          already enforces.
-          </>}
+          These are not included in what {TIER_LABELS.apply} costs, and you cannot buy your way to
+          them.
+        </p>
+        {notBuilt.length > 0 && (
+          <p className="t-sm" style={{ color: "var(--muted)", marginTop: 8 }}>
+            <span className="mono" style={{ color: "var(--faint-readable)" }}>not built yet:</span>{" "}
+            {notBuilt.map((k) => FEATURES[k].label).join(" · ")}
+          </p>
+        )}
+        {unverified.length > 0 && (
+          <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6 }}>
+            <span className="mono" style={{ color: "var(--accent-lite)" }}>built, not yet verified end to end:</span>{" "}
+            {unverified.map((k) => FEATURES[k].label).join(" · ")}. {TIER_LABELS.apply} accounts can try it, with
+            that caveat shown, but it is not counted as a benefit until someone has watched it work.
+          </p>
+        )}
+      </section>
+
+      <section className="border" style={{ borderColor: "var(--line)", padding: "16px 18px", marginBottom: 28 }}>
+        <div className="mono chrome">how the limits work</div>
+        <ul className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "66ch", paddingLeft: 18, display: "flex", flexDirection: "column", gap: 6 }}>
+          <li>
+            Each Free tool renews 30 days after you first use it, on its own clock. Reopening,
+            editing, copying or exporting what you already made never counts, and a run that fails
+            gives the use back.
+          </li>
+          <li>
+            The tracker limit counts active opportunities only. Finished ones (offer, rejected,
+            ghosted, withdrawn) and your whole history are always kept and never count. Applications
+            you actually submit are always recorded.
+          </li>
+          <li>
+            If you leave {TIER_LABELS.apply}, nothing is deleted: your drafts, tracker and saved
+            searches stay, and you choose which saved search keeps alerting.
+          </li>
+          <li>
+            Alerts can only report what we have already found and checked at the source; daily is
+            the fastest we run them.
+          </li>
+        </ul>
+      </section>
+
+      <section className="border" style={{ borderColor: "var(--line)", padding: "16px 18px", marginBottom: 28 }}>
+        <div className="mono chrome">{checkoutReady ? "secure payments via Stripe" : "no payment is collected yet"}</div>
+        <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "66ch" }}>
+          {checkoutReady ? (
+            <>Payments are handled by Stripe; card details never reach Instela. {TIER_LABELS.apply} is monthly and you can manage or cancel it from this page at any time.</>
+          ) : (
+            <>Checkout is switched off until it is configured to charge exactly the price shown here. Every account is on {TIER_LABELS.free} until then, and the limits on this page are the ones the product already enforces.</>
+          )}
         </p>
       </section>
 

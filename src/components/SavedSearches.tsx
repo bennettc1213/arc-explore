@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 
 import {
   deleteSearchAction,
+  pickFreeAlertAction,
   saveSearchAction,
   toggleNotifyAction,
   type SaveSearchState,
@@ -22,6 +23,10 @@ export interface SavedSearchView {
   name: string;
   filters: SavedFilters;
   notify: boolean;
+  /** Whether this search's alerts are active on the viewer's plan. */
+  alerting: boolean;
+  /** On Free: whether this search holds the single alert slot. */
+  holdsFreeSlot: boolean;
 }
 
 /**
@@ -36,20 +41,24 @@ export function SavedSearches({
   current,
   currentIsEmpty,
   searches,
-  canSave = true,
+  limit,
+  cadence,
+  onFree,
 }: {
   current: SavedFilters;
   currentIsEmpty: boolean;
   searches: SavedSearchView[];
-  /** Whether this viewer's tier includes saved-search alerts. Decided
-   *  server-side (see app/page.tsx); `saveSearchAction` re-checks it anyway,
-   *  because a Server Action is a public POST endpoint and a hidden button
-   *  is not a check. */
-  canSave?: boolean;
+  /** How many this plan may hold — decided server-side; `saveSearchAction`
+   *  re-checks it, because a Server Action is a public POST endpoint. */
+  limit: number;
+  /** "weekly" or "daily" — the plan's alert cadence. */
+  cadence: string;
+  onFree: boolean;
 }) {
   const [state, action, pending] = useActionState(saveSearchAction, INITIAL);
   const [naming, setNaming] = useState(false);
 
+  const atLimit = searches.length >= limit;
   const alreadySaved = searches.some(
     (s) => filtersToQuery(s.filters) === filtersToQuery(current),
   );
@@ -61,26 +70,31 @@ export function SavedSearches({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <span className="mono chrome">saved searches</span>
-        {!canSave && (
-          <span className="mono" style={{ color: "var(--faint-readable)" }}>
-            🔒{" "}
-            <Link href="/pricing" style={{ color: "var(--accent)" }}>
-              {TIER_LABELS.apply}
-            </Link>{" "}
-            — a saved search exists to alert you, and alerts are a paid feature
-          </span>
-        )}
-        {canSave && !currentIsEmpty && !alreadySaved && !naming && (
+        {!currentIsEmpty && !alreadySaved && !naming && !atLimit && (
           <button type="button" className="btn press" onClick={() => setNaming(true)}>
             save this search
           </button>
         )}
-        {canSave && alreadySaved && (
+        {!currentIsEmpty && !alreadySaved && atLimit && (
+          <span className="mono" style={{ color: "var(--faint-readable)" }}>
+            {onFree ? (
+              <>
+                {TIER_LABELS.free} keeps {limit} saved search — delete it to save this one, or{" "}
+                <Link href="/pricing?feature=saved_search_alerts" style={{ color: "var(--accent)" }}>
+                  {TIER_LABELS.apply} saves several, with daily alerts
+                </Link>
+              </>
+            ) : (
+              <>you have {limit} saved — delete one to save another</>
+            )}
+          </span>
+        )}
+        {alreadySaved && (
           <span className="mono" style={{ color: "var(--faint-readable)" }}>
             this one is already saved
           </span>
         )}
-        {canSave && currentIsEmpty && (
+        {currentIsEmpty && (
           <span className="mono" style={{ color: "var(--faint-readable)" }}>
             filter the feed first — an empty search matches everything
           </span>
@@ -159,9 +173,24 @@ export function SavedSearches({
                         : "alerts off — the search still works in the feed"
                     }
                   >
-                    {s.notify ? "alerts on" : "alerts off"}
+                    {s.notify ? (s.alerting ? `alerts on · ${cadence}` : `alerts paused on ${TIER_LABELS.free}`) : "alerts off"}
                   </PendingButton>
                 </form>
+
+                {onFree && !s.holdsFreeSlot && (
+                  <form action={pickFreeAlertAction}>
+                    <input type="hidden" name="id" value={s.id} />
+                    <PendingButton
+                      type="submit"
+                      pendingLabel="switching…"
+                      className="mono press"
+                      style={{ background: "none", border: "none", padding: 0, color: "var(--accent)" }}
+                      title="Free alerts on one saved search; this makes it this one"
+                    >
+                      alert on this one instead
+                    </PendingButton>
+                  </form>
+                )}
 
                 <form action={deleteSearchAction}>
                   <input type="hidden" name="id" value={s.id} />
@@ -187,8 +216,12 @@ export function SavedSearches({
 
       {searches.length > 0 && (
         <p className="mono" style={{ marginTop: 12, color: "var(--faint-readable)" }}>
-          an alert fires only for postings we first saw since the last one — never a re-send of
-          what you have already been shown.
+          alerts email {cadence}, and only for postings we first saw since the last one — never a
+          re-send of what you have already been shown, and never before we have found and
+          checked a listing ourselves. Saved searches reopen from here whether or not email is on.
+          {onFree && searches.length > 1 && (
+            <> {TIER_LABELS.free} alerts on one search; the others are kept, paused, and resume on {TIER_LABELS.apply}.</>
+          )}
         </p>
       )}
     </section>

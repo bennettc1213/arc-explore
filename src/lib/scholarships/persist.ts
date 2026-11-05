@@ -47,6 +47,7 @@ const POSTINGS_BATCH = 500;
 export async function persistScholarships(
   source: ScholarshipSource,
   listings: ScholarshipListing[],
+  opts?: { absenceAuthoritative?: boolean },
 ): Promise<ScholarshipPersistResult> {
   return db.transaction(async (tx) => {
     let inserted = 0;
@@ -85,7 +86,9 @@ export async function persistScholarships(
     // open need reopening. We do this before the upsert so a row that is
     // closing on this run keeps its first-miss timestamp and is not re-touched
     // by the upsert's closedAt logic.
-    const lifecycle = await applyScholarshipLifecycle(tx, source, openHashes, now);
+    const lifecycle = opts?.absenceAuthoritative === false
+      ? { closed: 0, reopened: 0 }
+      : await applyScholarshipLifecycle(tx, source, openHashes, now);
 
     const hashById = new Map<string, string>();
 

@@ -325,8 +325,11 @@ export interface PlanPayload {
   lockedCount: number;
 }
 
-/** Logged-out visitors see this many real cards across the whole Plan view. */
-export const SIGNED_OUT_CARD_CAP = 10;
+/** A viewer without full ranked depth (signed out or Free) sees this many
+ *  distinct real cards across the whole Plan view — the list's own number,
+ *  `FREE_RANKED_RESULTS`. A literal so client components importing this
+ *  module's types do not pull the schema in; a test pins the two together. */
+export const PLAN_FREE_CARD_CAP = 20;
 
 /**
  * Assemble the view and apply the cap.

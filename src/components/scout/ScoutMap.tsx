@@ -46,14 +46,25 @@ function pipeline([x, y]: number[], index: number) {
   return `M ${x} ${y} H ${rail} V ${index % 2 ? 53 : 47} H 50 V 50`;
 }
 
-export function ScoutMap({ active = false, field = "" }: { active?: boolean; field?: string }) {
+// Stream mode staggers each path's pulse so the core is always receiving one.
+// The order is fixed rather than random so server and client render the same.
+const STREAM_PERIOD_S = 3.2;
+const streamDelay = (i: number) => `${((i * 7) % sources.length) * (STREAM_PERIOD_S / sources.length)}s`;
+
+/**
+ * `active` plays the one-off connection sequence Scout shows while it runs.
+ * `stream` is the landing page's resting loop: every path already connected,
+ * with a pulse travelling down each into the core, forever. Both are
+ * illustrations of the shape of discovery, never a log of real requests.
+ */
+export function ScoutMap({ active = false, field = "", stream = false }: { active?: boolean; field?: string; stream?: boolean }) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (!active) return;
     const timer = setInterval(() => setTick(t => Math.min(t + 1, 44)), 250);
     return () => clearInterval(timer);
   }, [active]);
-  const state = (i: number) => !active || tick < i * 2 + 1 ? "waiting" : tick < i * 2 + 4 ? "connecting" : "connected";
+  const state = (i: number) => stream ? "connected" : !active || tick < i * 2 + 1 ? "waiting" : tick < i * 2 + 4 ? "connecting" : "connected";
   const engineering = /engineer|construction|infrastructure|water|structur|transport/i.test(field);
   const health = /nurs|health|medic|pharma|dental/i.test(field);
   const education = /teach|education|pedagog/i.test(field);
@@ -66,13 +77,13 @@ export function ScoutMap({ active = false, field = "" }: { active?: boolean; fie
     14: health ? "Public health roles" : education ? "State education roles" : "State agencies",
     17: health ? "Community clinics" : education ? "Community programs" : "Public service roles",
   };
-  return <div className={`scout-network ${active ? "is-searching" : ""}`} aria-label="Illustrated discovery network">
-    <div className="scout-network-top"><span><Activity size={12} /> DISCOVERY NETWORK</span><span>{active ? "BUILDING YOUR SEARCH" : "READY WHEN YOU ARE"}</span></div>
+  return <div className={`scout-network ${active || stream ? "is-searching" : ""} ${stream ? "is-streaming" : ""}`} aria-label="Illustrated discovery network">
+    <div className="scout-network-top"><span><Activity size={12} /> DISCOVERY NETWORK</span><span>{stream ? "ALWAYS CHECKING" : active ? "BUILDING YOUR SEARCH" : "READY WHEN YOU ARE"}</span></div>
     <div className="scout-network-diagram">
-      {[desktop, mobile].map((positions, layout) => <svg key={layout} className={`scout-pipelines ${layout ? "mobile-pipelines" : "desktop-pipelines"}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">{positions.map((point, i) => <g key={i} className={state(i)}><path className="pipeline-track" d={pipeline(point, i)} /><path className="pipeline-signal" pathLength="1" d={pipeline(point, i)} /></g>)}</svg>)}
-      {sources.map((source, i) => <div key={source.label} className={`scout-source ${state(i)} ${active && tick < i * 2 - 5 ? "not-reached" : ""}`} style={{ "--source-x": `${desktop[i][0]}%`, "--source-y": `${desktop[i][1]}%`, "--mobile-x": `${mobile[i][0]}%`, "--mobile-y": `${mobile[i][1]}%` } as CSSProperties}><source.icon size={16} /><span>{labels[i] ?? source.label}</span><Check className="source-check" size={10} /></div>)}
-      <div className="scout-network-core"><Radar size={28} /><strong>Your Scout</strong><span>{active ? "Making connections" : "Ready to discover"}</span></div>
+      {[desktop, mobile].map((positions, layout) => <svg key={layout} className={`scout-pipelines ${layout ? "mobile-pipelines" : "desktop-pipelines"}`} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">{positions.map((point, i) => <g key={i} className={state(i)} style={stream ? { "--stream-delay": streamDelay(i) } as CSSProperties : undefined}><path className="pipeline-track" d={pipeline(point, i)} /><path className="pipeline-signal" pathLength="1" d={pipeline(point, i)} /></g>)}</svg>)}
+      {sources.map((source, i) => <div key={source.label} className={`scout-source ${state(i)} ${active && tick < i * 2 - 5 ? "not-reached" : ""}`} style={{ "--source-x": `${desktop[i][0]}%`, "--source-y": `${desktop[i][1]}%`, "--mobile-x": `${mobile[i][0]}%`, "--mobile-y": `${mobile[i][1]}%`, ...(stream ? { "--stream-delay": streamDelay(i) } : {}) } as CSSProperties}><source.icon size={16} /><span>{labels[i] ?? source.label}</span><Check className="source-check" size={10} /></div>)}
+      <div className="scout-network-core"><Radar size={28} /><strong>Your Scout</strong><span>{stream ? "Taking in new listings" : active ? "Making connections" : "Ready to discover"}</span></div>
     </div>
-    <div className="scout-network-bottom"><span className="scout-network-light" /><span>Discovery network preview</span><span>{active ? `${sources.filter((_, i) => state(i) === "connected").length} / ${sources.length} paths mapped` : `${sources.length} discovery paths`}</span></div>
+    <div className="scout-network-bottom"><span className="scout-network-light" /><span>{stream ? "Illustration of new listings reaching Scout" : "Discovery network preview"}</span><span>{active ? `${sources.filter((_, i) => state(i) === "connected").length} / ${sources.length} paths mapped` : `${sources.length} discovery paths`}</span></div>
   </div>;
 }

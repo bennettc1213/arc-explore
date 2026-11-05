@@ -369,6 +369,7 @@ export function matchFieldKey(sig: FieldSignature): AutofillKey | null {
   // predicate. Both were found by running this over a real Greenhouse form.
   if (isInfrastructureField(sig)) return null;
   if (isYesNoQuestion(sig)) return null;
+  if (isApplicationSpecificQuestion(sig)) return null;
 
   const type = (sig.type ?? "").toLowerCase();
   // File inputs are unfillable: we hold no original document. Checkboxes and
@@ -445,9 +446,19 @@ export function matchFieldKey(sig: FieldSignature): AutofillKey | null {
 
   // 7. Location. Last, because "location" appears inside plenty of
   // question text that is not asking where the student lives.
-  if (hasAny(t, ["location", "city", "address", "where are you based"])) return "location";
+  // A street address / state / postal code is not interchangeable with a city.
+  if (hasAny(t, ["street", "postal", "zip", "state", "country"]) || hasPhrase(t, "address line")) return null;
+  if (hasAny(t, ["location", "city"]) || hasPhrase(t, "where are you based")) return "location";
 
   return null;
+}
+
+/** Narrative and relationship questions are always specific to this application.
+ * Check before generic words like "school", "family", or "name" can match. */
+export function isApplicationSpecificQuestion(sig: FieldSignature): boolean {
+  const label = normalizeSignature(sig.label ?? "");
+  return /^(why|describe|explain|tell us|tell me|share|write|what interests|what motivates)\b/.test(label)
+    || /\b(friends?|family members?|relatives?|previous recipients?|received this scholarship)\b/.test(label);
 }
 
 /* ------------------------------------------------------------------ *

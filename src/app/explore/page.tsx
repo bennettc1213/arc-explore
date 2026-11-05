@@ -10,12 +10,13 @@ import { recordEvent } from "@/lib/analytics/record";
 import { statusesForPostings } from "@/lib/applications/store";
 import { getSessionUser } from "@/lib/auth";
 import { getAvailableTerms, getFeed, getFeedStats, getLotteryAwards, newSinceFromDays } from "@/lib/feed";
-import { FREE_DAILY_RESULTS, reservationFor } from "@/lib/feed-trim";
+import { FREE_RANKED_RESULTS, reservationFor } from "@/lib/feed-trim";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { evaluateFeature, TIER_PRICE_USD, TIMING_PRIORITY_POINTS } from "@/lib/pricing/tiers";
+import { ALERT_CADENCE_LABEL, evaluateFeature, TIER_LABELS, TIER_PRICE_USD, TIMING_PRIORITY_POINTS } from "@/lib/pricing/tiers";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 import { listSearches } from "@/lib/searches/store";
+import { alertingSearchIds, freeAlertSlot, savedSearchLimit } from "@/lib/searches/alerting";
 import { filtersFromParams, isEmptyFilters } from "@/lib/searches/types";
 import {
   INTEREST_OPTIONS,
@@ -30,11 +31,11 @@ import { PlanView, type FundingState } from "@/components/scholarships/PlanView"
 import { getFundingGoal } from "@/lib/profile/funding-goal";
 import { FEED_PATH } from "@/lib/routes";
 import { ActiveFilters } from "@/components/ActiveFilters";
-import { OpportunityDeck } from "@/components/discovery/OpportunityDeck";
 import { DiscoveryPreferences } from "@/components/discovery/DiscoveryPreferences";
-import { toDiscoveryCard } from "@/lib/discovery/cards";
-import { toScoringProfile, withScoringPreferences, scoringQueryFrom } from "@/lib/score/v2/profile";
 import { Icon } from "@/components/ui/Icon";
+import { ExploreScoutEntry } from "@/components/scout/ExploreScoutEntry";
+import { exploreEntryFocus, scoutButtonLabel, scoutHref, type ScoutFocus } from "@/lib/scout/focus";
+import { toScoringProfile, withScoringPreferences, scoringQueryFrom } from "@/lib/score/v2/profile";
 import { getFundingTotals, getScholarshipPlan } from "@/lib/scholarships/explore";
 import { parseExploreView, type ExploreView } from "@/lib/scholarships/plan";
 
@@ -133,6 +134,12 @@ export default async function FeedPage({
 }) {
   const sp = await searchParams;
 
+  // Picking a category (sidebar, old Cards links) opens a Scout start screen, not
+  // the ranked list. Returned before anything is loaded: nothing here needs the
+  // session, the profile or the feed.
+  const entry = exploreEntryFocus(sp);
+  if (entry) return <ExploreScoutEntry focus={entry.focus} />;
+
   /*
    * Set by the account-deletion redirect. Worth a banner rather than a silent
    * landing: someone who just destroyed everything they had here should be told
@@ -217,9 +224,12 @@ export default async function FeedPage({
    * the default there, List is the existing ranked feed below.
    */
   const scholarshipViews = kind === "scholarship";
-  const deckView = sp.view !== "list" && sp.view !== "plan";
   const view: ExploreView = parseExploreView(sp.view);
-  const planView = !deckView && scholarshipViews && view === "plan";
+  const planView = scholarshipViews && view === "plan";
+  // Which Scout the header button opens: the tool being looked at, or a plain one.
+  const scoutFocus: ScoutFocus | null = currentFilters.meritOnly
+    ? "merit"
+    : kind === "scholarship" ? "scholarships" : kind === "internship" ? "internships" : null;
   const newDaysRaw = Number(Array.isArray(sp.new) ? sp.new[0] : sp.new);
   const newSinceDays = Number.isFinite(newDaysRaw) && newDaysRaw > 0 ? Math.round(newDaysRaw) : null;
 
@@ -241,24 +251,21 @@ export default async function FeedPage({
     Number.isFinite(showRaw) && showRaw > 0 ? Math.min(Math.round(showRaw), 500) : FEED_PAGE_SIZE;
 
   /*
-   * THE FREE PLAN'S DAILY SET.
+   * THE FREE PLAN'S RANKED DEPTH.
    *
-   * Free sees the top `FREE_DAILY_RESULTS` ranked matches; paid sees the whole
-   * list, a page at a time. Deliberately a **depth** cap rather than a
-   * per-listing view counter: a counter needs a row written on every listing
-   * open, punishes exploring, resets awkwardly, and would be the first
-   * behavioural log of what a named student looked at — which is exactly what
-   * `events` was designed not to be (see its schema comment). This needs no
-   * new table and cannot be gamed by refreshing.
+   * Free sees the top `FREE_RANKED_RESULTS` ranked matches for this exact
+   * search and filter combination; Pro sees the whole list, a page at a time.
+   * A **depth** cap rather than a per-listing view counter: a counter needs a
+   * row written on every listing open, punishes exploring, and would be the
+   * first behavioural log of what a named student looked at — exactly what
+   * `events` was designed not to be. Changing the filters ranks a different
+   * set; opening listings is never counted.
    *
-   * It is genuinely a *daily* set without any date arithmetic: the ranking
-   * reads timing, timing now moves every day (deadlines approach, postings
-   * age), and `ingest-fast` adds rows every 20 minutes. So the twenty change
-   * on their own. The UI says that rather than claiming a midnight reset,
-   * which would be a schedule we do not actually run.
+   * The set moves as ingestion adds rows and timing changes. The UI says that,
+   * and never promises a midnight reset or a number of new rows per day.
    */
   const dailyCapped = !evaluateFeature(tier, "feed_full_depth").usable;
-  const show = dailyCapped ? FREE_DAILY_RESULTS : requested;
+  const show = dailyCapped ? FREE_RANKED_RESULTS : requested;
 
   const [listFeed, stats, terms, lotteryAwards, plan, funding] = await Promise.all([
     // The Plan view ranks through getFeed itself (inside getScholarshipPlan),
@@ -402,6 +409,11 @@ export default async function FeedPage({
     });
   }
 
+  // The Free ranked-depth prompt is about to render: counted by feature only.
+  if (dailyCapped && total > items.length) {
+    void recordEvent("upgrade_prompt_viewed", { feature: "feed_full_depth" });
+  }
+
   const guestVerticals = new Set(profile.targetVerticals ?? []);
 
   // One query for the whole page rather than one per row.
@@ -409,10 +421,9 @@ export default async function FeedPage({
     ? await statusesForPostings(user.id, [...items, ...lotteryAwards].map((i) => i.id))
     : new Map();
   const discoveryKey = new URLSearchParams(Object.entries(sp).flatMap(([key, value]) => value === undefined ? [] : (Array.isArray(value) ? value : [value]).map(v => [key, v]))).toString();
-  const moreHref = !dailyCapped && total > items.length && items.length < 500 ? hrefWith({ show: String(Math.min(items.length + FEED_PAGE_SIZE * 2, 500)), view: "deck" }) : null;
 
   return (
-    <main className={`wrap explore-page ${deckView ? "discovery-page" : ""}`} style={{ paddingBlock: "48px 96px" }}>
+    <main className="wrap explore-page" style={{ paddingBlock: "48px 96px" }}>
       {deleted && (
         <div
           className="border"
@@ -431,19 +442,23 @@ export default async function FeedPage({
       )}
 
       <header className="workspace-page-heading" style={{ marginBottom: 40 }}>
-        <div className="eyebrow chrome">{deckView ? "A world of possibilities. A place to start." : "01 — internships + scholarships"}</div>
+        <div className="eyebrow chrome">01 — internships + scholarships</div>
         <h1 className="section-title" style={{ marginTop: 12 }}>
-          {deckView ? "Less searching." : "Everything open right now,"}{" "}
-          <span style={{ color: "var(--accent)" }}>{deckView ? "More possibility." : "ranked for you."}</span>
+          Everything open right now,{" "}
+          <span style={{ color: "var(--accent)" }}>ranked for you.</span>
         </h1>
         <p className="t-base" style={{ color: "var(--muted)", maxWidth: "58ch", marginTop: 14 }}>
-          {deckView && kind === "internship"
-            ? <><span style={{ color: "var(--text)" }}>{stats.newToday.toLocaleString("en-US")}</span> {stats.newToday === 1 ? "internship" : "internships"} found today</>
-            : deckView ? "One opportunity at a time. Skip what isn't you. Save what could be. Take your next step." : "Every listing is checked at the source. Your data is never sold."}{" "}
+          Every listing is checked at the source. Your data is never sold.{" "}
           <Link href="/how-we-verify" style={{ color: "var(--accent)" }}>
             How we verify
           </Link>
         </p>
+        {/* A guided way in for anyone who would rather answer a few questions
+            than read a ranked list. Tailored to the tool they are looking at. */}
+        <Link href={scoutHref(scoutFocus)} className="btn btn-primary" style={{ marginTop: 20 }}>
+          {scoutButtonLabel(scoutFocus)}
+          <Icon name="arrow" size={16} />
+        </Link>
       </header>
 
       <section
@@ -470,12 +485,11 @@ export default async function FeedPage({
           missing. Writes the same `kind` param that select does. */}
       <div className="explore-page-toolbar">
         <div className="explore-view-options">
-        {!deckView && <KindSwitcher
+        <KindSwitcher
           current={kind === "scholarship" ? "scholarship" : kind === "internship" ? "internship" : "all"}
           hrefs={kindHrefs}
-        />}
-        <nav className="discovery-mode-switch" aria-label="Explore experience"><Link href={hrefWith({ view: "deck" })} aria-current={deckView ? "page" : undefined} prefetch={false}><Icon name="explore" size={15} />Cards</Link><Link href={hrefWith({ view: "list" })} aria-current={!deckView && !planView ? "page" : undefined} prefetch={false}><Icon name="menu" size={15} />List</Link>{scholarshipViews && <Link href={viewHrefs.plan} aria-current={planView ? "page" : undefined} prefetch={false}>Funding plan</Link>}</nav>
-        {!deckView && scholarshipViews && (
+        />
+        {scholarshipViews && (
           <ViewToggle current={view} explicit={sp.view !== undefined} hrefs={viewHrefs} />
         )}
       </div>
@@ -488,7 +502,6 @@ export default async function FeedPage({
         key={discoveryKey}
         compact
         scoring={{ school: profile.school, gpa: profile.gpa, gpaScale: profile.gpaScale, enrollmentStatus: profile.enrollmentStatus, educationLevel: profile.educationLevel, residency: profile.residency, priority: profile.priority }}
-        discovery={deckView}
         meritOnly={currentFilters.meritOnly}
         college={currentFilters.college}
         user={Boolean(user)}
@@ -516,7 +529,7 @@ export default async function FeedPage({
         hideBlocked={hideBlocked}
         excludeMarketing={excludeMarketing}
         activeCount={activeCount}
-        view={deckView ? "deck" : scholarshipViews ? view : "list"}
+        view={scholarshipViews ? view : "list"}
       /></DiscoveryPreferences>
       </div>
 
@@ -524,7 +537,7 @@ export default async function FeedPage({
       <div className="explore-results" id="opportunity-results">
       <ActiveFilters params={sp} />
 
-      {!deckView && user && !profileReady && (
+      {user && !profileReady && (
         <div className="slot" style={{ marginBottom: 24, padding: "14px 16px" }}>
           <Mascot size={26} />
           <span className="flex-1">
@@ -543,7 +556,7 @@ export default async function FeedPage({
         </div>
       )}
 
-      {!deckView && !user && !hasProfile && (
+      {!user && !hasProfile && (
         <div className="slot" style={{ marginBottom: 24, padding: "14px 16px" }}>
           <span>
             personalize your matches to score these — or{" "}
@@ -552,11 +565,11 @@ export default async function FeedPage({
         </div>
       )}
 
-      {!deckView && <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
+      <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
         {plan
           ? `03 — your plan, from ${plan.counts.listings.toLocaleString("en-US")} open scholarships`
           : `03 — ${items.length} results`}
-      </div>}
+      </div>
 
       {/* A category can only be read off what the source actually wrote. Most
           scholarships name no field at all, so without this line picking a
@@ -575,17 +588,25 @@ export default async function FeedPage({
         <SavedSearches
           current={currentFilters}
           currentIsEmpty={isEmptyFilters(currentFilters)}
-          canSave={evaluateFeature(tier, "saved_search_alerts").usable}
-          searches={savedSearches.map((s) => ({
-            id: s.id,
-            name: s.name,
-            filters: s.filters,
-            notify: s.notify,
-          }))}
+          limit={savedSearchLimit(tier)}
+          cadence={ALERT_CADENCE_LABEL[tier]}
+          onFree={tier === "free"}
+          searches={(() => {
+            const alerting = alertingSearchIds(savedSearches, tier);
+            const slot = tier === "free" ? freeAlertSlot(savedSearches) : null;
+            return savedSearches.map((s) => ({
+              id: s.id,
+              name: s.name,
+              filters: s.filters,
+              notify: s.notify,
+              alerting: alerting.has(s.id),
+              holdsFreeSlot: slot === s.id,
+            }));
+          })()}
         />
       )}
 
-      {deckView ? <OpportunityDeck key={discoveryKey} cards={items.map(item => toDiscoveryCard(item, tier, profileReady, scoringQueryFrom(sp)))} signedIn={Boolean(user)} statuses={Object.fromEntries(tracked)} kindLabel={currentFilters.meritOnly ? "college merit scholarships" : kind === "scholarship" ? "scholarships" : kind === "internship" ? "internships" : "opportunities"} total={total} dailyCapped={dailyCapped} moreHref={moreHref} /> : plan ? (
+      {plan ? (
         <EmailModalProvider>
           <PlanView
             plan={plan}
@@ -628,23 +649,21 @@ export default async function FeedPage({
               style={{ borderColor: "var(--accent)", padding: "16px 18px", marginTop: 18 }}
             >
               <div className="mono-strong" style={{ color: "var(--accent)" }}>
-                your top {items.length} of {total.toLocaleString()} matches
+                your top {items.length} ranked matches for this search, of {total.toLocaleString()}
               </div>
               <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "64ch" }}>
-                {/* Says what actually changes the set, rather than promising a
-                    midnight reset we do not run. Ingest is every 20 minutes and
-                    timing moves daily, so these twenty genuinely turn over. */}
-                The free plan shows your {FREE_DAILY_RESULTS} highest-ranked matches. They re-rank as we poll
-                each employer&rsquo;s board and as deadlines approach, so this set changes day to
-                day{stats.newToday > 0 ? ` — ${stats.newToday.toLocaleString()} of the corpus was found in the last day` : ""}.
-                Searching, filtering and opening any listing are never limited.
+                {TIER_LABELS.free} shows the top {FREE_RANKED_RESULTS} for each search. Change the
+                filters or the search and you get that search&rsquo;s top {FREE_RANKED_RESULTS}.
+                The set moves as we find new listings and as deadlines approach. Searching,
+                filtering and opening any listing are never limited, and every warning and source
+                fact shows on every plan.
               </p>
               <Link
                 href="/pricing?feature=feed_full_depth"
                 className="btn btn-primary press"
                 style={{ textDecoration: "none", display: "inline-block", marginTop: 12 }}
               >
-                see all {total.toLocaleString()} — ${TIER_PRICE_USD.apply}/mo
+                see all {total.toLocaleString()} with {TIER_LABELS.apply} — ${TIER_PRICE_USD.apply}/mo
               </Link>
             </div>
           )}

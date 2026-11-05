@@ -19,7 +19,7 @@ import { db } from "@/db/client";
 import { statusesForPostings } from "@/lib/applications/store";
 import { statusMeta } from "@/lib/applications/types";
 import { getFeed, type FeedFilters, type FeedItem } from "@/lib/feed";
-import { presentFit, type TierId } from "@/lib/pricing/tiers";
+import { evaluateFeature, presentFit, type TierId } from "@/lib/pricing/tiers";
 import type { ScoreProfile } from "@/lib/score/fit";
 
 import { formatAward } from "./display";
@@ -32,7 +32,7 @@ import {
   fundingTotals,
   nextMoves,
   selectRows,
-  SIGNED_OUT_CARD_CAP,
+  PLAN_FREE_CARD_CAP,
   type EligibilityStatus,
   type FundingTotals,
   type PlanInput,
@@ -126,12 +126,12 @@ export interface ScholarshipPlanArgs {
   filters: FeedFilters;
   tier: TierId;
   profileReady: boolean;
-  /** Null signed out — which is what switches the card cap on. */
+  /** Null signed out. The card cap follows the tier, not the session. */
   userId: string | null;
 }
 
 /**
- * The Plan view, capped and locked for a signed-out visitor.
+ * The Plan view, capped and locked for a viewer without full ranked depth.
  *
  * The cap is applied here and only here. The page and the JSON endpoint both
  * call this; neither re-implements it.
@@ -166,7 +166,13 @@ export async function getScholarshipPlan(args: ScholarshipPlanArgs): Promise<Pla
     );
   }
 
-  return buildPlanPayload(inputs, cards, { cap: args.userId ? null : SIGNED_OUT_CARD_CAP });
+  // The same ranked-depth policy as the list: a viewer without full depth
+  // (signed out, or Free) sees FREE_RANKED_RESULTS distinct cards across the
+  // whole Plan view; Pro sees every card. The Plan view arranges cards into
+  // rows rather than one ranked list, so the cap counts distinct listings in
+  // reading order (see buildPlanPayload) rather than list positions.
+  const capped = !evaluateFeature(args.tier, "feed_full_depth").usable;
+  return buildPlanPayload(inputs, cards, { cap: capped ? PLAN_FREE_CARD_CAP : null });
 }
 
 /**

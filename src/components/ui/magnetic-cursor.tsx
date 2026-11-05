@@ -14,7 +14,11 @@ interface MagneticCursorProps {
   blendMode?: "difference" | "exclusion" | "normal" | "screen" | "overlay";
   cursorClassName?: string;
   disableOnTouch?: boolean;
-  /** Controls that receive the effect. The app intentionally limits this to buttons. */
+  /**
+   * Controls that receive the effect. The app intentionally limits this to buttons:
+   * `.btn` everywhere, plus the home page's two-line `.landing-cta` buttons, which
+   * are their own class and so were left out until they were named here.
+   */
   targetSelector?: string;
 }
 
@@ -28,7 +32,7 @@ export const MagneticCursor: FC<MagneticCursorProps> = ({
   blendMode = "exclusion",
   cursorClassName = "",
   disableOnTouch = true,
-  targetSelector = "button, .btn",
+  targetSelector = "button, .btn, .landing-cta",
 }) => {
   const cursorRef = useRef<HTMLDivElement>(null);
   const finePointer = useMedia("(pointer: fine)");

@@ -159,13 +159,19 @@ test("compiled vendor modules use file extensions Chrome can load", () => {
   // A missing ".js" on `from "./frame-headers"` is why the popup sat on
   // "checking this page…" forever: the module graph failed and main() never ran.
   const vendor = join(EXT, "vendor");
-  const files = ["apply-url.js", "autofill.js", "frame-headers.js", "submitted.js"];
+  const files = ["apply-url.js", "autofill.js", "frame-headers.js", "submitted.js", "extension-config.js"];
   for (const file of files) {
     const src = readFileSync(join(vendor, file), "utf8");
     for (const spec of src.matchAll(/from\s+["'](\.[^"']+)["']/g)) {
       assert.match(spec[1], /\.js$/, `${file} imports ${spec[1]} without .js`);
     }
   }
+});
+
+test("the Chrome service worker uses packaged static imports, not unsupported dynamic imports", () => {
+  const js = code("background.js");
+  assert.doesNotMatch(js, /\bimport\s*\(/);
+  assert.match(js, /from "\.\/vendor\/extension-config\.js"/);
 });
 
 test("the embedded path still never submits, and still fills through the tested matcher", () => {

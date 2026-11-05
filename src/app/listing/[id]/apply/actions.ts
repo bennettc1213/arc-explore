@@ -129,6 +129,9 @@ export async function markAppliedAction(
   if (!postingId) return { status: "error", message: "missing posting" };
   const user = await requireUser(`/listing/${postingId}`);
 
+  // Deliberately NOT capacity-checked: this records an application the student
+  // actually submitted. A plan limit must never discard a true record — the
+  // tracker limit only refuses voluntary saves (tracker/actions.ts).
   await setStatus(user.id, postingId, "applied");
 
   const [stored, resume] = await Promise.all([getProfile(user.id), getLatestResume(user.id)]);

@@ -11,7 +11,11 @@ import {
   responseRate,
   shouldStampAppliedAt,
   statusMeta,
+  countActiveSlots,
+  occupiesActiveSlot,
+  transitionNeedsSlot,
 } from "./types";
+import { FEATURES } from "@/lib/pricing/tiers";
 
 const rows = (...statuses: ApplicationStatus[]) => statuses.map((status) => ({ status }));
 
@@ -122,5 +126,46 @@ describe("responseRate", () => {
     );
     // 10 submitted, 4 responded (screen, interview, offer, rejected).
     assert.deepEqual(r, { rate: 40, of: 10 });
+  });
+});
+
+describe("active tracker capacity", () => {
+  it("Free holds 10 active opportunities", () => {
+    assert.equal(FEATURES.tracker.limits.free, 10);
+    assert.equal(FEATURES.tracker.limits.apply, null);
+  });
+
+  it("in-flight statuses are active; decisions are history", () => {
+    for (const s of ["saved", "applied", "screen", "interview"] as const) assert.equal(occupiesActiveSlot(s, false), true);
+    for (const s of ["offer", "rejected", "ghosted", "withdrawn"] as const) assert.equal(occupiesActiveSlot(s, false), false);
+  });
+
+  it("a saved row on a closed listing is history; a submitted one is still waiting", () => {
+    assert.equal(occupiesActiveSlot("saved", true), false);
+    assert.equal(occupiesActiveSlot("applied", true), true);
+    assert.equal(occupiesActiveSlot("interview", true), true);
+  });
+
+  it("counts only active rows, however long the history", () => {
+    const history = Array.from({ length: 40 }, () => ({ status: "rejected" as const, closed: true }));
+    const active = Array.from({ length: 3 }, () => ({ status: "applied" as const, closed: false }));
+    assert.equal(countActiveSlots([...history, ...active]), 3);
+  });
+
+  it("only moves into the active set need a slot", () => {
+    assert.equal(transitionNeedsSlot(null, "saved", false), true, "new row");
+    assert.equal(transitionNeedsSlot("rejected", "interview", false), true, "reactivating history");
+    assert.equal(transitionNeedsSlot("saved", "applied", false), false, "active to active");
+    assert.equal(transitionNeedsSlot("applied", "rejected", false), false, "active to history");
+    assert.equal(transitionNeedsSlot("withdrawn", "ghosted", false), false, "history to history");
+    assert.equal(transitionNeedsSlot(null, "saved", true), false, "saving a closed listing is history");
+  });
+
+  it("a downgraded account with 14 active rows can still finish them", () => {
+    // Moving any of them into history never needs capacity, so the student is
+    // never forced to delete work to keep using the tracker.
+    for (const next of ["offer", "rejected", "ghosted", "withdrawn"] as const) {
+      assert.equal(transitionNeedsSlot("applied", next, false), false);
+    }
   });
 });

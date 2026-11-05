@@ -6,11 +6,12 @@ import { getProfile, getLatestResume } from "@/lib/profile/store";
 import { toScoringProfile } from "@/lib/score/v2/profile";
 import { getUserTier } from "@/lib/pricing/entitlements";
 import { evaluateFeature, TIMING_PRIORITY_POINTS } from "@/lib/pricing/tiers";
-import { FREE_DAILY_RESULTS, reservationFor } from "@/lib/feed-trim";
+import { FREE_RANKED_RESULTS, reservationFor } from "@/lib/feed-trim";
 import { toDiscoveryCard } from "@/lib/discovery/cards";
 import { selectScoutSections } from "@/lib/scout/results";
 import { scoutSchema } from "@/lib/scout/types";
 import { scoutFreshness } from "@/lib/scout/freshness";
+import { rememberScout } from "@/lib/scout/history-store";
 
 export async function runScout(raw: unknown) {
   const parsed = scoutSchema.safeParse(raw);
@@ -18,11 +19,14 @@ export async function runScout(raw: unknown) {
   const p = parsed.data;
   try {
     const user = await getSessionUser();
+    // Recent Scouts are account memory, not browser memory. A failure to save
+    // this convenience must never stop a search from running.
+    if (user) await rememberScout(user.id, p).catch(() => undefined);
     const [stored, resume, tier] = await Promise.all([user ? getProfile(user.id) : null, user ? getLatestResume(user.id) : null, getUserTier(user?.id)]);
-    const profile = { ...toScoringProfile(stored, [], resume?.parsed), major: p.field, school: p.school || stored?.school, gradYear: p.gradYear || stored?.gradYear, workAuth: p.workAuth || stored?.workAuth, gpa: p.gpa === "" ? stored?.gpa : p.gpa, gpaScale: Number(p.gpaScale), residency: p.residency || null, priority: p.priority, targetLocations: p.location ? [p.location] : [], openToRemote: p.remote };
+    const profile = { ...toScoringProfile(stored, [], resume?.parsed), major: p.field || null, school: p.school || stored?.school, gradYear: p.gradYear || stored?.gradYear, workAuth: p.workAuth || stored?.workAuth, gpa: p.gpa === "" ? stored?.gpa : p.gpa, gpaScale: Number(p.gpaScale), residency: p.residency || null, priority: p.priority, targetLocations: p.location ? [p.location] : [], openToRemote: p.remote };
     const full = evaluateFeature(tier, "feed_full_depth").usable;
-    const limit = full ? 100 : FREE_DAILY_RESULTS;
-    const feed = await getFeed(profile, { q: p.field, kind: p.kind === "both" ? null : p.kind, location: p.location || null, remoteOnly: p.remote, hideBlocked: true, excludeMarketing: true, limit, reservePerKind: p.kind === "both" ? reservationFor(limit) : 0, timingPoints: TIMING_PRIORITY_POINTS[tier] });
+    const limit = full ? 100 : FREE_RANKED_RESULTS;
+    const feed = await getFeed(profile, { q: p.field || null, kind: p.kind === "both" ? null : p.kind, location: p.location || null, remoteOnly: p.remote, hideBlocked: true, excludeMarketing: true, meritOnly: p.merit, college: p.merit && p.college ? p.college : null, limit, reservePerKind: p.kind === "both" ? reservationFor(limit) : 0, timingPoints: TIMING_PRIORITY_POINTS[tier] });
     const now = new Date();
     const sections = selectScoutSections(feed.items, now);
     const displayed = sections.flatMap(section => section.items.map(entry => entry.item));

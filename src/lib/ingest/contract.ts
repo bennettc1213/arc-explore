@@ -42,8 +42,12 @@ export type IncompleteReason =
   | "malformed_response";
 
 export interface FetchCompleteness {
+  /** Search completion follows its declared query/stop policy, never a board mirror. */
+  scope?: "board" | "search";
   /**
-   * True only when we hold every row the source published.
+   * True when the declared fetch scope completed. The default scope is the
+   * whole board. A search can finish its policy without reading the whole
+   * board; those adapters MUST also set absenceAuthoritative: false.
    *
    * False is the load-bearing value: it suppresses absence, so nothing is
    * closed and no miss strike is advanced on the strength of rows we never saw.

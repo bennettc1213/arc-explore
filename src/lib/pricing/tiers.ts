@@ -2,32 +2,25 @@
  * The single source of truth for what each pricing tier includes.
  *
  * EVERY GATING DECISION IN THIS CODEBASE MUST READ FROM THIS FILE. No
- * component, action or route may hardcode `tier === "edge"` or a price —
+ * component, action or route may hardcode `tier === "apply"` or a price —
  * they call `evaluateFeature` (or one of the small helpers below it) and
- * render whatever it returns. That is what makes "$6.99" a one-line change
+ * render whatever it returns. That is what makes a price a one-line change
  * instead of a grep-and-pray across every gated surface.
  *
  * This module is pure — no database import, no `"use server"`. It has to be
  * safe to import from a client component (a locked badge needs the label and
  * price without a round trip), and it has to be safe to import from
  * `db/schema.ts`'s consumers without creating an import cycle. Anything that
- * needs the database — reading a user's actual tier, reading how many times
- * they have used a capped tool — lives in `entitlements.ts` and `usage.ts`,
- * which import *this* file, never the other way around.
+ * needs the database — reading a user's actual tier, reading a tool's
+ * allowance — lives in `entitlements.ts` and `grants.ts`, which import *this*
+ * file, never the other way around.
  *
- * STATUS, NOT A SEPARATE LIST. Five tools were named explicitly as
- * "reserved but not built" for the Apply tier: scholarship autofill, the
- * reusable answer bank, one-click reapply, submission confirmation, and the
- * semester recap. Two more turned out to need the same treatment once this
- * was actually cross-checked against the codebase — the Smart Resume
- * converter (CLAUDE.md already forbids inventing its structure) and
- * "priority freshest listings" (no ranking-boost mechanism exists to gate).
- * Rather than track "reserved" as a separate concept from "built", every
- * feature below carries one `status: "live" | "coming_soon"` flag, and
- * `evaluateFeature` is the only place that flag is read. A `coming_soon`
- * feature is unusable on every tier regardless of its configured limits —
- * the limits still say what it will unlock once built, so the UI can render
- * "Apply — coming soon" instead of a number nobody can act on.
+ * STATUS, NOT A SEPARATE LIST. Every feature carries one
+ * `status: "live" | "unverified" | "coming_soon"` flag beside its plan limits.
+ * A `coming_soon` feature is unusable on every plan regardless of its limits;
+ * the limits still say what it will unlock, so a locked badge can say "Pro —
+ * not built yet" rather than nothing. Plan membership and readiness are
+ * separate: see `isCurrentBenefit`.
  */
 
 import { PLAN_IDS, type PlanId } from "@/db/schema";
@@ -37,8 +30,12 @@ import { presentAssessment } from "../score/v2/presentation";
 export const TIER_IDS = PLAN_IDS;
 export type TierId = PlanId;
 
+/**
+ * User-facing plan names. The paid plan's internal id stays `apply` — renaming
+ * a stored identifier buys nothing — but every surface says "Pro".
+ */
 export const TIER_LABELS: Record<TierId, string> = {
-  free: "See it",
+  free: "Free",
   apply: "Pro",
 };
 
@@ -46,21 +43,60 @@ export const TIER_LABELS: Record<TierId, string> = {
  * Monthly price in whole US dollars and cents. The one place a price is
  * spelled out as a number — everywhere else imports this.
  *
- * NO BILLING PROVIDER READS OR WRITES THIS YET. There is no Stripe product,
- * no checkout session, no webhook. This constant is what a pricing page
- * displays and what a future checkout flow would pass to whichever payment
- * processor gets wired up; changing it here does not change what anyone is
- * actually charged until that flow exists. See FIXES.md.
+ * THIS IS THE DISPLAYED PRICE, NOT THE CHARGED ONE. Stripe charges whatever
+ * `STRIPE_PRICE_APPLY_MONTHLY` points at. `lib/pricing/checkout-quote.ts`
+ * reads that price from Stripe and refuses checkout when it disagrees with
+ * this number, so the page can never advertise one amount and charge another.
+ * Changing this constant does not change any Stripe price.
  */
 export const TIER_PRICE_USD: Record<TierId, number> = {
   free: 0,
-  apply: 5.99,
+  apply: 20,
 };
 
 export const TIER_TAGLINES: Record<TierId, string> = {
-  free: "see it",
-  apply: "apply with it",
+  free: "find and organize",
+  apply: "spend less time applying",
 };
+
+export function autofillFeature(kind: string): "extension_autofill_internships" | "extension_autofill_scholarships" {
+  return kind === "scholarship" ? "extension_autofill_scholarships" : "extension_autofill_internships";
+}
+
+/**
+ * The length of a free tool allowance, in days.
+ *
+ * NOT A CALENDAR MONTH AND NOT A BILLING CYCLE. A free account has no
+ * subscription to reset against, so each tool keeps its own clock: the first
+ * successful new use starts a period, and that tool renews this many days
+ * later (UTC instants, no date rounding). Say "every 30 days", never "per
+ * month". The arithmetic lives in `allowance.ts`.
+ */
+export const ALLOWANCE_PERIOD_DAYS = 30;
+
+/**
+ * How often saved-search alerts may email, per plan.
+ *
+ * Daily is the fastest cadence the scheduler actually runs
+ * (`.github/workflows/search-alerts.yml`, once a day). Nothing faster is
+ * claimed: an alert can only report a posting after ingestion has found it.
+ */
+export const ALERT_INTERVAL_DAYS: Record<TierId, number> = {
+  free: 7,
+  apply: 1,
+};
+
+export const ALERT_CADENCE_LABEL: Record<TierId, string> = {
+  free: "weekly",
+  apply: "daily",
+};
+
+/**
+ * An operational ceiling on saved searches, not a plan limit. It bounds what
+ * one account costs the nightly alert job. Pro is "multiple saved searches"
+ * up to this; Free's commercial limit is `FEATURES.saved_search_alerts`.
+ */
+export const SAVED_SEARCH_CEILING = 20;
 
 /**
  * How far timing may move a posting in the feed's ranking, per tier, measured
@@ -168,17 +204,29 @@ export type FeatureKey = (typeof FEATURE_KEYS)[number];
  */
 export type FeatureStatus = "live" | "unverified" | "coming_soon";
 
+/**
+ * What a numeric limit counts.
+ *
+ *  - `none`      no count; the limit is only 0 (excluded) or null (included).
+ *  - `capacity`  how many may exist at once (active tracker rows, saved searches).
+ *                Frees up when one is finished or removed.
+ *  - `period`    successful new uses per `ALLOWANCE_PERIOD_DAYS`, per tool.
+ *                See `allowance.ts`.
+ */
+export type FeatureMeter = "none" | "capacity" | "period";
+
 export interface FeatureEntitlement {
   key: FeatureKey;
   label: string;
   description: string;
   status: FeatureStatus;
+  meter: FeatureMeter;
+  /** What one unit of a `period` meter is, in words a student can check. */
+  useMeans?: string;
   /**
    * Per-tier limit. `null` = unlimited. `0` = not included on that tier at
-   * all. A positive integer = that many uses before the tier is exhausted —
-   * see `usage.ts` for what "a use" means per feature (a lifetime count for
-   * most of these; there is no billing cycle to reset against yet, which is
-   * called out below and in FIXES.md).
+   * all. A positive integer is read through `meter`: concurrent capacity, or
+   * successful new uses per allowance period.
    *
    * These are the INTENDED limits regardless of build status — a
    * `coming_soon` feature still states what it will unlock, so a locked
@@ -188,52 +236,58 @@ export interface FeatureEntitlement {
 }
 
 /**
- * Every feature entitlement this product has committed to, tier by tier.
- *
- * Ordered to match the tier writeup: Free's own list first, then what Edge
- * adds, then what Apply adds — so this file reads the same way the pricing
- * page will.
+ * Every feature entitlement this product has committed to, plan by plan —
+ * the approved Free/Pro matrix (docs/free-pro-plans.md). Free's own list
+ * first, then what Pro adds, then what is not built.
  */
 export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
   feed_browse: {
     key: "feed_browse",
-    label: "Search every listing",
+    label: "Search and open every listing",
     description:
-      "Search and filter the whole corpus — every internship and scholarship, on every tier. " +
-      "Filters, search and opening any listing are never limited.",
+      "Search, filter and open any internship or scholarship, with its source link, " +
+      "verification and freshness facts, eligibility and work-authorization warnings, and " +
+      "scam, lottery and marketing flags. Never limited, never paywalled.",
     status: "live",
+    meter: "none",
     limits: { free: null, apply: null },
   },
   feed_full_depth: {
     key: "feed_full_depth",
-    label: "See every match, not just the daily 10",
+    label: "Full ranked results",
     description:
-      "Free shows your 10 highest-ranked matches, re-ranked as new postings arrive and " +
-      "deadlines approach. Paid shows the full ranked list.",
+      "Free shows your top 20 ranked matches for each search and filter combination; " +
+      "change the filters and you get that search's top 20. Pro shows the whole ranked " +
+      "list, a page at a time.",
     status: "live",
+    meter: "none",
     limits: { free: 0, apply: null },
   },
   deadline_reminders: {
     key: "deadline_reminders",
     label: "Deadline reminders",
-    description: "Email reminders on saved items with a stated deadline.",
+    description: "Email reminders on tracked opportunities that publish a deadline.",
     status: "live",
+    meter: "none",
     limits: { free: null, apply: null },
   },
   fit_score_full: {
     key: "fit_score_full",
-    label: "Full Fit Score",
+    label: "Numerical fit scores and factor explanations",
     description:
-      "The 0–100 score and the known/total confidence marker. Free sees a bucketed label — " +
-      "Strong / Good / Low Fit — instead of the number.",
+      "The 0–100 fit score with each factor explained. Free sees a Strong / Good / Low label " +
+      "and the same confidence marker. Eligibility conflicts and unknown requirements are " +
+      "shown on every plan. A fit score is not a probability of being selected.",
     status: "live",
+    meter: "none",
     limits: { free: 0, apply: null },
   },
   fit_score_gap_closer: {
     key: "fit_score_gap_closer",
-    label: "Fit Score gap-closer",
-    description: "The \"why this score\" breakdown and the missing-skills list per listing.",
+    label: "Gap-closing guidance",
+    description: "Which listed skills you are missing for a listing, so you know what to add.",
     status: "live",
+    meter: "none",
     limits: { free: 0, apply: null },
   },
   resume_critique: {
@@ -241,6 +295,8 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
     label: "Resume critique",
     description: "ATS-compatibility and completeness findings against your parsed resume.",
     status: "live",
+    meter: "period",
+    useMeans: "critiquing a resume revision that has not been critiqued before",
     limits: { free: 1, apply: null },
   },
   smart_resume: {
@@ -248,88 +304,108 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
     label: "Smart Resume + PDF",
     description:
       "The Smart Resume converter and its PDF export. Blocked on resume-structuring logic " +
-      "CLAUDE.md says not to invent — see FIXES.md.",
+      "that has not been supplied.",
     status: "coming_soon",
+    meter: "none",
     limits: { free: 0, apply: null },
   },
   cover_letter: {
     key: "cover_letter",
     label: "Cover letter drafts",
-    description: "A grounded first draft per listing, editable paragraph by paragraph.",
+    description:
+      "A grounded first draft for one opportunity, editable paragraph by paragraph. " +
+      "AI generations are limited to 30 an hour on every plan to protect the service.",
     status: "live",
+    meter: "period",
+    useMeans: "drafting a letter for an opportunity you have not drafted for before",
     limits: { free: 1, apply: null },
   },
   github_tools: {
     key: "github_tools",
-    label: "GitHub builder + audit",
-    description: "The README generator, pin recommendations, and the profile audit.",
+    label: "GitHub audit + README builder",
+    description: "The profile audit, pin recommendations and README generator for one GitHub account.",
     status: "live",
+    meter: "period",
+    useMeans: "auditing a GitHub account you have not audited before",
     limits: { free: 1, apply: null },
   },
   linkedin_tools: {
     key: "linkedin_tools",
-    label: "LinkedIn builder + checker",
+    label: "LinkedIn check + builder",
     description: "The headline/About draft and the pasted-text profile checker.",
     status: "live",
+    meter: "period",
+    useMeans: "starting a 72-hour LinkedIn session",
     limits: { free: 1, apply: null },
   },
   tracker: {
     key: "tracker",
     label: "Application tracker",
-    description: "Track postings through Saved → Applied → Decision.",
+    description:
+      "Track opportunities from saved to applied to decision. The limit counts active " +
+      "opportunities only; finished ones and your full history never count.",
     status: "live",
-    limits: { free: 5, apply: null },
+    meter: "capacity",
+    limits: { free: 10, apply: null },
   },
   essay_reviewer: {
     key: "essay_reviewer",
     label: "Essay / SOP reviewer",
     description: "Prompt coverage, specificity, clarity and structure feedback.",
     status: "live",
-    limits: { free: 0, apply: null },
+    meter: "period",
+    useMeans: "starting a 72-hour essay review session",
+    limits: { free: 1, apply: null },
   },
   saved_search_alerts: {
     key: "saved_search_alerts",
-    label: "Saved-search alerts",
-    description: "Email when a saved search finds something new.",
+    label: "Saved searches with alerts",
+    description:
+      "Save a search and get an email when it finds something new. Free alerts weekly on one " +
+      "saved search; Pro alerts daily on several.",
     status: "live",
-    limits: { free: 0, apply: null },
+    meter: "capacity",
+    limits: { free: 1, apply: null },
   },
   weekly_digest: {
     key: "weekly_digest",
     label: "Weekly digest",
-    description: "A weekly email of new matches, reserving slots so internships aren't crowded out.",
+    description:
+      "One email a week with up to six new matches above the relevance floor. Nothing is " +
+      "sent in a week with nothing worth sending.",
     status: "live",
-    limits: { free: 0, apply: null },
+    meter: "none",
+    limits: { free: null, apply: null },
   },
   deadline_triage: {
     key: "deadline_triage",
     label: "Deadline triage",
-    description: "\"What to do this week\" across everything you're tracking. Not built yet.",
+    description: "A what-to-do-this-week view across everything you're tracking. Not built yet.",
     status: "coming_soon",
+    meter: "none",
     limits: { free: 0, apply: null },
   },
   extension_autofill_internships: {
     key: "extension_autofill_internships",
     label: "Autofill & apply — internships",
     description:
-      "The browser extension autofills the employer's real Greenhouse/Lever/Ashby/SmartRecruiters " +
-      "form; you review and press submit. Includes the confirmation email and auto-tracked " +
-      "Submitted status. Requires installing the extension in Chrome.",
-    // Built, and 616 tests cover it including source-level safety invariants —
-    // but FIXES.md §3 records that it has never been loaded into Chrome and
-    // driven with a real session, and every ATS form actually read so far
-    // produced at least one bug that reading it was the only way to find. So
-    // it is sold as unverified rather than as finished.
+      "Autofill supported applications from your Instela profile. Answer missing questions as you go; " +
+      "reusable facts are saved for next time. Review and submit on the official form. Requires the Chrome extension.",
+    // Built and tested, including source-level safety invariants — but never
+    // loaded into Chrome and driven with a real session (FIXES.md §3). It is
+    // therefore not listed as a current Pro benefit; see `isCurrentBenefit`.
     status: "unverified",
+    meter: "none",
     limits: { free: 0, apply: null },
   },
   extension_autofill_scholarships: {
     key: "extension_autofill_scholarships",
     label: "Autofill & apply — scholarships",
     description:
-      "Scholarship application sites are bespoke, not a handful of ATS platforms — this has not " +
-      "been built. Not built yet.",
-    status: "coming_soon",
+      "Autofill standard fields on supported scholarship forms and answer one-time questions in an Instela prompt. " +
+      "Some portals need a separate tab and per-site extension access. Currently in testing.",
+    status: "unverified",
+    meter: "none",
     limits: { free: 0, apply: null },
   },
   answer_bank: {
@@ -337,6 +413,7 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
     label: "Reusable answer bank",
     description: "Save and reuse answers to recurring application questions. Not built yet.",
     status: "coming_soon",
+    meter: "none",
     limits: { free: 0, apply: null },
   },
   one_click_reapply: {
@@ -344,17 +421,17 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
     label: "One-click reapply",
     description: "Refile a past application to a similar posting. Not built yet.",
     status: "coming_soon",
+    meter: "none",
     limits: { free: 0, apply: null },
   },
   priority_freshest_listings: {
     key: "priority_freshest_listings",
     label: "Timing-weighted ranking",
     description:
-      "Paid plans let how soon something closes, and how freshly it was posted, move a listing " +
-      "up the ranking — Edge by up to 10 points, Apply by up to 20. Measured on the live " +
-      "corpus this is a real but modest shift: 13 of a signed-out top 20 carry a stated " +
-      "deadline instead of 10. It never promotes a listing that fits you worse.",
+      "Lets how soon something closes, and how recently it was posted, move a listing up to " +
+      "20 points. A modest effect, and it never promotes a listing that fits you worse.",
     status: "live",
+    meter: "none",
     limits: { free: 0, apply: null },
   },
   semester_recap: {
@@ -362,9 +439,21 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
     label: "Semester recap",
     description: "A summary of the term's activity across the tracker. Not built yet.",
     status: "coming_soon",
+    meter: "none",
     limits: { free: 0, apply: null },
   },
 };
+
+/**
+ * Whether a feature belongs on the list of things a subscriber gets today.
+ *
+ * Plan entitlement and release readiness are separate questions. A feature can
+ * belong to Pro and still be unavailable (`coming_soon`) or unproven
+ * (`unverified`); neither is sold as a current benefit.
+ */
+export function isCurrentBenefit(feature: FeatureKey): boolean {
+  return FEATURES[feature].status === "live";
+}
 
 /* ------------------------------------------------------------------ *
  * Evaluation — the one function every gate calls
@@ -548,7 +637,7 @@ export interface PresentFitOptions {
 
 /**
  * Shapes a `FitResult` for the viewer's tier — the discovery/scoring half of
- * the two gating patterns (the other is quantity caps, in `usage.ts`).
+ * the two gating patterns (the other is quantity caps, in `allowance.ts` and `grants.ts`).
  *
  * SERVER-SIDE, NOT A CSS TRICK. Callers run this in an RSC before the
  * reasons array or the numeric score is ever handed to a child component,
@@ -656,9 +745,23 @@ export function presentFit(
     score: null,
     known: fit.knownDimensions,
     total: fit.totalDimensions,
-    reasons: [],
+    // Eligibility conflicts and unknown requirements are safety information,
+    // not paid guidance: they survive the bucket on every plan.
+    reasons: eligibilityReasons(fit.reasons),
     skills: { matched: [], missing: [] },
     bucketLabel: FIT_BUCKET_LABELS[bucketFitScore(fit.score)],
     locked: true,
   };
+}
+
+/** Dimensions that decide whether a student may apply at all. */
+const ELIGIBILITY_DIMENSIONS: ReadonlySet<ScoreReason["dimension"]> = new Set(["work_auth", "location", "term"]);
+
+/**
+ * The reasons every plan sees: conflicts ("bad") and unknowns on the
+ * eligibility dimensions. What Pro adds is the score, the positive factors and
+ * the gap-closing guidance — never whether a student is allowed to apply.
+ */
+export function eligibilityReasons(reasons: readonly ScoreReason[]): ScoreReason[] {
+  return reasons.filter((r) => r.kind !== "good" && ELIGIBILITY_DIMENSIONS.has(r.dimension));
 }

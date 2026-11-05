@@ -22,6 +22,7 @@ import { greenhouse } from "./sources/greenhouse";
 import { lever } from "./sources/lever";
 import { smartrecruiters } from "./sources/smartrecruiters";
 import { workable } from "./sources/workable";
+import { workday } from "./sources/workday";
 
 /** One stubbed HTTP reply, keyed by a substring of the request URL. */
 interface StubbedResponse {
@@ -51,6 +52,7 @@ function itBehavesLikeABoardAdapter(
   name: string,
   get: () => BoardAdapter,
   fixtures: {
+    slug?: string;
     /** A well-formed full board, as that source's JSON. */
     healthy: unknown;
     /** A 200 whose body is not a board. */
@@ -67,6 +69,7 @@ function itBehavesLikeABoardAdapter(
   },
 ) {
   const conditional = fixtures.conditionalRequests ?? true;
+  const slug = fixtures.slug ?? "acme";
   describe(`adapter contract: ${name}`, () => {
     beforeEach(() => {
       stubs = [];
@@ -89,7 +92,7 @@ function itBehavesLikeABoardAdapter(
 
     it("returns postings that identify themselves stably", async () => {
       stubAll([{ match: "/", body: fixtures.healthy }]);
-      const result = await get().fetchBoard("acme");
+      const result = await get().fetchBoard(slug);
       assert.notEqual(result.notModified, true);
       for (const p of result.postings) {
         // Every row must carry a source id: dedup runs on (source, source_id),
@@ -101,7 +104,7 @@ function itBehavesLikeABoardAdapter(
 
     it("reports complete when the whole board arrived", async () => {
       stubAll([{ match: "/", body: fixtures.healthy }]);
-      const result = await get().fetchBoard("acme");
+      const result = await get().fetchBoard(slug);
       assert.equal(result.successfulComplete, true, "a healthy board must report complete");
       assert.equal(result.completeness?.complete, true);
     });
@@ -113,7 +116,7 @@ function itBehavesLikeABoardAdapter(
         // The distinction that keeps a warm-ETag cycle from closing every listing
         // on the registry: 304 means "unchanged", not "nothing there".
         stubAll([{ match: "/", status: 304 }]);
-        const result = await get().fetchBoard("acme");
+        const result = await get().fetchBoard(slug);
         assert.equal(result.notModified, true);
         assert.deepEqual(result.postings, []);
       },
@@ -121,13 +124,13 @@ function itBehavesLikeABoardAdapter(
 
     it("does not claim to support conditional requests unless it does", async () => {
       stubAll([{ match: "/", body: fixtures.healthy }]);
-      const result = await get().fetchBoard("acme");
+      const result = await get().fetchBoard(slug);
       assert.equal(result.etag !== null, conditional, "conditional boards must publish an ETag");
     });
 
     it("does not claim a complete read of a body that is not a board", async () => {
       stubAll([{ match: "/", body: fixtures.notABoard }]);
-      const result = await get().fetchBoard("acme");
+      const result = await get().fetchBoard(slug);
       assert.equal(
         result.successfulComplete,
         false,
@@ -137,7 +140,7 @@ function itBehavesLikeABoardAdapter(
 
     it("never reports success for a body that carries no rows and no array", async () => {
       stubAll([{ match: "/", body: { ok: false } }]);
-      const result = await get().fetchBoard("acme");
+      const result = await get().fetchBoard(slug);
       // Whatever this source does with such a body, the verdict must not be
       // "complete" — that is the claim that closes listings.
       assert.notEqual(result.successfulComplete, true);
@@ -239,6 +242,13 @@ itBehavesLikeABoardAdapter("workable", () => workable, {
   },
   notABoard: { message: "Not Found" },
   // Workable publishes no ETag, so every poll is a full read.
+  conditionalRequests: false,
+});
+
+itBehavesLikeABoardAdapter("workday", () => workday, {
+  slug: "acme.wd5.myworkdayjobs.com/External",
+  healthy: { total: 1, jobPostings: [{ title: "Engineering Intern", externalPath: "/job/Austin/Engineering-Intern_REQ1", bulletFields: ["REQ1"], locationsText: "Austin, TX" }] },
+  notABoard: { message: "Unknown career site" },
   conditionalRequests: false,
 });
 

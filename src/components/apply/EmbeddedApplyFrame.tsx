@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { applyUrlHost } from "@/lib/apply/apply-url";
+import { describeFill, type FillReport } from "@/lib/apply/autofill";
 
 /**
  * The employer's real application form, embedded in an Instela page.
@@ -80,14 +81,14 @@ export function EmbeddedApplyFrame({
     const onMessage = (event: MessageEvent) => {
       // The browser sets `event.origin`; the sender cannot forge it. Anything
       // not from the exact form we embedded is not ours to read.
-      if (event.origin !== origin) return;
+      if (event.origin !== origin || event.source !== frameRef.current?.contentWindow) return;
       const data = event.data as
         | { type: "INSTELA_EMBED_PONG" }
         | { type: "INSTELA_EMBED_SUBMITTED"; postingId: string | null }
         | {
             type: "INSTELA_EMBED_RESULT";
             state: string;
-            report?: { filled: number; blocked: number; skippedNonEmpty: number };
+            report?: FillReport;
             blockedLabels?: string[];
             postingId?: string | null;
           };
@@ -112,27 +113,32 @@ export function EmbeddedApplyFrame({
         return;
       }
       if (data?.type !== "INSTELA_EMBED_RESULT") return;
+      if (data.state === "prompting") {
+        // Human answers can take longer than the network watchdog. The
+        // extension now owns the interaction until its final result arrives.
+        busyRef.current = false;
+        setStatus("Answer the Instela prompts in the form to continue. You can skip any question.");
+        return;
+      }
 
       busyRef.current = false;
       setBusy(false);
       if (data.state === "filled") {
-        const r = data.report ?? { filled: 0, blocked: 0, skippedNonEmpty: 0 };
+        const r = data.report ?? { filled: 0, blocked: 0, skippedNonEmpty: 0, known: 0, unknown: 0 };
         // Named after what happened to each field, not a single success count:
         // "filled 9" beside "4 are yours to answer" is the honest summary, and
         // the amber ones are the whole point of the design.
-        setStatus(
-          `filled ${r.filled} field${r.filled === 1 ? "" : "s"}` +
-            (r.skippedNonEmpty ? ` · left ${r.skippedNonEmpty} you had already typed` : "") +
-            (r.blocked ? ` · ${r.blocked} are yours to answer` : ""),
-        );
+        setStatus(describeFill(r));
         setBlocked(data.blockedLabels ?? []);
         onFilled?.(data.postingId ?? null);
       } else if (data.state === "signed-out") {
-        setStatus("sign in to Arc in this browser, then press fill again");
+        setStatus("Sign in to Instela in this browser, then try autofill again.");
       } else if (data.state === "no-match") {
         setStatus("the extension could not match this page to a posting");
+      } else if (data.state === "upgrade") {
+        setStatus("Autofill requires Instela Pro on the account signed in to the extension.");
       } else {
-        setStatus("the extension could not reach Arc — is it running?");
+        setStatus("The extension could not reach Instela. Check your connection and extension settings.");
       }
     };
     window.addEventListener("message", onMessage);
@@ -229,9 +235,32 @@ export function EmbeddedApplyFrame({
         </a>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3" style={{ paddingBlock: 14 }}>
+        <button
+          type="button"
+          className="btn btn-primary press"
+          onClick={doFill}
+          disabled={busy || extension === "absent"}
+          // A primary button that is disabled in the DOM and full-strength on
+          // screen invites the click it will not answer.
+          style={{ opacity: busy || extension === "absent" ? 0.5 : 1 }}
+        >
+          {busy ? "Autofill in progress…" : "Autofill with Instela"}
+        </button>
+        <span className="mono" style={{ color: "var(--muted)" }}>
+          then read it, attach your resume, and press the employer&rsquo;s submit button
+        </span>
+      </div>
+
       <iframe
+        data-instela-application
         ref={frameRef}
         src={url}
+        onLoad={() => {
+          busyRef.current = false;
+          setBusy(false);
+          setStatus(null);
+        }}
         title={`Application form on ${host}`}
         style={{
           width: "100%",
@@ -243,28 +272,11 @@ export function EmbeddedApplyFrame({
         }}
       />
 
-      <div className="flex flex-wrap items-center gap-3" style={{ marginTop: 12 }}>
-        <button
-          type="button"
-          className="btn btn-primary press"
-          onClick={doFill}
-          disabled={busy || extension === "absent"}
-          // A primary button that is disabled in the DOM and full-strength on
-          // screen invites the click it will not answer.
-          style={{ opacity: busy || extension === "absent" ? 0.5 : 1 }}
-        >
-          {busy ? "filling…" : "fill this form"}
-        </button>
-        <span className="mono" style={{ color: "var(--muted)" }}>
-          then read it, attach your resume, and press the employer&rsquo;s submit button
-        </span>
-      </div>
-
       {extension === "absent" && (
         <p className="t-sm" style={{ color: "var(--muted)", marginTop: 10, maxWidth: "60ch" }}>
-          Filling needs the Arc browser extension, which does the typing inside the form above —
-          this page genuinely cannot reach into it. See <a href="/extension">the extension page</a>.
-          You can still fill the form by hand right here, or open it in a tab.
+          Enable the Instela extension for {host}. If it is already installed, open the form
+          in a tab, grant this site access from the extension popup, then return and reload.
+          See <a href="/extension">extension setup</a>. You can also complete the form here by hand.
         </p>
       )}
 

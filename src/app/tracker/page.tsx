@@ -6,12 +6,13 @@ import { requireUser } from "@/lib/auth";
 import { listApplications } from "@/lib/applications/store";
 import {
   MIN_FOR_RATE,
+  countActiveSlots,
   countByStatus,
   responseRate,
   statusMeta,
 } from "@/lib/applications/types";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { evaluateFeature, TIER_LABELS } from "@/lib/pricing/tiers";
+import { evaluateFeature, TIER_LABELS, TIER_PRICE_USD } from "@/lib/pricing/tiers";
 
 import { type CardApplication } from "./ApplicationCard";
 import { TrackerList } from "./TrackerList";
@@ -48,12 +49,12 @@ export default async function TrackerPage() {
   const counts = countByStatus(rows);
   const rate = responseRate(rows);
 
-  // Read-only: the cap is enforced in `setStatusAction` when a NEW posting is
-  // tracked (see tracker/actions.ts). This only tells the student where they
-  // stand before they hit it, rather than letting the feed's save button fail
-  // as a surprise.
+  // Read-only: the limit is enforced in `setStatusAction`. It counts ACTIVE
+  // opportunities (occupiesActiveSlot) — history never counts — and this only
+  // tells the student where they stand before a save is refused.
   const tier = await getUserTier(user.id);
-  const trackerAccess = evaluateFeature(tier, "tracker", rows.length);
+  const activeCount = countActiveSlots(rows.map((r) => ({ status: r.status, closed: r.closedAt !== null })));
+  const trackerAccess = evaluateFeature(tier, "tracker", activeCount);
 
   // Sorted by where each application sits in a real process, then by
   // most-recently-touched inside each group.
@@ -130,19 +131,21 @@ export default async function TrackerPage() {
           <span>
             {trackerAccess.usable ? (
               <>
-                tracking {rows.length} of {trackerAccess.limit} on {TIER_LABELS[tier]} ·{" "}
-                <Link href="/pricing" style={{ color: "var(--accent)" }}>
-                  upgrade for unlimited
+                {activeCount} of {trackerAccess.limit} active on {TIER_LABELS[tier]}. Finished
+                applications and your history never count.{" "}
+                <Link href="/pricing?feature=tracker" style={{ color: "var(--accent)" }}>
+                  Pro tracks without a limit
                 </Link>
               </>
             ) : (
               <>
-                you&rsquo;ve reached the {trackerAccess.limit}-posting limit on{" "}
-                {TIER_LABELS[tier]} — saving another will be refused until you{" "}
-                <Link href="/pricing" style={{ color: "var(--accent)" }}>
-                  upgrade
-                </Link>{" "}
-                or remove one below
+                {activeCount} active, which is the {TIER_LABELS[tier]} limit of {trackerAccess.limit}.
+                Everything below stays editable: mark one finished (offer, rejected, ghosted,
+                withdrawn) or remove it to track another, or{" "}
+                <Link href="/pricing?feature=tracker" style={{ color: "var(--accent)" }}>
+                  upgrade to {TIER_LABELS.apply} — ${TIER_PRICE_USD.apply}/mo
+                </Link>
+                .
               </>
             )}
           </span>

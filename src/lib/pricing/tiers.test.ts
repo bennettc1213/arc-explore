@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { USAGE_FEATURE_KEYS } from "@/db/schema";
 
 import type { FitResult } from "../score/fit";
+import { ALLOWANCE_FEATURES } from "./allowance";
 
 import {
   bucketFitScore,
@@ -14,7 +15,10 @@ import {
   presentFit,
   statusNote,
   TIER_IDS,
+  TIER_LABELS,
   TIER_PRICE_USD,
+  ALERT_INTERVAL_DAYS,
+  isCurrentBenefit,
   tierAtLeast,
 } from "./tiers";
 
@@ -102,7 +106,7 @@ test("a capped feature runs out, and reports how much is left on the way", () =>
   assert.equal(spent.reason, "limit_reached");
   assert.equal(spent.remaining, 0);
 
-  // Over-consumption (a lost race, see usage.ts) must clamp, not go negative.
+  // Over-consumption (e.g. old data counted under a different rule) must clamp, not go negative.
   assert.equal(evaluateFeature("free", "resume_critique", 99).remaining, 0);
 });
 
@@ -116,7 +120,7 @@ test("paid tiers are unlimited on the capped tools, and a count never changes th
 });
 
 test("a feature not included on a tier is refused regardless of usage count", () => {
-  const access = evaluateFeature("free", "essay_reviewer", 0);
+  const access = evaluateFeature("free", "fit_score_full", 0);
   assert.equal(access.usable, false);
   assert.equal(access.reason, "not_included");
   assert.equal(access.included, false);
@@ -156,14 +160,26 @@ test("the free tier keeps the things promised as free forever", () => {
 
 test("prices are ordered and the paid ones are the stated figures", () => {
   assert.equal(TIER_PRICE_USD.free, 0);
-  assert.equal(TIER_PRICE_USD.apply, 5.99);
+  assert.equal(TIER_PRICE_USD.apply, 20);
 });
 
 test("minimumTierFor names the cheapest tier that includes a feature", () => {
   assert.equal(minimumTierFor("feed_browse"), "free");
   assert.equal(minimumTierFor("resume_critique"), "free");
-  assert.equal(minimumTierFor("essay_reviewer"), "apply");
+  // Free since the 2026-11-03 matrix: one session per 30-day allowance period.
+  assert.equal(minimumTierFor("essay_reviewer"), "free");
+  assert.equal(minimumTierFor("fit_score_full"), "apply");
   assert.equal(minimumTierFor("extension_autofill_internships"), "apply");
+});
+
+test("every allowance feature is a real, period-metered feature key", () => {
+  for (const key of ALLOWANCE_FEATURES) {
+    assert.ok(FEATURE_KEYS.includes(key), key);
+    assert.equal(FEATURES[key].meter, "period", key);
+  }
+  for (const key of FEATURE_KEYS) {
+    if (FEATURES[key].meter === "period") assert.ok((ALLOWANCE_FEATURES as readonly string[]).includes(key), key);
+  }
 });
 
 test("every metered usage key is a real feature key", () => {
@@ -290,4 +306,49 @@ test("a high-confidence conflict shows Check eligibility, not Strong Fit", () =>
   const paid = presentFit(blocked, "apply", { profileReady: true });
   assert.equal(paid.score, null);
   assert.equal(paid.bucketLabel, "Check eligibility");
+});
+
+test("Free keeps eligibility conflicts and unknown requirements under the bucket", () => {
+  const fit: FitResult = {
+    ...FIT,
+    reasons: [
+      ...FIT.reasons,
+      { label: "needs sponsorship", dimension: "work_auth", kind: "bad", detail: "…" },
+      { label: "term unstated", dimension: "term", kind: "unknown", detail: "…" },
+      { label: "missing Go", dimension: "skills", kind: "bad", detail: "…" },
+    ],
+  };
+  const shown = presentFit(fit, "free", { profileReady: true });
+  assert.equal(shown.score, null);
+  assert.deepEqual(shown.reasons.map((r) => r.label), ["needs sponsorship", "term unstated"]);
+  // The positive factors and skills guidance stay Pro.
+  assert.ok(!shown.reasons.some((r) => r.kind === "good"));
+});
+
+test("the approved Free/Pro matrix", () => {
+  assert.equal(TIER_LABELS.free, "Free");
+  assert.equal(TIER_LABELS.apply, "Pro");
+  assert.equal(TIER_PRICE_USD.apply, 20);
+  assert.equal(FEATURES.tracker.limits.free, 10);
+  assert.equal(FEATURES.saved_search_alerts.limits.free, 1);
+  assert.equal(FEATURES.weekly_digest.limits.free, null);
+  assert.equal(FEATURES.deadline_reminders.limits.free, null);
+  assert.equal(FEATURES.feed_full_depth.limits.free, 0);
+  assert.equal(FEATURES.fit_score_full.limits.free, 0);
+  for (const key of FEATURE_KEYS) {
+    if (FEATURES[key].status !== "coming_soon") assert.notEqual(FEATURES[key].limits.apply, 0, `${key} must be in Pro`);
+  }
+  assert.equal(ALERT_INTERVAL_DAYS.free, 7);
+  assert.equal(ALERT_INTERVAL_DAYS.apply, 1);
+});
+
+test("unbuilt and unverified features are not sold as current benefits", () => {
+  for (const key of ["smart_resume", "answer_bank", "one_click_reapply", "deadline_triage", "semester_recap"] as const) {
+    assert.equal(FEATURES[key].status, "coming_soon");
+    assert.equal(isCurrentBenefit(key), false);
+  }
+  assert.equal(isCurrentBenefit("extension_autofill_internships"), false);
+  assert.equal(FEATURES.extension_autofill_scholarships.status, "unverified");
+  assert.equal(isCurrentBenefit("extension_autofill_scholarships"), false);
+  assert.equal(isCurrentBenefit("cover_letter"), true);
 });

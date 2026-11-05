@@ -27,15 +27,18 @@ import { NextResponse } from "next/server";
 
 import { getSessionUser } from "@/lib/auth";
 import { buildAutofillValues } from "@/lib/apply/autofill";
-import { corsHeaders, preflight } from "@/lib/apply/cors";
-import { findPostingByUrl, type ExtensionPacket } from "@/lib/apply/extension";
+import { allowedOrigins, corsHeaders, preflight } from "@/lib/apply/cors";
+import { findPostingById, findPostingByUrl, type ExtensionPacket } from "@/lib/apply/extension";
+import { applicationPageUrl } from "@/lib/apply/extension-config";
 import { buildApplicationPacket } from "@/lib/apply/packet";
 import { getCoverLetter } from "@/lib/cover-letter/store";
 import { statusesForPostings } from "@/lib/applications/store";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { evaluateFeature } from "@/lib/pricing/tiers";
+import { autofillFeature, evaluateFeature } from "@/lib/pricing/tiers";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { coerceParsedResume } from "@/lib/resume/types";
+import { applyMemoryFacts } from "@/lib/profile/memory";
+import { getMemoryFacts } from "@/lib/profile/memory-store";
 
 export const dynamic = "force-dynamic";
 
@@ -43,9 +46,15 @@ export async function OPTIONS(req: Request) {
   return preflight(req.headers.get("origin"));
 }
 
+// Session lookups use POST so extension fetches include their Origin. It is
+// the same read-only, no-store packet; no profile or application is mutated.
+export async function POST(req: Request) {
+  return GET(req);
+}
+
 export async function GET(req: Request) {
   const origin = req.headers.get("origin");
-  const headers = corsHeaders(origin);
+  const headers = { ...corsHeaders(origin), "Cache-Control": "private, no-store" };
 
   // Session first, then input: an unauthenticated caller learns only that
   // they are not signed in, the same answer `/api/extension/applied` gives.
@@ -54,8 +63,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "not signed in" }, { status: 401, headers });
   }
 
-  const pageUrl = new URL(req.url).searchParams.get("url");
-  if (!pageUrl) {
+  const query = new URL(req.url).searchParams;
+  const pageUrl = query.get("url");
+  const postingId = query.get("postingId");
+  if (!pageUrl || !applicationPageUrl(pageUrl)) {
     return NextResponse.json({ error: "missing url" }, { status: 400, headers });
   }
 
@@ -64,27 +75,30 @@ export async function GET(req: Request) {
   // here, not just by hiding the button in the extension's own popup — the
   // popup is JavaScript the student's own browser runs and cannot be trusted
   // to enforce a plan against itself; this endpoint is the actual boundary.
+  // Only our configured extension may resolve a session by listing identity.
+  // Ordinary callers retain URL matching. The worker binds this identity to
+  // the tab opened from a trusted Instela workspace, never page-supplied data.
+  if (postingId && (!origin || !allowedOrigins().includes(origin))) {
+    return NextResponse.json({ error: "Origin not allowed." }, { status: 403, headers });
+  }
+  const posting = postingId ? await findPostingById(postingId) : await findPostingByUrl(pageUrl);
+  if (!posting) return NextResponse.json({ posting: null }, { status: 200, headers });
   const tier = await getUserTier(user.id);
-  const access = evaluateFeature(tier, "extension_autofill_internships");
+  const feature = autofillFeature(posting.kind);
+  const access = evaluateFeature(tier, feature);
   if (!access.usable) {
     return NextResponse.json(
-      { error: "upgrade_required", feature: "extension_autofill_internships", minimumTier: access.minimumTier },
+      { error: "upgrade_required", feature, minimumTier: access.minimumTier },
       { status: 403, headers },
     );
   }
 
-  const posting = await findPostingByUrl(pageUrl);
-  if (!posting) {
-    // Not an error — most pages are not one of our postings. The extension
-    // says "we don't have this one" rather than showing a failure.
-    return NextResponse.json({ posting: null }, { status: 200, headers });
-  }
-
-  const [profile, resume, statuses, letter] = await Promise.all([
+  const [profile, resume, statuses, letter, memory] = await Promise.all([
     getProfile(user.id),
     getLatestResume(user.id),
     statusesForPostings(user.id, [posting.id]),
     getCoverLetter(user.id, posting.id),
+    getMemoryFacts(user.id),
   ]);
 
   const parsed = resume ? coerceParsedResume(resume.parsed) : null;
@@ -111,14 +125,14 @@ export async function GET(req: Request) {
   const values = buildAutofillValues({
     // Only the ordinary fields. `packet.attestations` is not passed, and there
     // is no AutofillKey it could map to even if it were.
-    fields: packet.fields.map((f) => ({ key: f.key, value: f.value })),
+    fields: packet.fields.filter(f => f.key !== "locations").map((f) => ({ key: f.key, value: f.value })),
     links,
     coverLetter,
   });
 
   const body: ExtensionPacket = {
     posting,
-    values: values as Record<string, string>,
+    values: applyMemoryFacts(values, memory) as Record<string, string>,
     attestations: packet.attestations.map((a) => a.label),
     hasCoverLetter: Boolean(coverLetter),
     alreadyApplied: statuses.get(posting.id) === "applied",

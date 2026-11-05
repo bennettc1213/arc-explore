@@ -27,6 +27,32 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+export const applicationMemoryFacts = pgTable("application_memory_facts", {
+  userId: uuid("user_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  key: text("key").notNull(),
+  value: text("value"),
+  source: text("source").notNull().default("profile"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.userId, t.key] })]);
+
+/**
+ * The last few Scouts a student actually ran. This is deliberately separate
+ * from saved_searches: these are a private, lightweight recall aid, not
+ * standing searches that can send email alerts.
+ */
+export const scoutHistory = pgTable("scout_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  filters: jsonb("filters").notNull(),
+  /** Stable JSON from the validated preferences, used to refresh a duplicate. */
+  fingerprint: text("fingerprint").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  uniqueIndex("scout_history_user_fingerprint_unique").on(t.userId, t.fingerprint),
+  index("scout_history_user_updated_idx").on(t.userId, t.updatedAt),
+]);
+
 export const studentEmailChallenges = pgTable("student_email_challenges", {
   userId: uuid("user_id").primaryKey().references(() => profiles.id, { onDelete: "cascade" }),
   email: text("email").notNull(),
@@ -62,6 +88,11 @@ export const ATS_TYPES = [
   "lever",
   "smartrecruiters",
   "workable",
+  "workday",
+  "oracle",
+  "rippling",
+  "jobvite",
+  "taleo",
   "unknown",
 ] as const;
 export type AtsType = (typeof ATS_TYPES)[number];
@@ -1439,6 +1470,11 @@ export const USAGE_FEATURE_KEYS = ["resume_critique", "github_tools", "linkedin_
 export type UsageFeatureKey = (typeof USAGE_FEATURE_KEYS)[number];
 
 /**
+ * RETIRED 2026-11-03 — no code reads or writes this table any more. Its
+ * lifetime counters were replaced by `feature_grants` and the 30-day policy in
+ * `src/lib/pricing/allowance.ts`; migration 0032 carried each row's last key
+ * across as a granted use. Kept, not dropped, so a rollback has its data.
+ *
  * One (user, feature) counter.
  *
  * `lastKey` is what makes this a *use* counter rather than a *view* counter.
@@ -1448,7 +1484,7 @@ export type UsageFeatureKey = (typeof USAGE_FEATURE_KEYS)[number];
  * run on the act of looking at their own resume twice. Re-running against the
  * same input (the same resume id, the same GitHub username) is a free replay
  * and does not move `count`; only a genuinely different input does. See
- * `src/lib/pricing/usage.ts`.
+ * the former `src/lib/pricing/usage.ts`.
  */
 export const featureUsage = pgTable(
   "feature_usage",
@@ -1463,6 +1499,57 @@ export const featureUsage = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("feature_usage_user_feature_unique").on(t.userId, t.feature)],
+);
+
+/**
+ * One granted (or reserved) use of a recurring tool allowance.
+ *
+ * Replaces `feature_usage`'s lifetime counter for the five allowance tools
+ * (see `src/lib/pricing/allowance.ts` for the policy). Separate from the
+ * artifacts themselves on purpose: a cover letter row can be edited or
+ * deleted, a critique is recomputed on every render, and neither is a record
+ * of *a use*. This table is.
+ *
+ * `grantKey` is the replay identity — a resume revision hash, a GitHub
+ * username, a posting id, or `session` for the browser-local tools. It never
+ * holds essay or profile text. `periodStart` is null for a use made on an
+ * unlimited plan: kept so the result stays replayable after a downgrade, never
+ * counted against a Free allowance.
+ */
+export const featureGrants = pgTable(
+  "feature_grants",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    feature: text("feature").notNull(),
+    grantKey: text("grant_key").notNull(),
+    periodStart: timestamp("period_start", { withTimezone: true }),
+    grantedAt: timestamp("granted_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    status: text("status").$type<"reserved" | "granted">().notNull().default("reserved"),
+  },
+  (t) => [index("feature_grants_user_feature_idx").on(t.userId, t.feature)],
+);
+
+/**
+ * One AI generation request, kept only long enough to rate-limit.
+ *
+ * An operational abuse limit on every plan, disclosed on the pricing page —
+ * not a hidden monthly cap on "unlimited". Holds no content.
+ */
+export const toolRequestLog = pgTable(
+  "tool_request_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    feature: text("feature").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("tool_request_log_user_idx").on(t.userId, t.feature, t.createdAt)],
 );
 
 /* ------------------------------------------------------------------ *
@@ -1499,6 +1586,13 @@ export const savedSearches = pgTable(
      * first alert a student gets should be genuinely new postings.
      */
     lastNotifiedAt: timestamp("last_notified_at", { withTimezone: true }).notNull().defaultNow(),
+    /**
+     * When the student chose this as the one search that alerts on Free.
+     * The latest pick wins; with none, the newest notifying search does. Only
+     * read for a Free account — a downgrade pauses the rest without touching
+     * their configuration. See `lib/searches/alerting.ts`.
+     */
+    freeAlertPickedAt: timestamp("free_alert_picked_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -1545,6 +1639,11 @@ export const EVENT_NAMES = [
   "card_saved",
   "goal_set",
   "locked_card_clicked",
+  // Free/Pro measurement (docs/free-pro-plans.md). Counts only, by feature —
+  // never who saw the prompt. Paid activation and renewal are read from
+  // `profiles`/Stripe, not from here.
+  "upgrade_prompt_viewed",
+  "checkout_started",
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 

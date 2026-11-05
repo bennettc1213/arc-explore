@@ -186,6 +186,8 @@ export interface PreparedPosting {
 }
 
 export interface ReconcileInput {
+  /** An employer's stable job id wins over a hash of mutable/optional facts. */
+  knownSourceHashes?: ReadonlyMap<string, string>;
   /** Early-career postings from this poll, already adapter-parsed. */
   incoming: SourcePosting[];
   /** What we currently hold for this board. */
@@ -200,6 +202,8 @@ export interface ReconcileInput {
    * meaningful. Failed or partial polls must not advance misses or close rows.
    */
   successfulComplete?: boolean;
+  /** Keyword searches cannot establish absence even when every request worked. */
+  absenceAuthoritative?: boolean;
   now?: Date;
 }
 
@@ -229,7 +233,7 @@ export interface ReconcilePlan {
   /** True when the close step was skipped by the liveness guard. */
   closeSuppressed: boolean;
   /** Why closes were skipped, when they were. */
-  closeSuppressedReason?: "poll_incomplete" | "empty_scrape";
+  closeSuppressedReason?: "poll_incomplete" | "empty_scrape" | "search_scope";
 }
 
 /** Normalize one source posting into the shape we store. */
@@ -303,10 +307,18 @@ export function preparePosting(sp: SourcePosting, now?: Date): PreparedPosting {
  * no internships still returns its other jobs, so `totalOnBoard > 0` with zero
  * early-career matches correctly closes them.
  */
+export function sourceIdentityKey(posting: Pick<SourcePosting, "source" | "sourceId">): string {
+  return JSON.stringify([posting.source, posting.sourceId]);
+}
+
 export function reconcile(input: ReconcileInput): ReconcilePlan {
   const { incoming, existing, totalOnBoard } = input;
 
-  const prepared = incoming.map((sp) => preparePosting(sp, input.now));
+  const prepared = incoming.map((sp) => {
+    const row = preparePosting(sp, input.now);
+    row.canonicalHash = input.knownSourceHashes?.get(sourceIdentityKey(sp)) ?? row.canonicalHash;
+    return row;
+  });
   const early = prepared.filter((p) => p.kind !== "other");
   const filteredOut = prepared.length - early.length;
 
@@ -381,7 +393,7 @@ export function reconcile(input: ReconcileInput): ReconcilePlan {
     Array.from(byHash.keys()),
     {
       now: input.now ?? new Date(),
-      successfulComplete: input.successfulComplete ?? true,
+      successfulComplete: (input.successfulComplete ?? true) && input.absenceAuthoritative !== false,
       suppressOnEmptySeen: totalOnBoard === 0,
       missingStrikesRequired: 2,
     },
@@ -395,7 +407,8 @@ export function reconcile(input: ReconcileInput): ReconcilePlan {
     unchanged,
     filteredOut,
     closeSuppressed: lifecycle.closeSuppressed,
-    closeSuppressedReason: lifecycle.closeSuppressedReason,
+    closeSuppressedReason: input.absenceAuthoritative === false && input.successfulComplete !== false
+      ? "search_scope" : lifecycle.closeSuppressedReason,
     toIncrementMissing: lifecycle.toIncrementMissing,
     toResetMissing: lifecycle.toResetMissing,
   };

@@ -4,8 +4,9 @@ import { toScoringProfile as toScoreProfile } from "../score/v2/profile";
 import { getProfile, getLatestResume } from "../profile/store";
 import { skillsFromParsedResume } from "../score/skills";
 
+import { dueSearches } from "./alerting";
 import { composeAlert, sendAlert, type AlertMatch } from "./email";
-import { alertCandidates, markNotified } from "./store";
+import { alertCandidates, markNotified, type AlertCandidate } from "./store";
 import { filtersToQuery, type SavedFilters } from "./types";
 
 /**
@@ -32,6 +33,10 @@ export interface AlertPlan {
 
 export interface AlertSummary {
   considered: number;
+  /** Searches whose alerts are paused by the plan (a downgraded account's extras). */
+  paused: number;
+  /** Active searches not yet due on their plan's cadence. */
+  notDue: number;
   withMatches: number;
   sent: number;
   failed: Array<{ searchId: string; error: string }>;
@@ -94,17 +99,29 @@ export async function planAlerts(
   return plans;
 }
 
+/**
+ * The searches that may email now, by the plan's alert set and cadence —
+ * `dueSearches` in alerting.ts, the one definition the feed panel and the
+ * digest also read.
+ */
+export function dueCandidates(all: readonly AlertCandidate[], now: Date) {
+  return dueSearches(all.map((c) => ({ ...c, id: c.searchId })), now);
+}
+
 export async function runAlerts(
   options: { send?: boolean; now?: Date } = {},
 ): Promise<AlertSummary> {
   const now = options.now ?? new Date();
   // Fetched once and threaded through: planning and sending need the same
   // rows, and querying twice risks acting on a set we did not plan against.
-  const candidates = await alertCandidates();
+  const all = await alertCandidates();
+  const { due: candidates, paused, notDue } = dueCandidates(all, now);
   const plans = await planAlerts(candidates);
 
   const summary: AlertSummary = {
     considered: candidates.length,
+    paused,
+    notDue,
     withMatches: plans.length,
     sent: 0,
     failed: [],

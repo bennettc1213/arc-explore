@@ -16,5 +16,5 @@ export function BillingButton({ portal = false }: { portal?: boolean }) {
       setLoading(false);
     }
   }
-  return <button type="button" className="btn" style={{ marginTop: "auto", textAlign: "center" }} onClick={openBilling} disabled={loading}>{loading ? "opening secure checkout…" : portal ? "manage subscription" : "upgrade to Apply"}</button>;
+  return <button type="button" className="btn" style={{ marginTop: "auto", textAlign: "center" }} onClick={openBilling} disabled={loading}>{loading ? "opening secure checkout…" : portal ? "manage subscription" : "upgrade to Pro"}</button>;
 }

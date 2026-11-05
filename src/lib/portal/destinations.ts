@@ -10,16 +10,17 @@
  * catalog and the portal follows without being touched.
  *
  * THE STATE IS THE ALLOWANCE, NOT THE BALANCE. "limited" says what the plan
- * gives ("1 free run"), never how many are left: remaining usage is a database
- * read per feature, and a tile that claimed "1 free run" for someone who had
+ * gives ("1 every 30 days"), never how many are left: remaining usage is a database
+ * read per feature, and a tile that claimed a free use for someone who had
  * already spent it would be a number we asserted without observing. The page a
  * tile opens knows the real balance and says it there.
  */
 
 import type { FeatureKey, TierId } from "@/lib/pricing/tiers";
 import { evaluateFeature, FEATURES, statusNote, TIER_LABELS } from "@/lib/pricing/tiers";
-import { FREE_DAILY_RESULTS } from "@/lib/feed-trim";
-import { feedHref } from "@/lib/routes";
+import { FREE_RANKED_RESULTS } from "@/lib/feed-trim";
+import { allowanceWords } from "@/lib/pricing/describe";
+import { scoutButtonLabel, scoutHref, type ScoutFocus } from "@/lib/scout/focus";
 
 export const PORTAL_ART_IDS = [
   "merit",
@@ -60,8 +61,11 @@ interface Destination {
   full?: FeatureKey;
   /** Said when `full` is not usable on the plan. */
   limitedNote?: string;
-  /** Nouns for a usage cap, so "1 free run" and "up to 5 tracked listings" read right. */
-  unit?: readonly [singular: string, plural: string];
+  /**
+   * The discovery tools open a guided Scout rather than a screen of ranked
+   * results. Set, it replaces `href` and names the tile's button.
+   */
+  scout?: ScoutFocus;
   /** Grid column span on the 12-column navigate grid. */
   span: 3 | 4 | 5 | 12;
 }
@@ -75,30 +79,33 @@ const DESTINATIONS: readonly Destination[] = [
     id: "merit",
     title: "College merit awards",
     blurb: "Merit-based awards from colleges and sponsors, ranked for you.",
-    href: feedHref("kind=scholarship&focus=merit&view=deck"),
+    href: scoutHref("merit"),
+    scout: "merit",
     feature: "feed_browse",
     full: "feed_full_depth",
-    limitedNote: `Free shows your top ${FREE_DAILY_RESULTS} matches`,
+    limitedNote: `Free: top ${FREE_RANKED_RESULTS} ranked matches per search`,
     span: 5,
   },
   {
     id: "scholarships",
     title: "Scholarships",
     blurb: "Every open scholarship, scored for how well you fit.",
-    href: feedHref("kind=scholarship&view=deck"),
+    href: scoutHref("scholarships"),
+    scout: "scholarships",
     feature: "feed_browse",
     full: "feed_full_depth",
-    limitedNote: `Free shows your top ${FREE_DAILY_RESULTS} matches`,
+    limitedNote: `Free: top ${FREE_RANKED_RESULTS} ranked matches per search`,
     span: 4,
   },
   {
     id: "internships",
     title: "Internships",
     blurb: "Open roles, confirmed live on the employer's own board.",
-    href: feedHref("kind=internship&view=deck"),
+    href: scoutHref("internships"),
+    scout: "internships",
     feature: "feed_browse",
     full: "feed_full_depth",
-    limitedNote: `Free shows your top ${FREE_DAILY_RESULTS} matches`,
+    limitedNote: `Free: top ${FREE_RANKED_RESULTS} ranked matches per search`,
     span: 3,
   },
   {
@@ -107,7 +114,6 @@ const DESTINATIONS: readonly Destination[] = [
     blurb: "Everything you've saved and sent, and what came back.",
     href: "/tracker",
     feature: "tracker",
-    unit: ["tracked listing", "tracked listings"],
     span: 3,
   },
   {
@@ -116,7 +122,6 @@ const DESTINATIONS: readonly Destination[] = [
     blurb: "Build it once, then check it against what ATS systems read.",
     href: "/resume",
     feature: "resume_critique",
-    unit: ["critique", "critiques"],
     span: 4,
   },
   {
@@ -133,7 +138,6 @@ const DESTINATIONS: readonly Destination[] = [
     blurb: "See your profile the way a recruiter does.",
     href: "/github",
     feature: "github_tools",
-    unit: ["run", "runs"],
     span: 4,
   },
   {
@@ -142,7 +146,6 @@ const DESTINATIONS: readonly Destination[] = [
     blurb: "Write the headline and summary recruiters search for.",
     href: "/linkedin",
     feature: "linkedin_tools",
-    unit: ["run", "runs"],
     span: 4,
   },
   {
@@ -173,16 +176,19 @@ export interface PortalTile {
   href: string | null;
   /** The small badge: "Pro" on a locked tile, "Free" on a limited one, "Coming soon". */
   pill: string | null;
-  /** What the plan gives, in words — "Free: 1 run". Null when there is nothing to qualify. */
+  /** What the plan gives, in words — "Free: 1 every 30 days". Null when there is nothing to qualify. */
   note: string | null;
   /** A truthfulness caveat about the feature itself, shown on the way in. */
   caveat: string | null;
+  /** The button on a tile that opens a guided Scout ("Start a Scout for internships"). */
+  cta: string | null;
   feature: FeatureKey | null;
 }
 
-function capNote(limit: number, unit: readonly [string, string] | undefined): string {
-  const [one, many] = unit ?? ["use", "uses"];
-  return limit === 1 ? `Free: 1 ${one}` : `Free: up to ${limit} ${many}`;
+/** "Free: 1 every 30 days", "Free: 10 active at a time" — from describe.ts. */
+function capNote(feature: FeatureKey, tier: TierId): string | null {
+  const words = allowanceWords(feature, tier);
+  return words ? `${TIER_LABELS[tier]}: ${words}` : null;
 }
 
 function sentence(text: string | null): string | null {
@@ -190,7 +196,7 @@ function sentence(text: string | null): string | null {
 }
 
 function resolve(d: Destination, tier: TierId): PortalTile {
-  const base = { id: d.id, title: d.title, blurb: d.blurb, span: d.span, feature: d.feature };
+  const base = { id: d.id, title: d.title, blurb: d.blurb, span: d.span, feature: d.feature, cta: d.scout ? scoutButtonLabel(d.scout) : null };
 
   // Open to everyone, no entitlement behind it.
   if (!d.feature) {
@@ -210,11 +216,9 @@ function resolve(d: Destination, tier: TierId): PortalTile {
     return {
       ...base,
       state: "locked",
-      // The same URL `UpgradeWall` sends to. The pricing page does not read
-      // `feature` yet (FIXES.md §2), so today this only lands on pricing; the
-      // parameter is there so it can say what the student came for once it does.
+      // The same URL `UpgradeWall` sends to; the pricing page highlights it.
       href: `/pricing?feature=${d.feature}`,
-      pill: TIER_LABELS[access.minimumTier],
+      pill: TIER_LABELS.apply,
       note: null,
       caveat,
     };
@@ -225,8 +229,8 @@ function resolve(d: Destination, tier: TierId): PortalTile {
       ...base,
       state: "limited",
       href: d.href,
-      pill: "Free",
-      note: capNote(access.limit, d.unit),
+      pill: TIER_LABELS.free,
+      note: capNote(d.feature, tier),
       caveat,
     };
   }
@@ -236,7 +240,7 @@ function resolve(d: Destination, tier: TierId): PortalTile {
       ...base,
       state: "limited",
       href: d.href,
-      pill: "Free",
+      pill: TIER_LABELS.free,
       note: d.limitedNote ?? null,
       caveat,
     };

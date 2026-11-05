@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
  *
  * WHAT THIS IS NOT: a login. It creates no session, knows no user, and reads
  * no profile. It sets one signed cookie saying which pricing tier to pretend
- * for this browser, so the Edge and Apply surfaces can be looked at on a
+ * for this browser, so the Pro surfaces can be looked at on a
  * machine where every profile in the database is on `free` and signing in at
  * all means waiting for a magic link.
  *
@@ -52,7 +52,7 @@ export default async function DevPage() {
         <p className="t-base" style={{ color: "var(--muted)", maxWidth: "62ch", marginTop: 14 }}>
           Every profile in the database is on the free plan — there is no checkout, so nothing
           ever sets it to anything else. This forces a tier for <strong>this browser only</strong>,
-          so the Edge and Apply surfaces can actually be seen. It is not a sign-in: no session is
+          so the Pro surfaces can actually be seen. It is not a sign-in: no session is
           created and no account is touched.
         </p>
       </header>

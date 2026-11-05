@@ -19,7 +19,7 @@ import { DEADLINE_FILTERS } from "../feed-search";
 import { FIELD_KEYS } from "../score/fit";
 
 export const MAX_NAME_LENGTH = 80;
-export const MAX_SAVED_SEARCHES = 20;
+
 
 /**
  * The saveable subset of the feed's filters.

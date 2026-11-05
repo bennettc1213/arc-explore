@@ -1,11 +1,13 @@
 import Link from "next/link";
+import { recordEvent } from "@/lib/analytics/record";
 
 import { BackLink } from "@/components/BackLink";
 import { UpgradeWall } from "@/components/pricing/UpgradeGate";
 import { requireUser } from "@/lib/auth";
 import { getCompletionCorpus } from "@/lib/feed";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { consumeUsage } from "@/lib/pricing/usage";
+import { withAllowance } from "@/lib/pricing/grants";
+import { resumeRevisionKey } from "@/lib/resume/revision";
 import { profileCompletion } from "@/lib/profile/completion";
 import { routePresence } from "@/lib/profile/routing";
 import { getEmailPrefs, getLatestResume, getProfile } from "@/lib/profile/store";
@@ -22,6 +24,8 @@ import { ProfileEditor } from "./ProfileEditor";
 import { ResumeCritique } from "./ResumeCritique";
 import { SignOutButton } from "./SignOutButton";
 import { FEED_PATH } from "@/lib/routes";
+import { ApplicationMemory } from "@/components/profile/ApplicationMemory";
+import { getMemorySnapshot } from "@/lib/profile/memory-store";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +46,7 @@ export default async function ProfilePage({
   const sp = await searchParams;
   const returnTo = safeReturnPath(sp.next);
   const user = await requireUser("/profile");
+  const memory = await getMemorySnapshot(user.id, user.email ?? null);
   const [profile, resume, emailPrefs, corpus] = await Promise.all([
     getProfile(user.id),
     getLatestResume(user.id),
@@ -53,21 +58,24 @@ export default async function ProfilePage({
   const competitiveness = await resumeCompetitiveness(resumeSkills);
 
   const tier = await getUserTier(user.id);
-  // Keyed on the resume id, not consumed on every render: re-opening /profile
-  // to look at the same resume's critique again is not a second "run" of the
-  // free tier's one — only critiquing a genuinely different resume is. See
-  // src/lib/pricing/usage.ts.
-  const critiqueAccess = resume
-    ? await consumeUsage(user.id, tier, "resume_critique", resume.id)
+  // One critique per distinct resume REVISION per 30-day allowance period.
+  // Keyed on the content of the parse the critique reads (resumeRevisionKey),
+  // so re-opening /profile, or changing unrelated profile fields, replays the
+  // earned critique for free; editing the resume itself is a new revision.
+  // The resume id is a replay alias for critiques recorded before 0032.
+  // Pure function over the stored parse — no model call — and computed only
+  // when the allowance admits it: a locked critique renders a wall, never the
+  // findings underneath it.
+  const parsed = resume ? coerceParsedResume(resume.parsed) : null;
+  const critiqueRun = resume && parsed
+    ? await withAllowance(
+        { userId: user.id, tier, feature: "resume_critique", keys: [resumeRevisionKey(parsed), resume.id] },
+        async () => critiqueResume(parsed),
+      )
     : null;
-  // Pure function over the stored parse — no model call, no query, so it costs
-  // nothing to recompute and always reflects the current checks. Only
-  // computed at all when the gate says this viewer may see it: a locked
-  // critique renders an upgrade wall, never the findings underneath it.
-  const critique =
-    resume && critiqueAccess?.access.usable
-      ? critiqueResume(coerceParsedResume(resume.parsed))
-      : null;
+  const critique = critiqueRun?.value ?? null;
+  const critiqueAccess = critiqueRun?.begin ?? null;
+  if (critiqueAccess?.outcome === "blocked") void recordEvent("upgrade_prompt_viewed", { feature: "resume_critique" });
   const routing = routePresence(profile, resumeSkills);
   const completion = profileCompletion(profile, resumeSkills, corpus);
 
@@ -81,13 +89,11 @@ export default async function ProfilePage({
             className="chrome"
             style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.03em", marginTop: 12 }}
           >
-            what should we <span style={{ color: "var(--accent)" }}>score against</span>
+            Your information. <span style={{ color: "var(--accent)" }}>Ready to apply.</span>
           </h1>
           <p className="t-sm" style={{ color: "var(--muted)", marginTop: 10, maxWidth: "60ch" }}>
-            Every answer here maps to a scoring dimension you can see on each posting.
-            Anything you leave blank is dropped from the score rather than counted
-            against a role — we would rather show a partial score than a confident
-            wrong one.
+            Manage what Instela knows about you, from reusable application details to
+            your resume and matching preferences. Keep it up to date as your story changes.
           </p>
         </div>
 
@@ -97,7 +103,8 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      <nav className="settings-section-nav" aria-label="Profile sections"><a href="#profile-overview">Overview</a><a href="#profile-resume">Resume upload</a><a href="#intake">Your details</a><a href="#email-preferences">Email preferences</a><a href="#account-settings">Account</a></nav>
+      <nav className="settings-section-nav" aria-label="Profile sections"><a href="#application-memory">Instela memory</a><a href="#profile-overview">Overview</a><a href="#profile-resume">Resume upload</a><a href="#intake">Your details</a><a href="#email-preferences">Email preferences</a><a href="#account-settings">Account</a></nav>
+      <ApplicationMemory facts={memory} />
       <div id="profile-overview" className="settings-section"><Completion completion={completion} /></div>
 
       {competitiveness && competitiveness.scoreablePostings > 0 && (
@@ -182,11 +189,16 @@ export default async function ProfilePage({
       />
 
       {critique && <ResumeCritique critique={critique} />}
-      {resume && critiqueAccess && !critiqueAccess.access.usable && (
+      {resume && critiqueAccess && critique === null && (
         <UpgradeWall
           feature="resume_critique"
           access={critiqueAccess.access}
-          reasonNote="you've used your free resume critique"
+          renewsAt={critiqueAccess.renewsAt}
+          reasonNote={
+            critiqueAccess.outcome === "in_flight"
+              ? "your critique is already being prepared — reload in a moment"
+              : "this resume revision has not been critiqued, and this period's free critique is used"
+          }
         />
       )}
 

@@ -23,6 +23,7 @@ import { fetchGreenhouseDescription, greenhouse } from "./sources/greenhouse";
 import { fetchSmartRecruitersDescription, smartrecruiters } from "./sources/smartrecruiters";
 import { lever } from "./sources/lever";
 import { workable } from "./sources/workable";
+import { workday } from "./sources/workday";
 import type { BoardAdapter, SourcePosting } from "./types";
 
 export const ADAPTERS: Record<string, BoardAdapter> = {
@@ -31,6 +32,7 @@ export const ADAPTERS: Record<string, BoardAdapter> = {
   lever,
   smartrecruiters,
   workable,
+  workday,
 };
 
 /** Parallel description fetches per board. Deliberately low — we are a guest. */
@@ -182,8 +184,10 @@ export async function pollOrg(
       successfulComplete = true,
       completeness,
       rejected,
+      absenceAuthoritative,
     } = await adapter.fetchBoard(org.atsSlug, {
       etag: org.etag,
+      companyName: org.name,
     });
 
     // A 304 means the board is byte-identical to last poll. Nothing changed,
@@ -251,6 +255,7 @@ if (!successfulComplete) {
         );
         const outcome = await persistPoll(org.id, enriched, totalOnBoard, etag, {
           successfulComplete: false,
+          absenceAuthoritative,
           runId: opts?.runId,
           rejectedByValidation: rejected ?? 0,
         });
@@ -274,6 +279,7 @@ if (!successfulComplete) {
     const enriched = await enrichDescriptions(adapter.name, org.atsSlug, postings);
 const outcome = await persistPoll(org.id, enriched, totalOnBoard, etag, {
         successfulComplete: true,
+        absenceAuthoritative,
         runId: opts?.runId,
         rejectedByValidation: rejected ?? 0,
       });
