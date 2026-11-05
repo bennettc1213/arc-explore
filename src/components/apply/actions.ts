@@ -133,12 +133,11 @@ export async function markAppliedAction(
   // Deliberately NOT capacity-checked: this records an application the student
   // actually submitted. A plan limit must never discard a true record — the
   // tracker limit only refuses voluntary saves (tracker/actions.ts).
-  await setStatus(user.id, postingId, "applied");
-
   const [stored, resume] = await Promise.all([getProfile(user.id), getLatestResume(user.id)]);
   const resumeSkills = resume ? skillsFromParsedResume(resume.parsed) : [];
   const posting = await getPosting(postingId, toScoreProfile(stored, resumeSkills, resume?.parsed));
   if (!posting) return { status: "error", message: "that posting is no longer tracked" };
+  await setStatus(user.id, postingId, "applied");
 
   const packet = buildApplicationPacket({
     profile: stored,

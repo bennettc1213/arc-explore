@@ -83,8 +83,9 @@ export default async function PricingPage({
           {TIER_LABELS.free} is a complete search: every listing, every warning and source fact,
           your top {FREE_RANKED_RESULTS} ranked matches for each search, a tracker, reminders, a
           weekly digest, and one use of each preparation tool every 30 days.{" "}
-          {TIER_LABELS.apply} is for when you are preparing several applications at once: the full
-          ranked list, detailed fit guidance, unlimited tracking and tools, and daily alerts.
+          {TIER_LABELS.apply} helps you spend less time applying, with unlimited preparation tools,
+          tracking, detailed fit guidance, and daily alerts. The browser extension adds profile
+          autofill and guided questions on supported forms; it is currently in testing.
         </p>
         {devTier ? (
           <p className="mono" style={{ marginTop: 10, color: "var(--accent)" }}>

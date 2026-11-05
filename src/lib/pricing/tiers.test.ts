@@ -343,10 +343,12 @@ test("the approved Free/Pro matrix", () => {
 });
 
 test("unbuilt and unverified features are not sold as current benefits", () => {
-  for (const key of ["smart_resume", "extension_autofill_scholarships", "answer_bank", "one_click_reapply", "deadline_triage", "semester_recap"] as const) {
+  for (const key of ["smart_resume", "answer_bank", "one_click_reapply", "deadline_triage", "semester_recap"] as const) {
     assert.equal(FEATURES[key].status, "coming_soon");
     assert.equal(isCurrentBenefit(key), false);
   }
   assert.equal(isCurrentBenefit("extension_autofill_internships"), false);
+  assert.equal(FEATURES.extension_autofill_scholarships.status, "unverified");
+  assert.equal(isCurrentBenefit("extension_autofill_scholarships"), false);
   assert.equal(isCurrentBenefit("cover_letter"), true);
 });

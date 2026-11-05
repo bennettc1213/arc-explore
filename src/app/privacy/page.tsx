@@ -152,6 +152,19 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
+      <Section title="application memory and autofill">
+        <p>Reusable facts you save in your profile or an Instela autofill prompt are stored in
+          your account. You can review, edit, or remove them in your profile. Removing a saved
+          fact stops it being reused by autofill; it does not rewrite the resume you uploaded.</p>
+        <p style={{ marginTop: 12 }}>When you choose autofill, the extension places answers into
+          the application site, which can read those answers even before submission. Answers to
+          questions specific to an employer or scholarship stay in that form and are not added
+          to your reusable Instela profile. The extension does not keep a separate persistent
+          copy of your profile. Your account memory is deleted when you delete your account.</p>
+        <p style={{ marginTop: 12 }}>The older saved-story library is stored only in this browser
+          and is not synced to your account. It is separate from your reusable profile facts.</p>
+      </Section>
+
       <Section title="resume imports and student verification">
         <p>
           Resume files are read on our server. Extracted text and structured details are stored;

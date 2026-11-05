@@ -11,6 +11,7 @@ import { toDiscoveryCard } from "@/lib/discovery/cards";
 import { selectScoutSections } from "@/lib/scout/results";
 import { scoutSchema } from "@/lib/scout/types";
 import { scoutFreshness } from "@/lib/scout/freshness";
+import { rememberScout } from "@/lib/scout/history-store";
 
 export async function runScout(raw: unknown) {
   const parsed = scoutSchema.safeParse(raw);
@@ -18,6 +19,9 @@ export async function runScout(raw: unknown) {
   const p = parsed.data;
   try {
     const user = await getSessionUser();
+    // Recent Scouts are account memory, not browser memory. A failure to save
+    // this convenience must never stop a search from running.
+    if (user) await rememberScout(user.id, p).catch(() => undefined);
     const [stored, resume, tier] = await Promise.all([user ? getProfile(user.id) : null, user ? getLatestResume(user.id) : null, getUserTier(user?.id)]);
     const profile = { ...toScoringProfile(stored, [], resume?.parsed), major: p.field || null, school: p.school || stored?.school, gradYear: p.gradYear || stored?.gradYear, workAuth: p.workAuth || stored?.workAuth, gpa: p.gpa === "" ? stored?.gpa : p.gpa, gpaScale: Number(p.gpaScale), residency: p.residency || null, priority: p.priority, targetLocations: p.location ? [p.location] : [], openToRemote: p.remote };
     const full = evaluateFeature(tier, "feed_full_depth").usable;

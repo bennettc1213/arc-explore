@@ -2,24 +2,27 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <title>Instela autofill</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <header>
         <span class="mark">in</span>
       <span class="wordmark">stela</span>
+      <span class="plan">AUTOFILL</span>
     </header>
 
-    <main id="root">
+    <main id="root" aria-busy="true">
       <p class="muted">checking this page…</p>
     </main>
 
     <footer>
-      <button id="settings-toggle" class="link">settings</button>
+      <div class="footer-links"><button id="profile-link" type="button" class="link">Profile &amp; memory</button><button id="settings-toggle" type="button" class="link" aria-expanded="false" aria-controls="settings">Settings</button></div>
       <div id="settings" hidden>
         <label for="origin">Instela address</label>
         <input id="origin" type="url" spellcheck="false" />
         <button id="save-origin" class="secondary">save</button>
+        <p id="settings-notice" role="status"></p>
       </div>
     </footer>
 

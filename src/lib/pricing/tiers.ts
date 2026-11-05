@@ -56,8 +56,12 @@ export const TIER_PRICE_USD: Record<TierId, number> = {
 
 export const TIER_TAGLINES: Record<TierId, string> = {
   free: "find and organize",
-  apply: "prepare without limits",
+  apply: "spend less time applying",
 };
+
+export function autofillFeature(kind: string): "extension_autofill_internships" | "extension_autofill_scholarships" {
+  return kind === "scholarship" ? "extension_autofill_scholarships" : "extension_autofill_internships";
+}
 
 /**
  * The length of a free tool allowance, in days.
@@ -385,8 +389,8 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
     key: "extension_autofill_internships",
     label: "Autofill & apply — internships",
     description:
-      "The browser extension autofills the employer's real Greenhouse/Lever/Ashby/SmartRecruiters " +
-      "form; you review and press submit. Requires installing the extension in Chrome.",
+      "Autofill supported applications from your Instela profile. Answer missing questions as you go; " +
+      "reusable facts are saved for next time. Review and submit on the official form. Requires the Chrome extension.",
     // Built and tested, including source-level safety invariants — but never
     // loaded into Chrome and driven with a real session (FIXES.md §3). It is
     // therefore not listed as a current Pro benefit; see `isCurrentBenefit`.
@@ -398,8 +402,9 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
     key: "extension_autofill_scholarships",
     label: "Autofill & apply — scholarships",
     description:
-      "Scholarship application sites are bespoke, not a handful of ATS platforms. Not built yet.",
-    status: "coming_soon",
+      "Autofill standard fields on supported scholarship forms and answer one-time questions in an Instela prompt. " +
+      "Some portals need a separate tab and per-site extension access. Currently in testing.",
+    status: "unverified",
     meter: "none",
     limits: { free: 0, apply: null },
   },

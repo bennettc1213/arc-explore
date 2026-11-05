@@ -24,6 +24,8 @@ import { ProfileEditor } from "./ProfileEditor";
 import { ResumeCritique } from "./ResumeCritique";
 import { SignOutButton } from "./SignOutButton";
 import { FEED_PATH } from "@/lib/routes";
+import { ApplicationMemory } from "@/components/profile/ApplicationMemory";
+import { getMemorySnapshot } from "@/lib/profile/memory-store";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +46,7 @@ export default async function ProfilePage({
   const sp = await searchParams;
   const returnTo = safeReturnPath(sp.next);
   const user = await requireUser("/profile");
+  const memory = await getMemorySnapshot(user.id, user.email ?? null);
   const [profile, resume, emailPrefs, corpus] = await Promise.all([
     getProfile(user.id),
     getLatestResume(user.id),
@@ -86,13 +89,11 @@ export default async function ProfilePage({
             className="chrome"
             style={{ fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.03em", marginTop: 12 }}
           >
-            what should we <span style={{ color: "var(--accent)" }}>score against</span>
+            Your information. <span style={{ color: "var(--accent)" }}>Ready to apply.</span>
           </h1>
           <p className="t-sm" style={{ color: "var(--muted)", marginTop: 10, maxWidth: "60ch" }}>
-            Every answer here maps to a scoring dimension you can see on each posting.
-            Anything you leave blank is dropped from the score rather than counted
-            against a role — we would rather show a partial score than a confident
-            wrong one.
+            Manage what Instela knows about you, from reusable application details to
+            your resume and matching preferences. Keep it up to date as your story changes.
           </p>
         </div>
 
@@ -102,7 +103,8 @@ export default async function ProfilePage({
         </div>
       </div>
 
-      <nav className="settings-section-nav" aria-label="Profile sections"><a href="#profile-overview">Overview</a><a href="#profile-resume">Resume upload</a><a href="#intake">Your details</a><a href="#email-preferences">Email preferences</a><a href="#account-settings">Account</a></nav>
+      <nav className="settings-section-nav" aria-label="Profile sections"><a href="#application-memory">Instela memory</a><a href="#profile-overview">Overview</a><a href="#profile-resume">Resume upload</a><a href="#intake">Your details</a><a href="#email-preferences">Email preferences</a><a href="#account-settings">Account</a></nav>
+      <ApplicationMemory facts={memory} />
       <div id="profile-overview" className="settings-section"><Completion completion={completion} /></div>
 
       {competitiveness && competitiveness.scoreablePostings > 0 && (

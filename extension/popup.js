@@ -1,334 +1,142 @@
-/**
- * The panel.
- *
- * Renders one of six states, and names each one precisely. "Not signed in",
- * "cannot reach Instela" and "we do not have this posting" are three different
- * problems with three different fixes, and collapsing them into one "something
- * went wrong" would leave the student with no idea which.
- */
+import { describeFill } from "./vendor/autofill.js";
+import { originPatternForUrl } from "./vendor/apply-url.js";
 
 const root = document.getElementById("root");
-
-let describeFill;
-let originPatternForUrl;
-let bootError = null;
-try {
-  ({ describeFill } = await import(chrome.runtime.getURL("vendor/autofill.js")));
-  ({ originPatternForUrl } = await import(chrome.runtime.getURL("vendor/apply-url.js")));
-} catch {
-  bootError = "the extension failed to load — open chrome://extensions and click reload";
-}
-
-/* ------------------------------------------------------------------ *
- * Helpers
- * ------------------------------------------------------------------ */
+let origin = "https://instela.org";
 
 function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
   Object.assign(node, props);
-  for (const c of children.flat()) {
-    if (c == null) continue;
-    node.append(typeof c === "string" ? document.createTextNode(c) : c);
-  }
+  for (const child of children.flat()) if (child != null) node.append(typeof child === "string" ? document.createTextNode(child) : child);
   return node;
 }
+function render(...nodes) { root.replaceChildren(...nodes.filter(Boolean)); root.setAttribute("aria-busy", "false"); }
+function button(text, onclick, className = "") { return el("button", { type: "button", className, onclick }, text); }
+function open(url) { return chrome.tabs.create({ url }); }
+function message(title, text, action) { render(el("p", { className: "eyebrow" }, "AUTOFILL WITH INSTELA"), el("h1", {}, title), el("p", { className: "muted" }, text), action); }
+function error(reason) { message("Let’s reconnect", reason, button("Try again", () => main())); }
 
-function render(...nodes) {
-  root.replaceChildren(...nodes.flat().filter(Boolean));
-}
-
-async function activeTab() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab;
-}
-
-/* ------------------------------------------------------------------ *
- * States
- * ------------------------------------------------------------------ */
-
-function signedOut(origin) {
-  render(
-    el("p", { className: "muted" }, "You are not signed in to Instela."),
-    el("hr"),
-    el(
-      "button",
-      {
-        onclick: () => chrome.tabs.create({ url: `${origin}/login` }),
-      },
-      "sign in",
-    ),
-  );
-}
-
-function unreachable(origin) {
-  render(
-    el("p", { className: "muted" }, `Could not reach Instela at ${origin}.`),
-    el(
-      "p",
-      { className: "muted" },
-      "If you are running it locally, start it with npm run dev — or set the address below.",
-    ),
-  );
-}
-
-function noMatch() {
-  render(
-    el("p", { className: "muted" }, "Instela does not have this posting."),
-    el(
-      "p",
-      { className: "muted" },
-      "It only fills applications for listings in your feed, so nothing here is autofillable.",
-    ),
-  );
-}
-
-function errorState(reason) {
-  render(el("p", { className: "muted" }, reason));
-}
-
-function upgrade(origin) {
-  render(
-    el("p", { className: "muted" }, "Autofill needs the Apply plan on this account."),
-    el("hr"),
-    el(
-      "button",
-      {
-        onclick: () => chrome.tabs.create({ url: `${origin}/pricing?feature=extension_autofill_internships` }),
-      },
-      "see pricing",
-    ),
-  );
-}
-
-/**
- * The working state.
- *
- * The button says "fill this form", not "apply" — the extension fills, the
- * student submits, and the label should not blur that.
- */
-function ready(packet, tabId) {
-  const { posting, values, attestations, hasCoverLetter, alreadyApplied } = packet;
-  const count = Object.keys(values).length;
-
-  const status = el("div", { className: "stack" });
-
-  const fillButton = el(
-    "button",
-    {
-      onclick: async () => {
-        fillButton.disabled = true;
-        fillButton.textContent = "filling…";
-        let res;
-        try {
-          res = await chrome.tabs.sendMessage(tabId, { type: "INSTELA_FILL", values });
-        } catch {
-          res = { error: "could not reach the page — try reloading it" };
-        }
-        fillButton.disabled = false;
-        fillButton.textContent = "fill this form again";
-
-        if (!res || res.error) {
-          status.replaceChildren(el("p", { className: "report" }, res?.error ?? "fill failed"));
-          return;
-        }
-
-        const parts = [el("p", { className: "report" }, describeFill(res.report))];
-        if (res.blockedLabels?.length) {
-          parts.push(
-            el(
-              "div",
-              { className: "yours" },
-              el("strong", {}, "yours to answer"),
-              el(
-                "ul",
-                {},
-                res.blockedLabels.map((l) => el("li", {}, l)),
-              ),
-            ),
-          );
-        }
-        status.replaceChildren(...parts);
-      },
-    },
-    "fill this form",
-  );
-
-  const appliedButton = el(
-    "button",
-    {
-      className: "secondary",
-      onclick: async () => {
-        appliedButton.disabled = true;
-        const res = await chrome.runtime.sendMessage({
-          type: "INSTELA_MARK_APPLIED",
-          postingId: posting.id,
-        });
-        appliedButton.textContent = res?.ok ? "recorded ✓" : "could not record";
-        if (res?.emailMessage) {
-          status.replaceChildren(el("p", { className: "report" }, res.emailMessage));
-        }
-      },
-    },
-    alreadyApplied ? "already marked applied" : "I submitted this",
-  );
-  appliedButton.disabled = Boolean(alreadyApplied);
-
-  render(
-    el("h1", {}, posting.title),
-    el("p", { className: "company" }, posting.company ?? posting.kind),
-    fillButton,
-    el(
-      "p",
-      { className: "muted", style: "margin-top:8px" },
-      `${count} fact${count === 1 ? "" : "s"} ready${hasCoverLetter ? " · cover letter included" : ""}`,
-    ),
-    attestations.length
-      ? el(
-          "div",
-          { className: "yours" },
-          el("strong", {}, "we will never fill these"),
-          el(
-            "ul",
-            {},
-            attestations.map((a) => el("li", {}, a)),
-          ),
-        )
-      : null,
-    status,
-    el("hr"),
-    el(
-      "p",
-      { className: "muted", style: "margin-bottom:8px" },
-      "Read the form, attach your resume, then submit it yourself.",
-    ),
-    appliedButton,
-  );
-}
-
-/**
- * The one-click-per-site grant, for anything outside the four ATS families.
- *
- * WHY THE BUTTON IS HERE AND NOT ON THE INSTELA PAGE. `chrome.permissions.request`
- * must run inside a user gesture in an extension surface — a content script
- * cannot call it at all, and forwarding a click from a web page through the
- * service worker loses the gesture, so Chrome refuses. This popup is the only
- * place the prompt can legitimately come from.
- *
- * The trade is small and it is once, ever, per site: Greenhouse, Lever, Ashby
- * and SmartRecruiters are declared in the manifest and never reach this path,
- * which is 1,885 of 1,909 open internships. It is the ~300 one-row scholarship
- * hosts that land here, and the alternative — `<all_urls>` at install — is a
- * prompt saying we can read every page the student ever visits.
- */
-function needsSiteAccess(tab, packet) {
-  const pattern = originPatternForUrl(tab.url);
-  const host = (() => {
+function ready(result, tabId) {
+  const { packet, target } = result;
+  const { posting, alreadyApplied } = packet;
+  const status = target.status ?? { state: "idle" };
+  const busy = status.state === "filling";
+  const action = button(busy ? "Continue answering in the form" : "Autofill with Instela", async () => {
+    if (busy) { window.close(); return; }
+    action.disabled = true;
+    action.textContent = "Connecting to your form…";
     try {
-      return new URL(tab.url).hostname;
-    } catch {
-      return tab.url;
-    }
-  })();
-
-  const button = el(
-    "button",
-    {
-      onclick: async () => {
-        button.disabled = true;
-        button.textContent = "waiting for Chrome…";
-        // Directly, not via the service worker: the gesture is what Chrome
-        // checks and it does not survive a message hop.
-        let granted = false;
-        try {
-          granted = await chrome.permissions.request({ origins: [pattern] });
-        } catch {
-          granted = false;
-        }
-        if (!granted) {
-          button.disabled = false;
-          button.textContent = `allow Instela on ${host}`;
-          return;
-        }
-        // A freshly granted origin injects nothing into the tab already open,
-        // and the student is looking at it — so put the script in by hand
-        // rather than making them reload a page they have no reason to suspect.
-        await chrome.runtime.sendMessage({ type: "INSTELA_ENSURE_SCRIPT", tabId: tab.id });
-        ready(packet, tab.id);
-      },
-    },
-    `allow Instela on ${host}`,
-  );
-
+      const response = await chrome.runtime.sendMessage({ type: "INSTELA_START_AUTOFILL", tabId, documentId: target.documentId, expectedUrl: target.pageUrl });
+      if (!response?.ok) { error(response?.reason ?? "Check that you are signed in to Instela with Pro, then try again."); return; }
+      window.close();
+    } catch { error("The application connection was interrupted. Please try again."); }
+  });
+  const receipt = el("p", { className: "report", role: "status" });
+  if (status.state === "complete" && status.report) receipt.textContent = Object.values(status.report).every(value => value === 0)
+    ? "No compatible fields found on this page. Open the actual application form, then reopen Instela. Custom controls and forms inside another frame may need manual entry."
+    : describeFill(status.report);
+  else if (status.state === "error") receipt.textContent = status.error;
+  else receipt.textContent = busy ? "Instela is working in the application. Answer or skip the question there." : "Instela asks for missing details. Reusable facts are saved; answers about this opportunity stay in this application.";
+  const applied = button(alreadyApplied ? "Added to your tracker" : "I submitted this application", async () => {
+    applied.disabled = true;
+    try {
+      const response = await chrome.runtime.sendMessage({ type: "INSTELA_MARK_APPLIED", postingId: posting.id, tabId });
+      if (!response?.ok) throw new Error(response?.reason ?? "Could not record your application.");
+      applied.textContent = "Added to your tracker";
+      receipt.textContent = response.emailMessage ?? "Application recorded.";
+    } catch (err) { applied.disabled = false; receipt.textContent = err.message; }
+  }, "secondary");
+  applied.disabled = Boolean(alreadyApplied) || busy;
+  const endSession = result.applicationSession ? button("End this application session", async () => {
+    await chrome.runtime.sendMessage({ type: "INSTELA_END_APPLICATION", tabId });
+    window.close();
+  }, "link") : null;
+  if (endSession) endSession.disabled = busy;
   render(
-    el("p", {}, el("strong", {}, packet.posting?.title ?? "this application")),
-    el(
-      "p",
-      { className: "muted", style: "margin-top:8px" },
-      `Instela has your facts ready, but it has never been allowed to touch ${host}.`,
-    ),
-    el(
-      "p",
-      { className: "muted" },
-      "Chrome will ask about this one site. Once you allow it, it is remembered and you will not be asked for this site again.",
-    ),
-    el("hr"),
-    button,
+    el("p", { className: "connection" }, target.embedded ? "● Connected inside Instela" : "● Connected to your application"),
+    el("h1", {}, posting.title), el("p", { className: "company" }, posting.company ?? posting.kind),
+    el("div", { className: "ready-count" }, el("strong", {}, String(packet.knownCount ?? 0)), el("span", {}, "saved details ready")),
+    action, receipt,
+    el("p", { className: "muted fine" }, `Filling ${new URL(target.pageUrl).hostname}. On the next page, reopen Instela to continue. Review your answers, attach any files, and submit on the application form.`),
+    el("hr"), applied, endSession,
   );
 }
 
-/* ------------------------------------------------------------------ *
- * Boot
- * ------------------------------------------------------------------ */
-
-async function main() {
-  if (bootError) return errorState(bootError);
-
-  try {
-    const tab = await activeTab();
-    if (!tab?.url) return errorState("no active tab");
-
-    const res = await chrome.runtime.sendMessage({ type: "INSTELA_GET_PACKET", pageUrl: tab.url });
-    if (!res) return errorState("could not reach the extension — reload it on chrome://extensions");
-
-    const originField = document.getElementById("origin");
-    if (originField) originField.value = res.origin ?? "";
-
-    switch (res.state) {
-      case "ready": {
-        // Declared hosts answer true without prompting; everything else needs
-        // the one-time per-site grant below.
-        const { granted } = await chrome.runtime.sendMessage({
-          type: "INSTELA_HAS_SITE_ACCESS",
-          pageUrl: tab.url,
-        });
-        if (!granted && originPatternForUrl(tab.url)) return needsSiteAccess(tab, res.packet);
-        return ready(res.packet, tab.id);
-      }
-      case "signed-out":
-        return signedOut(res.origin);
-      case "unreachable":
-        return unreachable(res.origin);
-      case "upgrade":
-        return upgrade(res.origin);
-      case "no-match":
-        return noMatch();
-      default:
-        return errorState(res.reason ?? "something went wrong");
-    }
-  } catch (err) {
-    return errorState(err?.message ?? "could not check this page");
-  }
+function needsAccess(result, tabId) {
+  const pageUrl = result.target.pageUrl;
+  const pattern = originPatternForUrl(pageUrl);
+  if (!pattern) return error("This application address is not supported.");
+  const host = new URL(pageUrl).hostname;
+  const grant = button(`Allow Instela on ${host}`, async () => {
+    grant.disabled = true;
+    let granted = false;
+    try {
+      // Chrome requires this to run directly in the popup's click handler.
+      granted = await chrome.permissions.request({ origins: [pattern] });
+    } catch { /* Cancellation leaves a usable retry button. */ }
+    if (!granted) { grant.disabled = false; return; }
+    const connection = await chrome.runtime.sendMessage({ type: "INSTELA_ENSURE_SCRIPT", tabId });
+    if (!connection?.ok) return connectionError(connection?.reason, pageUrl);
+    return main(false);
+  });
+  message("Connect this application", `Give Instela access to ${host} so it can fill this form. Chrome will ask about this site only.`, grant);
 }
 
-/* Settings — one field, the Instela address, so this works against localhost. */
+function connectionError(reason, pageUrl) {
+  message("Site access is saved", reason ?? "Reload the application form to connect the extension.", button("Open application in a tab", () => open(pageUrl)));
+}
+
+async function main(connect = true) {
+  root.setAttribute("aria-busy", "true");
+  try {
+    const settings = await chrome.runtime.sendMessage({ type: "INSTELA_SETTINGS" });
+    if (settings?.origin) origin = settings.origin;
+    document.getElementById("origin").value = origin;
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id == null) return error("Open an application page, then reopen Instela.");
+    const result = await chrome.runtime.sendMessage({ type: "INSTELA_TAB_PACKET", tabId: tab.id });
+    if (!result) return error("Reload the Instela extension and try again.");
+    if (result.origin) origin = result.origin;
+    switch (result.state) {
+      case "ready":
+        if (!result.granted) return needsAccess(result, tab.id);
+        if (!result.target.connected) {
+          if (connect) {
+            const connection = await chrome.runtime.sendMessage({ type: "INSTELA_ENSURE_SCRIPT", tabId: tab.id });
+            if (connection?.ok) return main(false);
+            return connectionError(connection?.reason, result.target.pageUrl);
+          }
+          return connectionError("Reload the form to reconnect the extension.", result.target.pageUrl);
+        }
+        return ready(result, tab.id);
+      case "signed-out": return message("Sign in to Instela", "Use the same Instela account in this Chrome browser to access your saved details.", button("Sign in", () => open(`${origin}/login`)));
+      case "upgrade": return message("Apply faster with Pro", "Your profile memory is ready. Instela Pro adds autofill and guided application questions.", button("Explore Pro", () => open(`${origin}/pricing?feature=extension_autofill_internships`)));
+      case "instela-home": return message("Ready when you apply", "Choose an opportunity and press Apply with Instela. Your saved details will be ready at the form.", button("Explore opportunities", () => open(`${origin}/explore`)));
+      case "open-application": return message("Continue to the application", "Instela keeps this opportunity connected as you move to its application form.", button("Open application with Instela", async () => {
+        const response = await chrome.runtime.sendMessage({ type: "INSTELA_OPEN_APPLICATION", tabId: tab.id });
+        if (response?.ok) window.close();
+        else error(response?.reason ?? "Could not open the application. Try again.");
+      }));
+      case "no-match": return message("Start with an Instela opportunity", "This page has not been matched to an active Instela listing. Open an opportunity from your feed to use autofill.", button("Find an opportunity", () => open(`${origin}/explore`)));
+      case "unsupported": return message("Open an application first", "Instela works on supported internship and scholarship forms. Open one from Instela to begin.", button("Open Instela", () => open(`${origin}/portal`)));
+      case "unreachable": return error(`Could not reach Instela at ${origin}. Check your connection and the extension settings.`);
+      default: return error(result.reason ?? "The application could not be checked. Please try again.");
+    }
+  } catch { return error("The extension could not connect. Reload it from chrome://extensions and try again."); }
+}
+
+document.getElementById("profile-link").addEventListener("click", () => open(`${origin}/profile#application-memory`));
 document.getElementById("settings-toggle").addEventListener("click", () => {
   const panel = document.getElementById("settings");
   panel.hidden = !panel.hidden;
+  document.getElementById("settings-toggle").setAttribute("aria-expanded", String(!panel.hidden));
 });
 document.getElementById("save-origin").addEventListener("click", async () => {
-  const value = document.getElementById("origin").value.trim();
-  await chrome.storage.local.set({ instelaOrigin: value });
-  main();
+  const notice = document.getElementById("settings-notice");
+  try {
+    const result = await chrome.runtime.sendMessage({ type: "INSTELA_SET_ORIGIN", origin: document.getElementById("origin").value });
+    notice.textContent = result?.ok ? "Connection saved." : result?.reason ?? "Could not save settings.";
+    if (result?.ok) main();
+  } catch { notice.textContent = "Could not save settings. Please try again."; }
 });
-
 main();

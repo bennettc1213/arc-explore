@@ -64,6 +64,21 @@ export function normalizeApplyUrl(raw: string): string | null {
   return `${host}${path}`;
 }
 
+/** Known application routes only. Unknown portals keep their official URL
+ * rather than inventing a destination that might not exist. */
+export function directApplicationUrl(raw: string): string {
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== "https:") return raw;
+    const host = url.hostname.toLowerCase();
+    const path = url.pathname.replace(/\/+$/, "");
+    if (host === "jobs.lever.co" && /^\/[^/]+\/[^/]+$/.test(path)) url.pathname = `${path}/apply`;
+    if (host === "jobs.ashbyhq.com" && /^\/[^/]+\/[^/]+$/.test(path)) url.pathname = `${path}/application`;
+    if (/(^|\.)greenhouse\.io$/.test(host)) url.hash = "application";
+    return url.toString();
+  } catch { return raw; }
+}
+
 /**
  * Hosts the extension is allowed to act on.
  *

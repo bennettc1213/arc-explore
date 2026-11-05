@@ -47,7 +47,8 @@
     "ingest:rederive": "tsx scripts/ingest-rederive.ts",
     "ingest:retag": "tsx scripts/backfill-content-marketing.ts",
     "build:mark": "tsx scripts/build-mark.ts",
-    "build:extension": "tsc src/lib/apply/autofill.ts src/lib/apply/apply-url.ts src/lib/apply/submitted.ts src/lib/apply/frame-headers.ts --outDir extension/vendor --module es2020 --target es2020 --moduleResolution bundler && node scripts/fix-extension-imports.mjs",
+    "build:extension": "tsc src/lib/apply/autofill.ts src/lib/apply/apply-url.ts src/lib/apply/submitted.ts src/lib/apply/frame-headers.ts src/lib/apply/extension-config.ts --outDir extension/vendor --module es2020 --target es2020 --moduleResolution bundler && node scripts/fix-extension-imports.mjs",
+    "package:extension": "npm run build:extension && node scripts/package-extension.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
     "feed:turnover": "tsx scripts/feed-turnover.ts",
     "search:quality": "tsx scripts/search-quality.ts"

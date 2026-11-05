@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/db/client";
-import { profiles, resumes } from "@/db/schema";
+import { applicationMemoryFacts, profiles, resumes } from "@/db/schema";
 
 import type { ParsedResume } from "../resume/types";
 import type { ProfileInput, UserProfile, WorkAuthValue, InterestValue } from "./types";
@@ -82,11 +82,27 @@ export async function saveProfile(userId: string, input: ProfileInput): Promise<
     updatedAt: new Date(),
   };
 
-  const [row] = await db
+  const row = await db.transaction(async tx => {
+    const [previous] = await tx.select({ displayName: profiles.displayName }).from(profiles).where(eq(profiles.id, userId)).limit(1);
+    const [saved] = await tx
     .insert(profiles)
     .values(values)
     .onConflictDoUpdate({ target: profiles.id, set: values })
     .returning();
+  const synced = { fullName: input.displayName, school: input.school, major: input.major,
+    gradYear: input.gradYear === null ? null : String(input.gradYear), gpa: input.gpa === null ? null : String(input.gpa),
+    portfolioUrl: input.portfolioUrl, linkedinUrl: input.linkedinUrl,
+    githubUrl: input.githubUsername ? `https://github.com/${input.githubUsername}` : null };
+  for (const [key, value] of Object.entries(synced)) {
+    await tx.update(applicationMemoryFacts).set({ value, source: "profile", updatedAt: new Date() })
+      .where(and(eq(applicationMemoryFacts.userId, userId), eq(applicationMemoryFacts.key, key)));
+  }
+  if (saved.displayName !== previous?.displayName) {
+    for (const key of ["firstName", "lastName"]) await tx.delete(applicationMemoryFacts)
+      .where(and(eq(applicationMemoryFacts.userId, userId), eq(applicationMemoryFacts.key, key)));
+  }
+  return saved;
+  });
 
   return toUserProfile(row);
 }

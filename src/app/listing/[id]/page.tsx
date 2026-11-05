@@ -16,7 +16,7 @@ import { formatAward } from "@/lib/scholarships/display";
 import { formatTerm } from "@/lib/terms/display";
 import { formatCompensation, formatWorkArrangement } from "@/lib/opportunity-details";
 import { presentFit } from "@/lib/pricing/entitlements";
-import { TIER_LABELS, evaluateFeature } from "@/lib/pricing/tiers";
+import { TIER_LABELS, autofillFeature, evaluateFeature } from "@/lib/pricing/tiers";
 import { hasReported } from "@/lib/reports/store";
 import { coerceParsedResume } from "@/lib/resume/types";
 import { resolveViewer, type SearchParams } from "@/app/explore/viewer";
@@ -198,12 +198,12 @@ export default async function ListingPage({
                 below stays available on every tier — it is the do-it-yourself
                 version of the same facts, and gating both would be charging
                 twice for one thing. */}
-            {wizardBoot && evaluateFeature(tier, "extension_autofill_internships").usable && (
+            {wizardBoot && evaluateFeature(tier, autofillFeature(item.kind)).usable && (
               <ApplyWizard boot={wizardBoot} />
             )}
-            {wizardBoot && !evaluateFeature(tier, "extension_autofill_internships").usable && (
+            {wizardBoot && !evaluateFeature(tier, autofillFeature(item.kind)).usable && (
               <Link
-                href="/pricing?feature=extension_autofill_internships"
+                href={`/pricing?feature=${autofillFeature(item.kind)}`}
                 className="btn press"
                 style={{ textDecoration: "none" }}
               >

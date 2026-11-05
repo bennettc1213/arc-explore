@@ -27,6 +27,32 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+export const applicationMemoryFacts = pgTable("application_memory_facts", {
+  userId: uuid("user_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  key: text("key").notNull(),
+  value: text("value"),
+  source: text("source").notNull().default("profile"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.userId, t.key] })]);
+
+/**
+ * The last few Scouts a student actually ran. This is deliberately separate
+ * from saved_searches: these are a private, lightweight recall aid, not
+ * standing searches that can send email alerts.
+ */
+export const scoutHistory = pgTable("scout_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => profiles.id, { onDelete: "cascade" }),
+  filters: jsonb("filters").notNull(),
+  /** Stable JSON from the validated preferences, used to refresh a duplicate. */
+  fingerprint: text("fingerprint").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  uniqueIndex("scout_history_user_fingerprint_unique").on(t.userId, t.fingerprint),
+  index("scout_history_user_updated_idx").on(t.userId, t.updatedAt),
+]);
+
 export const studentEmailChallenges = pgTable("student_email_challenges", {
   userId: uuid("user_id").primaryKey().references(() => profiles.id, { onDelete: "cascade" }),
   email: text("email").notNull(),

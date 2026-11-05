@@ -62,6 +62,22 @@ export function ProfileEditor({
   returnTo?: string;
 }) {
   const [values, setValues] = useState<FormValues>(() => toFormValues(profile));
+  const [lastProfile, setLastProfile] = useState(profile);
+  // Inline memory edits can revalidate this page while preferences are being
+  // edited. Refresh only fields whose saved values changed, preserving the
+  // rest of the student's unsaved form.
+  if (lastProfile !== profile) {
+    const before = toFormValues(lastProfile);
+    const after = toFormValues(profile);
+    const merged = { ...values };
+    for (const key of Object.keys(after) as (keyof FormValues)[]) {
+      if (JSON.stringify(before[key]) !== JSON.stringify(after[key])) {
+        Object.assign(merged, { [key]: after[key] });
+      }
+    }
+    setLastProfile(profile);
+    setValues(merged);
+  }
   const [saveState, saveAction, saving] = useActionState(saveProfileAction, SAVE_INITIAL);
   const [uploadState, uploadAction, uploading] = useActionState(
     uploadResumeAction,

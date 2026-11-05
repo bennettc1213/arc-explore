@@ -11,13 +11,15 @@
  *     such call in this file and there must never be one: the student presses
  *     the employer's own submit button, having read the form. That is the line
  *     the whole design rests on.
- *   · It must never fill a field `matchFieldKey` declined. The decision lives
- *     in `src/lib/apply/autofill.ts` — tested, and compiled into `vendor/` by
- *     `npm run build:extension` rather than reimplemented here, so there is one
- *     definition of what is safe to fill.
+ *   · Stored facts go only into fields `matchFieldKey` identified. Other
+ *     supported questions can receive the student's explicit answer through
+ *     the prompt; they never receive a guessed or cross-application answer.
+ *     Blocked declarations are still left for the original form.
  *   · It must never overwrite a value the student already typed.
  */
 
+if (!globalThis.__instelaContentReady) {
+globalThis.__instelaContentReady = true;
 const INSTELA_STYLE_ID = "instela-style";
 
 /* ------------------------------------------------------------------ *
@@ -150,11 +152,14 @@ function clearMarks() {
  * ------------------------------------------------------------------ */
 
 async function fill(values) {
+  if (fillInProgress) throw new Error("Autofill is already in progress. Finish or close the current Instela prompt first.");
+  fillInProgress = true;
+  try {
   // Imported at call time rather than at the top, because a content script is
   // a classic script and cannot use static `import`. The module is the
   // compiled output of the tested TypeScript, exposed via
   // web_accessible_resources.
-  const { matchFieldKey, isBlockedField } = await import(
+  const { matchFieldKey, isBlockedField, isInfrastructureField } = await import(
     chrome.runtime.getURL("vendor/autofill.js")
   );
 
@@ -163,6 +168,10 @@ async function fill(values) {
 
   const report = { filled: 0, known: 0, blocked: 0, unknown: 0, skippedNonEmpty: 0 };
   const blockedLabels = [];
+  const seen = new WeakSet();
+  for (let pass = 0; pass < 20; pass++) {
+  const questions = [];
+  const radioGroups = new Set();
 
   const controls = document.querySelectorAll("input, textarea, select");
   for (const el of controls) {
@@ -174,8 +183,12 @@ async function fill(values) {
     // original document — see /privacy).
     if (["hidden", "submit", "button", "reset", "image"].includes(type)) continue;
     if (el.disabled || el.readOnly) continue;
+    if (!el.getClientRects().length || ["file", "password", "checkbox"].includes(type)) continue;
+    if (seen.has(el)) continue;
+    seen.add(el);
 
     const sig = signatureOf(el);
+    if (isInfrastructureField(sig)) continue;
 
     if (isBlockedField(sig)) {
       report.blocked++;
@@ -184,15 +197,35 @@ async function fill(values) {
       continue;
     }
 
+    if (type === "radio") {
+      if (!el.name || radioGroups.has(el.name)) continue;
+      radioGroups.add(el.name);
+      const radios = [...controls].filter(input => input.type === "radio" && input.name === el.name && input.form === el.form);
+      if (radios.some(input => input.checked)) { report.skippedNonEmpty++; continue; }
+      const label = el.closest("fieldset")?.querySelector("legend")?.textContent?.trim();
+      // Without a group prompt, an individual "Yes" label is ambiguous.
+      if (!label || radios.some(input => isBlockedField({ ...signatureOf(input), label }))) { report.blocked++; continue; }
+      report.unknown++;
+      questions.push({ el, radios, label, key: null, category: "unknown" });
+      continue;
+    }
+
+    if (el.value && el.value.trim() !== "") {
+      report.skippedNonEmpty++;
+      continue;
+    }
+
     const key = matchFieldKey(sig);
     if (!key) {
       report.unknown++;
+      if (sig.label && ["text", "email", "tel", "url", "number", "date", "textarea", "select", "search"].includes(sig.type)) questions.push({ el, label: sig.label, key: null, category: "unknown" });
       continue;
     }
 
     const value = values[key];
     if (!value) {
       report.known++;
+      if (sig.label) questions.push({ el, label: sig.label, key: key === "coverLetter" ? null : key, category: "known" });
       continue;
     }
 
@@ -209,15 +242,158 @@ async function fill(values) {
       el.classList.add("arc-filled");
     } else {
       report.known++;
+      if (sig.label) questions.push({ el, label: sig.label, key: key === "coverLetter" ? null : key, category: "known" });
     }
   }
 
+  for (const question of questions) {
+    if (!question.el.isConnected || question.el.disabled || question.el.readOnly) continue;
+    const answer = await askQuestion(question);
+    if (answer === null) return { report, blockedLabels };
+    if (!answer) continue;
+    if (!question.el.isConnected || question.el.disabled || question.el.readOnly) continue;
+    if (question.radios) {
+      if (question.radios.some(input => input.checked)) continue;
+      const selected = question.radios.find(input => input.value === answer);
+      if (!selected) continue;
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "checked")?.set;
+      if (setter) setter.call(selected, true);
+      else selected.checked = true;
+      selected.dispatchEvent(new Event("input", { bubbles: true }));
+      selected.dispatchEvent(new Event("change", { bubbles: true }));
+      // React's radio change listener observes the click event. This is an
+      // explicit student choice on this radio, never a navigation/submit act.
+      selected.dispatchEvent(new Event("click", { bubbles: true }));
+      selected.classList.add("arc-filled");
+    } else {
+      if (question.el.value?.trim()) continue;
+      if (question.el.tagName === "SELECT") {
+        if (!setSelect(question.el, answer)) continue;
+      } else setNativeValue(question.el, answer);
+      question.el.classList.add("arc-filled");
+    }
+    report.filled++;
+    report[question.category]--;
+  }
+  if (!questions.length) break;
+  // Conditional questions may appear after a change event. Scan again after
+  // the site's next render, without navigating or pressing Next for them.
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
   return { report, blockedLabels };
+  } finally { fillInProgress = false; }
+}
+
+let fillInProgress = false;
+let lastFillState = { state: "idle" };
+let trustedEmbedder = null;
+
+async function runFill(values, notifyParent = true) {
+  if (fillInProgress || lastFillState.state === "filling") throw new Error("Autofill is already in progress. Answer the current Instela prompt first.");
+  lastFillState = { state: "filling" };
+  const notify = payload => {
+    if (notifyParent && trustedEmbedder) trustedEmbedder.source.postMessage({ type: "INSTELA_EMBED_RESULT", ...payload }, trustedEmbedder.origin);
+  };
+  notify({ state: "prompting" });
+  try {
+    const result = await fill(values);
+    lastFillState = { state: "complete", ...result };
+    notify({ state: "filled", ...result });
+    return result;
+  } catch (err) {
+    lastFillState = { state: "error", error: err?.message ?? "Autofill stopped. Please try again." };
+    notify({ state: "error" });
+    throw err;
+  }
+}
+
+/** A student's explicit answer, never an inferred or generated response.
+ * Stable facts are saved by the background worker; contextual answers live
+ * only in this form and are never sent to the memory API. */
+function askQuestion(question) {
+  return new Promise(resolve => {
+    const previousFocus = document.activeElement;
+    const host = document.createElement("div");
+    Object.assign(host.style, { position: "fixed", inset: "0", zIndex: "2147483647" });
+    const root = host.attachShadow({ mode: "closed" });
+    const style = document.createElement("style");
+    style.textContent = `:host{all:initial}.veil{position:fixed;inset:0;background:#10131bb8;display:grid;place-items:center;padding:16px;font:15px/1.5 system-ui;color:#eef0f5}.panel{background:#151922;border:1px solid #454c5a;border-radius:16px;padding:24px;max-width:480px;width:100%;box-sizing:border-box;max-height:95vh;overflow:auto}h2{font-size:20px;margin:12px 0}p{color:#b6becd;font-size:13px}input,textarea,select{box-sizing:border-box;width:100%;background:#222937;border:1px solid #677389;border-radius:8px;color:white;padding:12px;font:inherit}button{background:#ed8544;border:0;border-radius:8px;padding:10px 14px;color:#111;font:inherit;cursor:pointer}button:disabled{opacity:.5}footer{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.secondary{background:#303847;color:white}.error{color:#ffb5b5}a{color:#ffb98e}`;
+    const veil = document.createElement("div"); veil.className = "veil";
+    const panel = document.createElement("form"); panel.className = "panel";
+    panel.setAttribute("role", "dialog"); panel.setAttribute("aria-modal", "true"); panel.setAttribute("aria-labelledby", "question-title");
+    const brand = document.createElement("strong"); brand.textContent = "INSTELA · AUTOFILL";
+    const title = document.createElement("h2"); title.id = "question-title"; title.textContent = question.label;
+    const note = document.createElement("p");
+    note.textContent = question.key ? "Save this detail to your Instela profile and reuse it on future applications. You can edit or remove it in your profile." : "Your answer is for this application only. It will not be saved to your Instela profile.";
+    const choices = question.radios ? question.radios.map(input => ({ value: input.value, text: labelFor(input) ?? input.value })) : question.el.tagName === "SELECT" ? [...question.el.options].filter(o => o.value && !o.disabled).map(o => ({ value: o.value, text: o.textContent.trim() })) : null;
+    const input = document.createElement(choices ? "select" : !question.key || question.el.tagName === "TEXTAREA" ? "textarea" : "input");
+    input.setAttribute("aria-labelledby", "question-title");
+    input.required = true;
+    if (choices) {
+      const empty = document.createElement("option"); empty.value = ""; empty.textContent = "Choose an answer"; input.append(empty);
+      for (const choice of choices) { const option = document.createElement("option"); option.value = choice.value; option.textContent = choice.text; input.append(option); }
+    } else {
+      input.maxLength = Math.min(question.el.maxLength > 0 ? question.el.maxLength : 20000, question.key ? 500 : 20000);
+      if (input.tagName === "TEXTAREA") input.rows = 5;
+      else input.type = ["email", "url", "tel", "number", "date"].includes(question.el.type) ? question.el.type : "text";
+    }
+    const error = document.createElement("p"); error.className = "error"; error.setAttribute("role", "status");
+    const footer = document.createElement("footer");
+    const save = document.createElement("button"); save.type = "submit"; save.textContent = question.key ? "Save & autofill" : "Use this answer";
+    const skip = document.createElement("button"); skip.type = "button"; skip.className = "secondary"; skip.textContent = "Skip question";
+    const stop = document.createElement("button"); stop.type = "button"; stop.className = "secondary"; stop.textContent = "Finish in form";
+    let saving = false;
+    function finish(value) { host.remove(); if (previousFocus?.isConnected) previousFocus.focus(); resolve(value); }
+    skip.addEventListener("click", () => { if (!saving) finish(""); });
+    stop.addEventListener("click", () => { if (!saving) finish(null); });
+    panel.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !saving) { event.preventDefault(); finish(null); }
+      if (event.key === "Tab") {
+        if (event.shiftKey && root.activeElement === input) { event.preventDefault(); stop.focus(); }
+        else if (!event.shiftKey && root.activeElement === stop) { event.preventDefault(); input.focus(); }
+      }
+    });
+    panel.addEventListener("submit", async event => {
+      event.preventDefault();
+      const answer = input.value.trim();
+      if (!answer || saving) return;
+      saving = true; save.disabled = skip.disabled = stop.disabled = true; error.textContent = "";
+      if (question.key) {
+        try {
+          const value = choices?.find(choice => choice.value === answer)?.text ?? answer;
+          const result = await chrome.runtime.sendMessage({ type: "INSTELA_SAVE_MEMORY", key: question.key, value });
+          if (!result?.ok) throw new Error(result?.error ?? "Could not save this answer.");
+        } catch (err) {
+          error.textContent = err.message; saving = false; save.disabled = skip.disabled = stop.disabled = false; return;
+        }
+      }
+      finish(answer);
+    });
+    footer.append(save, skip, stop); panel.append(brand, title, note, input, error, footer); veil.append(panel); root.append(style, veil); document.documentElement.append(host); input.focus();
+  });
 }
 
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg?.type === "INSTELA_CONTEXT") {
+    sendResponse({ pageUrl: location.href, status: lastFillState });
+    return false;
+  }
+  if (msg?.type === "INSTELA_START_FILL") {
+    if (msg.expectedUrl !== location.href) {
+      sendResponse({ ok: false, reason: "The application changed. Reopen Instela to reconnect." });
+      return false;
+    }
+    if (fillInProgress || lastFillState.state === "filling") {
+      sendResponse({ ok: false, reason: "Autofill is already running. Continue with the question in the application." });
+      return false;
+    }
+    // The popup closes while the student answers in the application page.
+    sendResponse({ ok: true });
+    runFill(msg.values).catch(() => {});
+    return false;
+  }
   if (msg?.type === "INSTELA_FILL") {
-    fill(msg.values).then(sendResponse).catch((err) =>
+    runFill(msg.values).then(sendResponse).catch((err) =>
       sendResponse({ error: err?.message ?? "fill failed" }),
     );
     return true; // async
@@ -255,12 +431,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
  * still never holds the packet in its own JavaScript.
  */
 
-const DEFAULT_INSTELA_ORIGIN = "http://localhost:3000";
+const DEFAULT_INSTELA_ORIGIN = "https://instela.org";
 
 async function allowedParentOrigins() {
   const { instelaOrigin } = await chrome.storage.local.get("instelaOrigin");
-  const configured = (instelaOrigin || "").replace(/\/+$/, "");
-  const list = [DEFAULT_INSTELA_ORIGIN];
+  const { normalizeInstelaOrigin } = await import(chrome.runtime.getURL("vendor/extension-config.js"));
+  const configured = normalizeInstelaOrigin(instelaOrigin);
+  const list = [DEFAULT_INSTELA_ORIGIN, "https://www.instela.org"];
   if (configured) list.push(configured);
   return list;
 }
@@ -279,6 +456,7 @@ window.addEventListener("message", async (event) => {
   const type = event.data?.type;
   if (type !== "INSTELA_EMBED_PING" && type !== "INSTELA_EMBED_FILL") return;
   if (!(await isTrustedEmbedder(event))) return;
+  trustedEmbedder = { source: event.source, origin: event.origin };
 
   const reply = (payload) => event.source.postMessage({ ...payload, id: event.data.id }, event.origin);
 
@@ -300,7 +478,8 @@ window.addEventListener("message", async (event) => {
     }
     // `values` is built server-side by the same `buildAutofillValues` the
     // popup path uses, so both routes fill from one definition.
-    const { report, blockedLabels } = await fill(packet.packet.values);
+    reply({ type: "INSTELA_EMBED_RESULT", state: "prompting" });
+    const { report, blockedLabels } = await runFill(packet.packet.values, false);
     const postingId = packet.packet.posting?.id ?? null;
 
     /*
@@ -463,7 +642,7 @@ function showCompanion(info) {
 
   const fillButton = document.createElement("button");
   fillButton.type = "button";
-  fillButton.textContent = "fill this form";
+  fillButton.textContent = "Autofill with Instela";
   Object.assign(fillButton.style, {
     font: "inherit",
     width: "100%",
@@ -493,7 +672,7 @@ function showCompanion(info) {
                 : "Instela does not have this posting";
         return;
       }
-      const res = await fill(packet.packet.values);
+      const res = await runFill(packet.packet.values);
       const r = res.report ?? { filled: 0, blocked: 0, skippedNonEmpty: 0 };
       status.textContent =
         `filled ${r.filled} field${r.filled === 1 ? "" : "s"}` +
@@ -503,7 +682,7 @@ function showCompanion(info) {
       status.textContent = err?.message ?? "fill failed";
     } finally {
       fillButton.disabled = false;
-      fillButton.textContent = "fill this form again";
+      fillButton.textContent = "Autofill with Instela again";
     }
   });
 
@@ -516,9 +695,23 @@ function showCompanion(info) {
   (document.body ?? document.documentElement).append(host);
 }
 
+let lastAnnouncedUrl = null;
 function announcePage() {
-  if (window !== window.top) return;
+  if (lastAnnouncedUrl && lastAnnouncedUrl !== location.href) {
+    lastFillState = { state: "idle" };
+    document.getElementById(COMPANION_ID)?.remove?.();
+  }
+  lastAnnouncedUrl = location.href;
   chrome.runtime.sendMessage({ type: "INSTELA_PAGE_READY", pageUrl: location.href }).catch(() => {});
 }
 
 announcePage();
+// ATS portals often change routes without reloading the document. Observe
+// only the URL change; no text or answers are collected by this observer.
+if (typeof MutationObserver !== "undefined") {
+  const navigationObserver = new MutationObserver(() => { if (location.href !== lastAnnouncedUrl) announcePage(); });
+  navigationObserver.observe(document.documentElement, { childList: true, subtree: true });
+}
+window.addEventListener("popstate", announcePage);
+window.addEventListener("hashchange", announcePage);
+}

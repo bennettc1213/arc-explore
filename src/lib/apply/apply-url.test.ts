@@ -1,5 +1,14 @@
 import assert from "node:assert/strict";
+import { directApplicationUrl } from "./apply-url";
 import { test } from "node:test";
+
+test("known boards open their application route without losing referral parameters", () => {
+  assert.equal(directApplicationUrl("https://jobs.lever.co/team/job-id?source=instela"), "https://jobs.lever.co/team/job-id/apply?source=instela");
+  assert.equal(directApplicationUrl("https://jobs.ashbyhq.com/team/job-id"), "https://jobs.ashbyhq.com/team/job-id/application");
+  assert.equal(directApplicationUrl("https://jobs.lever.co/team/job-id/apply"), "https://jobs.lever.co/team/job-id/apply");
+  assert.equal(directApplicationUrl("https://job-boards.greenhouse.io/team/jobs/123"), "https://job-boards.greenhouse.io/team/jobs/123#application");
+  assert.equal(directApplicationUrl("https://scholarship.example/award"), "https://scholarship.example/award");
+});
 
 import {
   applyUrlHost,
