@@ -43,7 +43,10 @@ function workflow(controls: Input[], answer: (question: { key: string | null; la
   };
   runInNewContext(code, context);
   Object.assign(context, { askQuestion: answer });
-  return (context as unknown as { fill: (values: Record<string, string>) => Promise<{ report: { filled: number; skippedNonEmpty: number; known: number; unknown: number; blocked: number } }> });
+  return (context as unknown as {
+    fill: (values: Record<string, string>) => Promise<{ report: { filled: number; skippedNonEmpty: number; known: number; unknown: number; blocked: number } }>;
+    shouldUseQuickChoices: (choices: { text: string }[] | null) => boolean;
+  });
 }
 
 test("autofill reuses facts, prompts for missing facts, and isolates one-time answers", async () => {
@@ -105,4 +108,12 @@ test("a fieldset radio group asks one contextual question and fills the chosen r
   assert.equal(fields[1].checked, true);
   assert.equal(fields[0].checked, false);
   assert.equal(result.report.filled, 1);
+});
+
+test("small choice sets use buttons while country-sized lists stay dropdowns", () => {
+  const session = workflow([], async () => null);
+  assert.equal(session.shouldUseQuickChoices([{ text: "Yes" }, { text: "No" }]), true);
+  assert.equal(session.shouldUseQuickChoices([{ text: "California" }, { text: "Colorado" }, { text: "Oregon" }, { text: "Washington" }]), true);
+  assert.equal(session.shouldUseQuickChoices(Array.from({ length: 195 }, (_, index) => ({ text: `Country ${index}` }))), false);
+  assert.equal(session.shouldUseQuickChoices([{ text: "A choice whose label is long enough that a button would be hard to scan" }]), false);
 });
