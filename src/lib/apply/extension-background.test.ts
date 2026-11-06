@@ -90,6 +90,9 @@ test("the toolbar finds the application inside Instela and keeps values out of i
   assert.equal(result.target.documentId, "application-document");
   assert.equal(result.packet.values, undefined);
   assert.equal(result.packet.knownCount, 1);
+  assert.equal((await app.startAutofill(10, "application-document")).ok, true);
+  assert.equal(app.sent[0].options.documentId, "application-document");
+  assert.equal(app.created.length, 0, "embedded autofill stays in the Instela workspace without opening another tab");
 });
 
 test("autofill fetches fresh facts and routes them to exactly the chosen document", async () => {

@@ -65,6 +65,7 @@ export function EmbeddedApplyFrame({
   const [status, setStatus] = useState<string | null>(null);
   const [blocked, setBlocked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   const host = applyUrlHost(url);
   const origin = (() => {
@@ -185,7 +186,17 @@ export function EmbeddedApplyFrame({
       send();
     }, 400);
     return () => window.clearInterval(timer);
-  }, [origin]);
+  }, [origin, reloadKey]);
+
+  const reloadForm = () => {
+    presentRef.current = false;
+    busyRef.current = false;
+    setExtension("unknown");
+    setBusy(false);
+    setStatus(null);
+    setBlocked([]);
+    setReloadKey(value => value + 1);
+  };
 
   const doFill = () => {
     if (!origin) return;
@@ -240,19 +251,21 @@ export function EmbeddedApplyFrame({
           type="button"
           className="btn btn-primary press"
           onClick={doFill}
-          disabled={busy || extension === "absent"}
+          disabled={busy || extension !== "present"}
           // A primary button that is disabled in the DOM and full-strength on
           // screen invites the click it will not answer.
-          style={{ opacity: busy || extension === "absent" ? 0.5 : 1 }}
+          style={{ opacity: busy || extension !== "present" ? 0.5 : 1 }}
         >
           {busy ? "Autofill in progress…" : "Autofill with Instela"}
         </button>
+        <button type="button" className="btn press" onClick={reloadForm} disabled={busy}>Reload form</button>
         <span className="mono" style={{ color: "var(--muted)" }}>
           then read it, attach your resume, and press the employer&rsquo;s submit button
         </span>
       </div>
 
       <iframe
+        key={reloadKey}
         data-instela-application
         ref={frameRef}
         src={url}
@@ -274,8 +287,8 @@ export function EmbeddedApplyFrame({
 
       {extension === "absent" && (
         <p className="t-sm" style={{ color: "var(--muted)", marginTop: 10, maxWidth: "60ch" }}>
-          Enable the Instela extension for {host}. If it is already installed, open the form
-          in a tab, grant this site access from the extension popup, then return and reload.
+          Open the Instela extension on this page and allow access to {host}, then choose
+          Reload form here to reconnect.
           See <a href="/extension">extension setup</a>. You can also complete the form here by hand.
         </p>
       )}
