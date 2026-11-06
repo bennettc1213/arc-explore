@@ -9,13 +9,14 @@ const application = "https://job-boards.greenhouse.io/team/jobs/123";
 const popupSender = { url: "chrome-extension://test/popup.html" };
 type Frame = { frameId: number; documentId: string; pageUrl: string; status?: { state: string } };
 
-function worker(tabUrl: string, embedded = true, stored: Record<string, unknown> = {}) {
+function worker(tabUrl: string, embedded = true, stored: Record<string, unknown> = {}, workspaceUrl = application) {
   const frames = new Map<string, Frame>();
   const sent: { message: Record<string, unknown>; options: { documentId: string } }[] = [];
   const requests: { url: string; body?: string }[] = [];
   let listener: (message: object, sender: object, response: (value: unknown) => void) => boolean;
   let phone = "old phone";
   let granted = true;
+  let offline = false;
   let openerTabId: number | undefined;
   const created: object[] = [];
   const scripts: { id: string; matches: string[] }[] = [];
@@ -43,7 +44,7 @@ function worker(tabUrl: string, embedded = true, stored: Record<string, unknown>
     scripting: {
       executeScript: async (input: { files?: string[] }) => input.files
         ? [...frames.values()].map(frame => ({ frameId: frame.frameId, documentId: frame.documentId }))
-        : [{ frameId: 0, result: { url: application, embedded } }],
+        : [{ frameId: 0, result: { url: workspaceUrl, embedded } }],
       getRegisteredContentScripts: async () => scripts,
       registerContentScripts: async (input: typeof scripts) => { scripts.push(...input); },
     },
@@ -53,6 +54,7 @@ function worker(tabUrl: string, embedded = true, stored: Record<string, unknown>
     __config: config, __urls: urls, chrome, URL, AbortSignal,
     fetch: async (url: string, init: { body?: string }) => {
       requests.push({ url, body: init.body });
+      if (offline) throw new Error("network offline");
       return { ok: true, status: 200, json: async () => url.includes("/packet?") ? { posting: { id: "posting-123", title: "Research intern", kind: "internship" }, values: { phone }, attestations: [], alreadyApplied: false } : { ok: true } };
     },
   };
@@ -69,6 +71,7 @@ function worker(tabUrl: string, embedded = true, stored: Record<string, unknown>
     ...api, frames, sent, requests, stored, created, scripts,
     navigate(url: string) { tabUrl = url; },
     setGranted(value: boolean) { granted = value; },
+    setOffline(value: boolean) { offline = value; },
     setOpener(id: number) { openerTabId = id; },
     setPhone(value: string) { phone = value; },
     async add(frame: Frame) { frames.set(frame.documentId, frame); await api.rememberFrame({ tab: { id: 10 }, frameId: frame.frameId, documentId: frame.documentId, url: frame.pageUrl }); },
@@ -145,13 +148,49 @@ test("opening from a trusted workspace creates a tab session before navigation",
   assert.deepEqual(JSON.parse(JSON.stringify(app.created)), [{ url: "about:blank", openerTabId: 10 }, { url: application }]);
   const session = app.stored["instela.application.20"] as { postingId: string };
   assert.equal(session.postingId, "posting-123");
-  assert.match(app.requests[0].url, /postingId=posting-123/);
+  assert.equal(app.requests.length, 0, "opening a public application does not request profile facts");
   assert.doesNotMatch(JSON.stringify(app.stored), /old phone|values/);
 });
 
 function applicationSession() {
   return { postingId: "posting-123", title: "Scholarship", origin: "https://instela.org", expiresAt: Date.now() + 60_000 };
 }
+
+test("a live workspace repairs a stale localhost setting before launching", async () => {
+  const workspace = "https://instela.org/listing/posting-123/apply";
+  const app = worker(workspace, false, { instelaOrigin: "http://localhost:3000" });
+  const result = await app.message({ type: "INSTELA_OPEN_APPLICATION" }, { tab: { id: 10 }, frameId: 0, url: workspace }) as { ok: boolean };
+  assert.equal(result.ok, true);
+  assert.equal(app.stored.instelaOrigin, "https://instela.org");
+  assert.equal((app.stored["instela.application.20"] as { origin: string }).origin, "https://instela.org");
+});
+
+test("an unavailable profile API does not prevent opening the application", async () => {
+  const app = worker("https://instela.org/listing/posting-123/apply", false);
+  app.setOffline(true);
+  assert.equal((await app.message({ type: "INSTELA_OPEN_APPLICATION", tabId: 10 }) as { ok: boolean }).ok, true);
+  assert.equal(app.requests.length, 0);
+  app.navigate(application);
+  assert.equal((await app.tabPacket(10)).state, "unreachable", "autofill still requires a successful authenticated API request");
+});
+
+test("the reported Kanoski scholarship opens before optional site access is requested", async () => {
+  const url = "https://www.kanoski.com/community-involvement/distracted-driving-scholarship";
+  const app = worker("https://instela.org/listing/posting-123/apply", false, {}, url);
+  app.setGranted(false);
+  assert.equal((await app.message({ type: "INSTELA_OPEN_APPLICATION", tabId: 10 }) as { ok: boolean }).ok, true);
+  assert.deepEqual(JSON.parse(JSON.stringify(app.created.at(-1))), { url });
+  assert.equal(app.requests.length, 0);
+});
+
+test("untrusted form pages cannot change the configured Instela environment", async () => {
+  const app = worker(application, false, { instelaOrigin: "http://localhost:3000" });
+  const result = await app.message({ type: "INSTELA_OPEN_APPLICATION" }, { tab: { id: 10 }, frameId: 0, url: application }) as { ok: boolean; reason: string };
+  assert.equal(result.ok, false);
+  assert.equal(typeof result.reason, "string");
+  assert.equal(app.stored.instelaOrigin, "http://localhost:3000");
+  assert.equal(app.created.length, 0);
+});
 
 test("redirected forms retain listing identity, but content cannot receive session facts before explicit start", async () => {
   const redirected = "https://awards.example/forms/step-2?application=123";

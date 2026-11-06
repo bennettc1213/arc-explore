@@ -8,6 +8,17 @@ async function instelaOrigin() {
   return normalizeInstelaOrigin(saved.instelaOrigin) ?? DEFAULT_INSTELA_ORIGIN;
 }
 
+// A student can move between local testing and production. An explicit action
+// on a trusted workspace selects that environment; arbitrary form sites cannot.
+async function workspaceOrigin(pageUrl) {
+  const configured = await instelaOrigin();
+  let origin;
+  try { origin = normalizeInstelaOrigin(new URL(pageUrl).origin); } catch { return configured; }
+  if (!origin || !isApplicationWorkspace(pageUrl, origin)) return configured;
+  if (origin !== configured) await chrome.storage.local.set({ instelaOrigin: origin });
+  return origin;
+}
+
 async function api(path, body) {
   const origin = await instelaOrigin();
   try {
@@ -55,30 +66,30 @@ async function applicationSession(tabId) {
 }
 
 async function workspaceContext(tabId) {
-  const origin = await instelaOrigin();
   const tab = await chrome.tabs.get(tabId);
+  const origin = await workspaceOrigin(tab.url ?? "");
   if (!isApplicationWorkspace(tab.url ?? "", origin)) return null;
   const [read] = await chrome.scripting.executeScript({
     target: { tabId, frameIds: [0] },
     func: () => {
       const workspace = document.querySelector("[data-instela-application-url]");
-      return workspace ? { url: workspace.getAttribute("data-instela-application-url"), embedded: workspace.getAttribute("data-instela-embedded") === "true" } : null;
+      return workspace ? { url: workspace.getAttribute("data-instela-application-url"), embedded: workspace.getAttribute("data-instela-embedded") === "true", title: document.querySelector("h1")?.textContent?.trim() || "Application" } : null;
     },
   });
   const pageUrl = applicationPageUrl(read?.result?.url);
   if (!pageUrl) return null;
-  return { pageUrl, embedded: Boolean(read.result.embedded), postingId: new URL(tab.url).pathname.split("/")[2], origin };
+  return { pageUrl, embedded: Boolean(read.result.embedded), postingId: new URL(tab.url).pathname.split("/")[2], title: read.result.title || "Application", origin };
 }
 
 async function openApplication(tabId) {
   const context = await workspaceContext(tabId);
   if (!context) return { ok: false, reason: "Open an Instela application workspace first." };
-  const result = await fetchPacket(context.pageUrl, context.postingId);
-  if (result.state !== "ready") return { ok: false, reason: result.state === "upgrade" ? "Instela Pro is required." : "Sign in and check that this opportunity is still open." };
+  // Opening a public application needs no profile request. Authentication,
+  // listing validity and Pro access are checked when autofill is requested.
   // Start with a blank tab so a fast redirect cannot outrun session storage.
   const tab = await chrome.tabs.create({ url: "about:blank", openerTabId: tabId });
   await chrome.storage.session.set({ [sessionKey(tab.id)]: {
-    postingId: result.packet.posting.id, title: result.packet.posting.title,
+    postingId: context.postingId, title: context.title,
     origin: context.origin, expiresAt: Date.now() + SESSION_MS,
   } });
   await chrome.tabs.update(tab.id, { url: context.pageUrl });
@@ -111,8 +122,8 @@ async function probe(tabId, frame) {
 /** Read only the explicit application marker, and only on our own workspace. */
 async function applicationContext(tabId) {
   await frameWrites.catch(() => {});
-  const origin = await instelaOrigin();
   const tab = await chrome.tabs.get(tabId);
+  const origin = await workspaceOrigin(tab.url ?? "");
   if (!tab.url) return { state: "unsupported", origin };
   let pageUrl = applicationPageUrl(tab.url);
   let embedded = false;
@@ -242,7 +253,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   const popup = !sender.tab && sender.url?.startsWith(chrome.runtime.getURL(""));
   let task;
   if (msg?.type === "INSTELA_OPEN_APPLICATION" && sender.tab && sender.frameId === 0) {
-    task = instelaOrigin().then(origin => isApplicationWorkspace(sender.url ?? "", origin) ? openApplication(sender.tab.id) : { ok: false });
+    task = workspaceOrigin(sender.url ?? "").then(origin => isApplicationWorkspace(sender.url ?? "", origin) ? openApplication(sender.tab.id) : { ok: false, reason: "Open this opportunity's Apply with Instela page first." });
   }
   else if (msg?.type === "INSTELA_GET_PACKET" && sender.tab) task = contentPacket(sender);
   else if (msg?.type === "INSTELA_SAVE_MEMORY") task = saveMemory(msg.key, msg.value, sender);

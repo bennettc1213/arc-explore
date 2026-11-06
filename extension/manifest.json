@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Instela \u2014 apply with your own facts",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "minimum_chrome_version": "106",
   "description": "Fills an internship or scholarship application with the facts you already gave Instela. You review every field and press submit yourself.",
   "permissions": [
