@@ -23,7 +23,7 @@ import { fetchGreenhouseDescription, greenhouse } from "./sources/greenhouse";
 import { fetchSmartRecruitersDescription, smartrecruiters } from "./sources/smartrecruiters";
 import { lever } from "./sources/lever";
 import { workable } from "./sources/workable";
-import { workday } from "./sources/workday";
+import { WORKDAY_POLL_INTERVAL_SEC, workday } from "./sources/workday";
 import type { BoardAdapter, SourcePosting } from "./types";
 
 export const ADAPTERS: Record<string, BoardAdapter> = {
@@ -170,6 +170,8 @@ export async function pollOrg(
   opts?: PollOrgOptions,
 ): Promise<PollOrgResult> {
   const adapter = org.atsSlug ? ADAPTERS[org.atsType] : undefined;
+  // A Workday read costs far more requests than a board mirror; see the constant.
+  const cadence = org.atsType === "workday" ? { pollIntervalSec: WORKDAY_POLL_INTERVAL_SEC } : {};
   if (!adapter || !org.atsSlug) {
     const error = `no adapter for atsType=${org.atsType} slug=${org.atsSlug ?? "null"}`;
     await recordPollFailure(org.id, error);
@@ -258,6 +260,7 @@ if (!successfulComplete) {
           absenceAuthoritative,
           runId: opts?.runId,
           rejectedByValidation: rejected ?? 0,
+          ...cadence,
         });
 
         await recordIncompletePoll(org.id, `${org.name}: ${reason}${detail}`, {
@@ -282,6 +285,7 @@ const outcome = await persistPoll(org.id, enriched, totalOnBoard, etag, {
         absenceAuthoritative,
         runId: opts?.runId,
         rejectedByValidation: rejected ?? 0,
+        ...cadence,
       });
     return { ok: true, outcome };
   } catch (e) {

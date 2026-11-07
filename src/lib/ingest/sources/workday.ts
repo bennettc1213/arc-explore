@@ -35,6 +35,19 @@ const DETAIL_CAP = 40;
  * capped at two pages and hitting that cap is not a failure (a fuzzy "co-op"
  * search over a big board always has more pages, almost all of them noise).
  */
+/**
+ * How often the cron re-reads a Workday board: every six hours, not every 20
+ * minutes. One read is now up to 14 search pages plus up to 40 detail requests
+ * on a big board, against the roughly one request per board that the run's
+ * budget was sized for ("~50s per 240 boards" in run.ts). At the 20-minute
+ * default, 346 cron-polled Workday boards would eat the 10-minute budget and
+ * crowd out Greenhouse, Lever and the rest. Workday rows never close on absence
+ * and a posting stays open for weeks, so a six-hour read costs little. This is
+ * the cron path only: the manual import scripts call persistPoll themselves and
+ * keep their own parked interval.
+ */
+export const WORKDAY_POLL_INTERVAL_SEC = 21_600;
+
 export const WORKDAY_QUERIES: ReadonlyArray<{ text: string; primary: boolean; pages: number | null }> = [
   { text: "internship", primary: true, pages: null },
   { text: "interns", primary: false, pages: 2 },

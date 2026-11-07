@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { inferAts } from "./sources/simplify";
-import { WORKDAY_QUERIES, workday, workdayRobotsAllows } from "./sources/workday";
+import { WORKDAY_POLL_INTERVAL_SEC, WORKDAY_QUERIES, workday, workdayRobotsAllows } from "./sources/workday";
 import { parseWorkdayBoard, workdayApiFromShell, workdayBoardFromUrl } from "./sources/workday-board";
 
 const originalFetch = globalThis.fetch;
@@ -175,6 +175,18 @@ describe("Workday search", () => {
     assert.equal(result.completeness?.reason, "page_cap_reached");
     assert.equal(result.postings.length, 200);
     assert.equal(details, 40);
+  });
+});
+
+describe("Workday cron cadence", () => {
+  it("is much slower than the default, because one read is many requests", () => {
+    // The cron run is budgeted at about one request per board, polled every
+    // 1,200s (persist.ts DEFAULT_POLL_INTERVAL_SEC; not imported, since that
+    // module opens a database connection at load).
+    assert.ok(WORKDAY_POLL_INTERVAL_SEC >= 1200 * 12);
+    // And far shorter than the parked manual interval, which must stay the
+    // only way to switch a board off.
+    assert.ok(WORKDAY_POLL_INTERVAL_SEC < 315_360_000);
   });
 });
 
