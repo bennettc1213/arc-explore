@@ -93,6 +93,7 @@ export const ATS_TYPES = [
   "rippling",
   "jobvite",
   "taleo",
+  "recruitee",
   "unknown",
 ] as const;
 export type AtsType = (typeof ATS_TYPES)[number];

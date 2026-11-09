@@ -105,8 +105,10 @@ export function extractOpportunityFacts(input: {
       if (scaleConflict || valuesConflict) { rule.evidence.status = "conflicting"; other.evidence.status = "conflicting"; }
     }
   }
-  const rubric = rubricSchema.safeParse(input.structuredRubric);
-  const meritRubric = rubric.success && rubric.data.sourceUrl === input.url ? rubric.data : null;
+  // Almost no row carries a rubric. Parsing `undefined` with zod builds a full
+  // ZodError per row, which at ~25k rows per feed request cost seconds.
+  const rubric = input.structuredRubric == null ? null : rubricSchema.safeParse(input.structuredRubric);
+  const meritRubric = rubric?.success && rubric.data.sourceUrl === input.url ? rubric.data : null;
   const text = source.join("\n");
   return {
     rules: { type: "all", id: "eligibility", label: "Stated eligibility", children: rules }, evidence,

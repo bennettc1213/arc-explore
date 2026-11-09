@@ -419,8 +419,12 @@ export function relativeDayLabel(then: Date, now: Date): string {
   if (days <= 0) return "today";
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
-  return then.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  return SHORT_DATE.format(then);
 }
+
+// One formatter, built once: toLocaleDateString constructs a new Intl object on
+// every call, which was ~3s of a 25k-row feed request.
+const SHORT_DATE = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
 export interface TimingDisplay {
   /** "verified today" — what WE confirmed, never what we were told. */

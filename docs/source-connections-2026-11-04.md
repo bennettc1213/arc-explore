@@ -1,5 +1,9 @@
 # Opportunity data connections — 2026-11-04
 
+Recruitee was subsequently connected on November 5: 15 employer boards and
+48 distinct open listings. See [the Recruitee connection report](recruitee-source.md)
+for validation, repeat-import results and the upcoming authentication change.
+
 The owner's order is **connections first, scheduling later**. These changes are
 manual connection/import commands. No workflow, n8n trigger, production site,
 or scheduled source list was changed. New employer organizations are held at

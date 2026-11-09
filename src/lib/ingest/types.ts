@@ -16,6 +16,7 @@ export type SourceName =
   | "rippling"
   | "jobvite"
   | "taleo"
+  | "recruitee"
   | "simplify"
   | "usajobs";
 
