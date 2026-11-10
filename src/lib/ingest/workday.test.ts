@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it } from "node:test";
 import { inferAts } from "./sources/simplify";
-import { workday, workdayRobotsAllows } from "./sources/workday";
+import { WORKDAY_POLL_INTERVAL_SEC, WORKDAY_QUERIES, workday, workdayRobotsAllows } from "./sources/workday";
 import { parseWorkdayBoard, workdayApiFromShell, workdayBoardFromUrl } from "./sources/workday-board";
 
 const originalFetch = globalThis.fetch;
@@ -86,8 +86,9 @@ describe("Workday search", () => {
       assert.equal((init?.headers as Record<string, string>)["Accept-Language"], "en-US");
       if (url.endsWith("/jobs")) {
         assert.equal(init?.method, "POST");
-        const body = JSON.parse(String(init.body)); offsets.push(body.offset);
-        assert.equal(body.searchText, "intern");
+        const body = JSON.parse(String(init.body));
+        assert.ok(WORKDAY_QUERIES.some(q => q.text === body.searchText), `unexpected query ${body.searchText}`);
+        if (body.searchText === WORKDAY_QUERIES[0].text) offsets.push(body.offset);
         return json({ total: 21, jobPostings: body.offset === 0 ? Array.from({ length: 20 }, (_, i) => job(i)) : [job(99, "International Tax Director")] });
       }
       return json({ jobPostingInfo: { title: "Engineering Intern", jobReqId: url.split("_").pop(), location: "Austin, TX", additionalLocations: ["Boston, MA"], jobDescription: "<p>Build <b>things</b>.</p>", startDate: "2026-10-13", canApply: true } });
@@ -124,7 +125,8 @@ describe("Workday search", () => {
       const url = String(input);
       if (url.endsWith("robots.txt")) return new Response("");
       if (!url.endsWith("/jobs")) return json({}, 404);
-      const offset = JSON.parse(String(init?.body)).offset; offsets.push(offset);
+      const body = JSON.parse(String(init?.body)); const offset = body.offset;
+      if (body.searchText === WORKDAY_QUERIES[0].text) offsets.push(offset);
       return json({ total: offset === 0 ? 45 : 0, jobPostings: Array.from({ length: offset === 40 ? 5 : 20 }, (_, i) => job(offset + i)) });
     };
     const result = await workday.fetchBoard(slug);
@@ -173,5 +175,103 @@ describe("Workday search", () => {
     assert.equal(result.completeness?.reason, "page_cap_reached");
     assert.equal(result.postings.length, 200);
     assert.equal(details, 40);
+  });
+});
+
+describe("Workday cron cadence", () => {
+  it("is much slower than the default, because one read is many requests", () => {
+    // The cron run is budgeted at about one request per board, polled every
+    // 1,200s (persist.ts DEFAULT_POLL_INTERVAL_SEC; not imported, since that
+    // module opens a database connection at load).
+    assert.ok(WORKDAY_POLL_INTERVAL_SEC >= 1200 * 12);
+    // And far shorter than the parked manual interval, which must stay the
+    // only way to switch a board off.
+    assert.ok(WORKDAY_POLL_INTERVAL_SEC < 315_360_000);
+  });
+});
+
+describe("Workday query passes", () => {
+  /** A big board: "intern" is fuzzy and newest-first, so its first page is all noise. */
+  const bigBoard = (init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body));
+    const noise = Array.from({ length: 20 }, (_, i) => job(1000 + body.offset + i, `Senior Director ${body.offset + i}`));
+    if (body.searchText === "internship") {
+      return json({ total: 3, jobPostings: [job(1, "Marketing Intern"), job(2, "Data Internship"), noise[0]] });
+    }
+    return json({ total: 1206, jobPostings: noise });
+  };
+
+  it("finds internships on a board whose first page of fuzzy results holds none", async () => {
+    // The shape that returned 0 rows on J&J and Northrop Grumman (2026-11-06).
+    globalThis.fetch = async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("robots.txt")) return new Response("");
+      if (!url.endsWith("/jobs")) return json({}, 404);
+      return bigBoard(init);
+    };
+    const result = await workday.fetchBoard(slug);
+    assert.deepEqual(result.postings.map(p => p.sourceId).sort(), ["acme/External/REQ1", "acme/External/REQ2"]);
+    assert.equal(result.successfulComplete, true);
+    assert.equal(result.absenceAuthoritative, false);
+  });
+
+  it("runs every query once on a small board and de-duplicates what they share", async () => {
+    const seen: string[] = [];
+    globalThis.fetch = async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("robots.txt")) return new Response("");
+      if (!url.endsWith("/jobs")) return json({}, 404);
+      seen.push(JSON.parse(String(init?.body)).searchText);
+      return json({ total: 2, jobPostings: [job(1), job(2)] });
+    };
+    const result = await workday.fetchBoard(slug);
+    assert.deepEqual(seen, WORKDAY_QUERIES.map(q => q.text));
+    assert.equal(result.postings.length, 2);
+    assert.equal(result.completeness?.claimedTotal, 2, "the claimed total is the primary search's");
+  });
+
+  it("does not call a board incomplete because a top-up search has more pages", async () => {
+    // "co-op" matches ~1,600 of J&J's jobs. Its 2-page cap is by design.
+    const perQuery: Record<string, number> = {};
+    globalThis.fetch = async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("robots.txt")) return new Response("");
+      if (!url.endsWith("/jobs")) return json({}, 404);
+      const body = JSON.parse(String(init?.body));
+      perQuery[body.searchText] = (perQuery[body.searchText] ?? 0) + 1;
+      if (body.searchText === WORKDAY_QUERIES[0].text) return json({ total: 1, jobPostings: [job(1)] });
+      return json({ total: 1600, jobPostings: Array.from({ length: 20 }, (_, i) => job(body.offset + i + 10)) });
+    };
+    const result = await workday.fetchBoard(slug);
+    assert.equal(result.successfulComplete, true);
+    assert.equal(perQuery["co-op"], 2);
+    assert.equal(perQuery["interns"], 2);
+  });
+
+  it("reads an identical opening page from two different searches as two reads, not a repeat", async () => {
+    globalThis.fetch = async (input) => {
+      const url = String(input);
+      if (url.endsWith("robots.txt")) return new Response("");
+      if (!url.endsWith("/jobs")) return json({}, 404);
+      return json({ total: 20, jobPostings: Array.from({ length: 20 }, (_, i) => job(i)) });
+    };
+    const result = await workday.fetchBoard(slug);
+    assert.equal(result.successfulComplete, true);
+    assert.equal(result.postings.length, 20);
+  });
+
+  it("stops every remaining query once one fails", async () => {
+    let searches = 0;
+    globalThis.fetch = async (input) => {
+      const url = String(input);
+      if (url.endsWith("robots.txt")) return new Response("");
+      if (!url.endsWith("/jobs")) return json({}, 404);
+      searches++;
+      return searches === 1 ? json({ total: 1, jobPostings: [job(1)] }) : json({}, 500);
+    };
+    const result = await workday.fetchBoard(slug);
+    assert.equal(result.successfulComplete, false);
+    assert.equal(result.postings.length, 1, "what was read is kept");
+    assert.ok(searches <= 3, "a failing board is not hammered by the remaining queries");
   });
 });

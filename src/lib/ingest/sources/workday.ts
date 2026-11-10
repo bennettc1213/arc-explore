@@ -1,7 +1,18 @@
 /**
  * Workday's public careers search (the same CXS requests as its careers UI).
- * Search totals include fuzzy matches such as "International". We page the
- * query "intern" until a page has no internships, or our request cap is hit.
+ * Search totals include fuzzy matches such as "International". We run a few
+ * short queries (WORKDAY_QUERIES), paging each until a page has no internships,
+ * or its request cap is hit.
+ *
+ * Why not just "intern": it matches "internal" and "international" and is
+ * sorted newest-first, not by relevance, so a large board's first page can hold
+ * no internship at all and a stop-at-first-empty-page rule then returns nothing.
+ * Measured 2026-11-06: J&J (1,208 matches) and Northrop Grumman (1,646) both
+ * returned 0 rows on "intern", and 54 and 26 on these queries. "internship" is
+ * far tighter and recovered 52 of J&J's 69 title-evident early-career roles; the
+ * "interns" and "co-op" passes lift that to 62. The rest are not reachable
+ * without reading whole boards (J&J alone is ~91 requests).
+ *
  * This is a SEARCH, never a board mirror: absenceAuthoritative is always false.
  * No cookies, login, anti-bot workarounds, or application submission endpoints.
  */
@@ -17,6 +28,31 @@ import { parseWorkdayBoard, workdayApiFromShell } from "./workday-board";
 const PAGE_SIZE = 20;
 const MAX_PAGES = 10;
 const DETAIL_CAP = 40;
+
+/**
+ * The searches run against every board. The first is the primary read and gets
+ * the caller's page budget; the others only top up what it missed, so each is
+ * capped at two pages and hitting that cap is not a failure (a fuzzy "co-op"
+ * search over a big board always has more pages, almost all of them noise).
+ */
+/**
+ * How often the cron re-reads a Workday board: every six hours, not every 20
+ * minutes. One read is now up to 14 search pages plus up to 40 detail requests
+ * on a big board, against the roughly one request per board that the run's
+ * budget was sized for ("~50s per 240 boards" in run.ts). At the 20-minute
+ * default, 346 cron-polled Workday boards would eat the 10-minute budget and
+ * crowd out Greenhouse, Lever and the rest. Workday rows never close on absence
+ * and a posting stays open for weeks, so a six-hour read costs little. This is
+ * the cron path only: the manual import scripts call persistPoll themselves and
+ * keep their own parked interval.
+ */
+export const WORKDAY_POLL_INTERVAL_SEC = 21_600;
+
+export const WORKDAY_QUERIES: ReadonlyArray<{ text: string; primary: boolean; pages: number | null }> = [
+  { text: "internship", primary: true, pages: null },
+  { text: "interns", primary: false, pages: 2 },
+  { text: "co-op", primary: false, pages: 2 },
+];
 
 interface SearchJob {
   title?: string;
@@ -56,59 +92,71 @@ return {
     let api = initialApi;
     const robots = await checkRobots(origin, [`/${site}/`, new URL(api).pathname + "/jobs"]);
     const jobs = new Map<string, SearchJob>();
-    const pageSignatures = new Set<string>();
     let pages = 0;
     let total: number | null = null;
     let failure: ReturnType<typeof incomplete> | undefined;
     let rejected = 0;
-    for (let page = 0; page < maxPages; page++) {
-      let data: SearchResponse | null;
-      try {
-        const search = () => getJson<SearchResponse>(`${api}/jobs`, {
-          headers: { "Accept-Language": "en-US" },
-          jsonBody: { appliedFacets: {}, limit: PAGE_SIZE, offset: page * PAGE_SIZE, searchText: "intern" },
-          attempts: 2, timeoutMs: 20_000,
-        });
-        try { data = (await search()).data; }
-        catch (e) {
-          if (page !== 0 || !(e instanceof HttpError) || e.status !== 422) throw e;
-          // Some public hostnames use hyphens while CXS uses underscores.
-          // Read the employer's published configuration rather than guessing.
-          api = workdayApiFromShell(slug, await getText(`${origin}/${site}/`, { attempts: 1, timeoutMs: 15_000 }));
-          if (api === initialApi) throw e;
-          if (!workdayRobotsAllows(robots, new URL(api).pathname + "/jobs")) throw new Error("Workday robots excludes configured search");
-          data = (await search()).data;
+    for (const query of WORKDAY_QUERIES) {
+      // Per query: two different searches can legitimately open on the same page.
+      const pageSignatures = new Set<string>();
+      const queryPages = query.pages ?? maxPages;
+      let queryPagesRead = 0;
+      let queryTotal: number | null = null;
+      for (let page = 0; page < queryPages; page++) {
+        let data: SearchResponse | null;
+        try {
+          const search = () => getJson<SearchResponse>(`${api}/jobs`, {
+            headers: { "Accept-Language": "en-US" },
+            jsonBody: { appliedFacets: {}, limit: PAGE_SIZE, offset: page * PAGE_SIZE, searchText: query.text },
+            attempts: 2, timeoutMs: 20_000,
+          });
+          try { data = (await search()).data; }
+          catch (e) {
+            if (pages !== 0 || !(e instanceof HttpError) || e.status !== 422) throw e;
+            // Some public hostnames use hyphens while CXS uses underscores.
+            // Read the employer's published configuration rather than guessing.
+            api = workdayApiFromShell(slug, await getText(`${origin}/${site}/`, { attempts: 1, timeoutMs: 15_000 }));
+            if (api === initialApi) throw e;
+            if (!workdayRobotsAllows(robots, new URL(api).pathname + "/jobs")) throw new Error("Workday robots excludes configured search");
+            data = (await search()).data;
+          }
+        } catch (e) {
+          if (pages === 0) throw e;
+          failure = incomplete("page_failed", pages, total); break;
         }
-      } catch (e) {
-        if (pages === 0) throw e;
-        failure = incomplete("page_failed", pages, total); break;
+        if (!data || !Array.isArray(data.jobPostings) || typeof data.total !== "number" || !Number.isSafeInteger(data.total) || data.total < 0) {
+          failure = incomplete("malformed_response", pages, total); break;
+        }
+        pages++; queryPagesRead++;
+        // Live Workday boards return total: 0 after offset 0 even when that
+        // page contains 20 jobs. Only the first page supplies the search total.
+        // The claimed total is the primary search's; the others are top-ups.
+        queryTotal = page === 0 || data.total > 0 ? data.total : queryTotal ?? data.total;
+        if (query.primary) total = queryTotal;
+        const rows = data.jobPostings;
+        const validRows = rows.filter(j => j && typeof j.title === "string" && typeof j.externalPath === "string" && /^\/job\/[^?#]+$/.test(j.externalPath) && !/(^|\/)\.{1,2}(\/|$)/.test(j.externalPath));
+        // Counted once: the later queries mostly re-read the same rows.
+        if (query.primary) rejected += rows.length - validRows.length;
+        if (rows.length && !validRows.length) {
+          failure = incomplete("malformed_response", pages, total); break;
+        }
+        const signature = JSON.stringify(validRows.map(j => j.externalPath));
+        if (rows.length && pageSignatures.has(signature)) {
+          failure = incomplete("malformed_response", pages, total, "Repeated search page"); break;
+        }
+        pageSignatures.add(signature);
+        const interns = validRows.filter(j => classifyOpportunity(j.title!) === "internship");
+        for (const j of interns) jobs.set(j.externalPath!, j);
+        if (page * PAGE_SIZE + rows.length >= queryTotal) break;
+        if (rows.length < PAGE_SIZE) { failure = incomplete("short_page", pages, total); break; }
+        // Workday's fuzzy search can continue through hundreds of irrelevant jobs.
+        // Stopping here deliberately trades recall for bounded host load.
+        if (!interns.length) break;
+        if (queryPagesRead === queryPages && query.primary) failure = incomplete("page_cap_reached", pages, total);
       }
-      if (!data || !Array.isArray(data.jobPostings) || typeof data.total !== "number" || !Number.isSafeInteger(data.total) || data.total < 0) {
-        failure = incomplete("malformed_response", pages, total); break;
-      }
-      pages++;
-      // Live Workday boards return total: 0 after offset 0 even when that
-      // page contains 20 jobs. Only the first page supplies the search total.
-      total = page === 0 || data.total > 0 ? data.total : total ?? data.total;
-      const rows = data.jobPostings;
-      const validRows = rows.filter(j => j && typeof j.title === "string" && typeof j.externalPath === "string" && /^\/job\/[^?#]+$/.test(j.externalPath) && !/(^|\/)\.{1,2}(\/|$)/.test(j.externalPath));
-      rejected += rows.length - validRows.length;
-      if (rows.length && !validRows.length) {
-        failure = incomplete("malformed_response", pages, total); break;
-      }
-      const signature = JSON.stringify(validRows.map(j => j.externalPath));
-      if (rows.length && pageSignatures.has(signature)) {
-        failure = incomplete("malformed_response", pages, total, "Repeated search page"); break;
-      }
-      pageSignatures.add(signature);
-      const interns = validRows.filter(j => classifyOpportunity(j.title!) === "internship");
-      for (const j of interns) jobs.set(j.externalPath!, j);
-      if (page * PAGE_SIZE + rows.length >= total) break;
-      if (rows.length < PAGE_SIZE) { failure = incomplete("short_page", pages, total); break; }
-      // Workday's fuzzy search can continue through hundreds of irrelevant jobs.
-      // Stopping here deliberately trades recall for bounded host load.
-      if (!interns.length) break;
-      if (pages === maxPages) failure = incomplete("page_cap_reached", pages, total);
+      // A failure anywhere ends the whole read; later queries would only pile
+      // more requests onto a board that is already misbehaving.
+      if (failure) break;
     }
 
     const entries = [...jobs.values()];
