@@ -53,7 +53,8 @@
     "package:extension": "npm run build:extension && node scripts/package-extension.mjs",
     "check": "npm run typecheck && npm run lint && npm test",
     "feed:turnover": "tsx scripts/feed-turnover.ts",
-    "search:quality": "tsx scripts/search-quality.ts"
+    "search:quality": "tsx scripts/search-quality.ts",
+    "scout:quality": "tsx scripts/scout-quality.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

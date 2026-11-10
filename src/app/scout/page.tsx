@@ -4,6 +4,10 @@ import { scoutFocusFrom } from "@/lib/scout/focus";
 import { listRecentScouts } from "@/lib/scout/history-store";
 
 export const metadata = { title: "Your Scout | Instela" };
+// Applies to every Server Action used on this page, runScout included. One
+// ranked pass over the open corpus is ~2s warm, but a cold instance pays the
+// full fetch first, and a platform timeout would read as an empty search.
+export const maxDuration = 60;
 
 export default async function ScoutPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await searchParams;

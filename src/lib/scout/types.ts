@@ -16,6 +16,16 @@ export const scoutSchema = z.object({
   /** Merit awards only. Defaults keep preferences saved before these existed loadable. */
   merit: z.boolean().default(false),
   college: z.string().trim().max(160).default(""),
+  /**
+   * Added 2026-11-10 with tiered results. Defaults keep every Scout saved
+   * before then loadable from history. `locationStrict` turns the location
+   * preference into a hard filter; otherwise it only decides the tier.
+   */
+  locationStrict: z.boolean().default(false),
+  /** Preferred deadline window in days, "any" for none. A preference, not a filter. */
+  deadline: z.enum(["any", "14", "30", "90"]).default("any"),
+  /** Preferred minimum confirmed scholarship award, in dollars. A preference, not a filter. */
+  minAward: z.enum(["0", "1000", "5000", "10000"]).default("0"),
 });
 export type ScoutPreferences = z.infer<typeof scoutSchema>;
-export const defaultScout: ScoutPreferences = { kind: "both", field: "", location: "", remote: false, priority: "fit", school: "", gradYear: "", workAuth: "", gpa: "", gpaScale: "4", residency: "", merit: false, college: "" };
+export const defaultScout: ScoutPreferences = { kind: "both", field: "", location: "", remote: false, priority: "fit", school: "", gradYear: "", workAuth: "", gpa: "", gpaScale: "4", residency: "", merit: false, college: "", locationStrict: false, deadline: "any", minAward: "0" };
