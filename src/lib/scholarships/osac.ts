@@ -60,6 +60,44 @@ export function finalDeadline(applicationText: string, cycleYear: number | null)
   return d.getUTCMonth() === month && d.getUTCDate() === day ? d : null;
 }
 
+const US_STATES = ["Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia",
+  "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan",
+  "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York",
+  "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+  "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"];
+const STATE_RE = new RegExp(`\\b(${US_STATES.join("|")})\\b`, "g");
+
+/**
+ * The states an award is limited to, read only from OSAC's typed residence
+ * fields and only when the line is unambiguous. Measured on the 2027-28
+ * catalogue: "Residence (state)" says "Oregon residents" / "Oregon Resident" /
+ * "Oregon" on 58 rows, but also "Oregon residency not required" on 28 and
+ * "Preference: Oregon" on 2, so a line with any word beyond state names and
+ * "residents"/"residency"/"open to"/"of"/"or"/"and" is left unread rather
+ * than guessed. "Residence (county)" (74 rows) lists counties in Oregon's own
+ * catalogue, so it means Oregon, unless the line also names another state's
+ * county ("Payette County (Idaho)", "Clark County, WA"), which is skipped.
+ */
+export function statedResidency(lines: readonly string[]): { states: string[]; quote: string } | null {
+  for (const line of lines) {
+    const m = line.match(/^Residence \((state|county)\):\s*(.+)$/i);
+    if (!m) continue;
+    const value = m[2].trim().replace(/[.;]+$/, "");
+    if (m[1].toLowerCase() === "state") {
+      const states = [...new Set(value.match(STATE_RE) ?? [])];
+      const leftover = value.replace(STATE_RE, " ").toLowerCase().replace(/[,()]/g, " ")
+        .split(/\s+/).filter(w => w && !["residents", "resident", "residency", "open", "to", "of", "or", "and", "in"].includes(w));
+      if (states.length && leftover.length === 0) return { states, quote: line };
+      continue;
+    }
+    // "Washington County" is an Oregon county, not the state of Washington.
+    const withoutCountyNames = value.replace(new RegExp(`\\b(${US_STATES.join("|")})\\s+Count(y|ies)\\b`, "g"), " County");
+    const otherState = (withoutCountyNames.match(STATE_RE) ?? []).some(s => s !== "Oregon") || /\b(WA|ID|CA|NV)\b/.test(value);
+    if (!otherState && /\bcount(y|ies)\b/i.test(value)) return { states: ["Oregon"], quote: line };
+  }
+  return null;
+}
+
 const clean = (s: string) => (htmlToText(s) ?? "").replace(/\s+/g, " ").trim();
 
 /** Entries on one catalogue page. Pure, so it is testable against captured markup. */
@@ -78,6 +116,7 @@ export function parseCatalogPage(html: string, deadlineAt: Date | null): Scholar
       if (line) lines.push(line);
     }
     const amount = parseAmount(lines.join(" "));
+    const residency = statedResidency(lines);
     out.push({
       source: "osac",
       sourceId: id,
@@ -99,6 +138,7 @@ export function parseCatalogPage(html: string, deadlineAt: Date | null): Scholar
       // OSAC's own award id. Letters around the digits keep the title
       // normaliser's year and requisition rules from stripping it.
       identityKey: `osac award id${id}`,
+      ...(residency ? { residency } : {}),
     });
   }
   return out;

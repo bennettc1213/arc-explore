@@ -76,4 +76,11 @@ export interface ScholarshipListing {
    * a source with its own stable id; leaving it unset keeps existing keys.
    */
   identityKey?: string;
+  /**
+   * States the award is limited to, when the source states it as a typed
+   * field (not inferred from prose). `quote` is the source line, verbatim.
+   * Stored in `postings.eligibility.residency` and read by the scorer as a
+   * residency requirement.
+   */
+  residency?: { states: string[]; quote: string };
 }

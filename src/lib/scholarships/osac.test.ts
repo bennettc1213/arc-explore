@@ -85,3 +85,26 @@ test("awards the title normaliser would merge keep distinct identities", async (
   // The same ids still collide by title alone, which is why identityKey exists.
   assert.equal(new Set(rows.map((r) => canonicalHash({ companyName: r.sponsorName, title: r.title, locations: [], term: null }))).size, 3);
 });
+
+test("residency is read only from unambiguous typed residence lines", async () => {
+  const { statedResidency } = await import("./osac");
+  const r = (line: string) => statedResidency([line])?.states ?? null;
+  // Real values from the 2027-28 catalogue.
+  assert.deepEqual(r("Residence (state): Oregon residents"), ["Oregon"]);
+  assert.deepEqual(r("Residence (state): Oregon Resident"), ["Oregon"]);
+  assert.deepEqual(r("Residence (state): Oregon or Washington"), ["Oregon", "Washington"]);
+  assert.deepEqual(r("Residence (state): Open to residents of Oregon, Washington, Idaho, Nevada, Utah and Montana"), ["Oregon", "Washington", "Idaho", "Nevada", "Utah", "Montana"]);
+  assert.deepEqual(r("Residence (county): Polk County"), ["Oregon"]);
+  assert.deepEqual(r("Residence (county): Clackamas, Lane, Multnomah, or Washington County"), ["Oregon"]);
+  // Each of these says something other than "only these states", so nothing is claimed.
+  for (const line of [
+    "Residence (state): Oregon residency not required",
+    "Residence (state): Preference: Oregon",
+    "Residence (state): Must have been an Oregon resident for at least 16 years",
+    "Residence (state): Oregon or Clark County, Washington",
+    "Residence (county): Malheur County (Oregon), and Payette County (Idaho)",
+    "Residence (other): Residence of Santiam Canyon",
+    "Residence (city): Portland",
+  ]) assert.equal(r(line), null, line);
+  assert.equal(statedResidency(["Residence (county): Polk County"])?.quote, "Residence (county): Polk County");
+});

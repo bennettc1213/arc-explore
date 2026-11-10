@@ -115,7 +115,9 @@ export async function persistScholarships(
             amountIsEstimated: r.listing.amountIsEstimated,
             isContentMarketing: r.contentMarketing,
             eligibility:
-              r.listing.eligibility.length > 0 ? { criteria: r.listing.eligibility } : null,
+              r.listing.eligibility.length > 0
+                ? { criteria: r.listing.eligibility, ...(r.listing.residency ? { residency: r.listing.residency } : {}) }
+                : null,
             deadlineAt: r.listing.deadlineAt,
             createdAt: now,
             firstSeenAt: now,

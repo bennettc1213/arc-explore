@@ -108,3 +108,46 @@ export function trimWithReservation<T extends { kind: PostingKind }>(
   // never position. A promoted internship still sits where its rank puts it.
   return ranked.filter((i) => keep.has(i));
 }
+
+/**
+ * The most rows one sponsor or employer may hold in a browsed window.
+ *
+ * Decided 2026-11-10 after OSAC: one state catalogue's 602 awards took 14 of
+ * the top 20 scholarships for every profile, because every row carried a
+ * known deadline and the eligibility that would have ruled most students out
+ * is unknown, and unknown is dropped rather than scored as a miss. A share
+ * rather than a constant, for the reason `FEED_KIND_FLOOR` gives: 3 of 20 and
+ * 3 of 100 are different promises.
+ */
+export const FEED_SOURCE_SHARE = 0.15;
+
+export function sourceCapFor(limit: number): number {
+  return Math.max(3, Math.ceil(limit * FEED_SOURCE_SHARE));
+}
+
+/**
+ * Each source keeps its first `cap` rows where the ranking put them; every
+ * row after that moves to the end of the list, in rank order. Nothing is
+ * dropped, so if nothing else qualifies the window still fills. `getFeed`
+ * sizes `cap` to the request's window (`sourceCapFor`), so this reads as
+ * "at most a share of what you are shown".
+ *
+ * Over the whole list rather than only the first window, because
+ * `trimWithReservation` runs afterwards and pulls a kind's next-best rows from
+ * below the window. Capping only the window left the overflow sitting right
+ * there, and the reservation promoted it: measured, 5 OSAC rows in a capped
+ * mixed top 20. Rows with no source name are never capped. Only for browsing;
+ * a typed search for one employer must still show that employer.
+ */
+export function capPerSource<T>(ranked: T[], cap: number, sourceOf: (item: T) => string | null): T[] {
+  if (cap <= 0 || ranked.length <= cap) return ranked;
+  const kept: T[] = [];
+  const deferred: T[] = [];
+  const counts = new Map<string, number>();
+  for (const item of ranked) {
+    const key = sourceOf(item)?.trim().toLowerCase();
+    const n = key ? counts.get(key) ?? 0 : 0;
+    if (!key || n < cap) { if (key) counts.set(key, n + 1); kept.push(item); } else deferred.push(item);
+  }
+  return deferred.length ? [...kept, ...deferred] : ranked;
+}

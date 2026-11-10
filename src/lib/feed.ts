@@ -20,7 +20,7 @@ import { isTermEnded } from "./terms/bounds";
 import { resolveTermView, parseTermLabel } from "./terms/display";
 import { escapeLike, type DeadlineFilter } from "./feed-search";
 import { escapeRegex, parseQuery } from "./search/query";
-import { trimWithReservation } from "./feed-trim";
+import { capPerSource, sourceCapFor, trimWithReservation } from "./feed-trim";
 import { canUseCorpusMemo, filterCorpusRows } from "./feed-corpus";
 import { isFlaggedDead } from "./ingest/linkcheck";
 import {
@@ -455,6 +455,19 @@ function makeRank(
 }
 
 /** The `{ criteria: string[] }` blob persist writes is all the schema has. */
+/**
+ * `eligibility.residency`, validated on the way out: a row written by an older
+ * or different shape reads as "no stated residency" rather than throwing.
+ */
+function residencyFrom(eligibility: unknown): { states: string[]; quote: string } | null {
+  const r = eligibility && typeof eligibility === "object" ? (eligibility as { residency?: unknown }).residency : null;
+  if (!r || typeof r !== "object") return null;
+  const { states, quote } = r as { states?: unknown; quote?: unknown };
+  if (!Array.isArray(states) || typeof quote !== "string") return null;
+  const valid = states.filter((s): s is string => typeof s === "string" && s.trim().length > 3);
+  return valid.length ? { states: valid, quote } : null;
+}
+
 function criteriaFrom(eligibility: unknown): string[] {
   if (eligibility && typeof eligibility === "object") {
     const criteria = (eligibility as { criteria?: unknown }).criteria;
@@ -594,7 +607,7 @@ function deriveRow(r: FeedRow): RowDerived {
   });
   const fieldKeys = r.kind === "scholarship" ? scholarshipFields({ title: r.title, sponsorName: r.sponsorName, eligibility: criteria }) : fieldsForPosting({ title: r.title });
   const rubric = r.eligibility && typeof r.eligibility === "object" ? (r.eligibility as { meritRubric?: unknown }).meritRubric : undefined;
-  const facts = extractOpportunityFacts({ title: r.title, criteria, url: r.url, observedAt: r.lastSeenAt.toISOString(), workAuth: r.workAuth, structuredRubric: rubric });
+  const facts = extractOpportunityFacts({ title: r.title, criteria, url: r.url, observedAt: r.lastSeenAt.toISOString(), workAuth: r.workAuth, structuredRubric: rubric, statedResidency: residencyFrom(r.eligibility) });
   const derived = { criteria, term, fieldKeys, facts };
   rowDerived.set(r, derived);
   return derived;
@@ -979,6 +992,10 @@ export async function getFeed(
       return `${eligibilityOrder(item.fit.assessment)}:${relevance}:${Math.floor(sortKey(item, filters.timingPoints ?? 0, res, day) / 3)}`;
     }, item => item.company?.trim().toLowerCase() || item.id);
   }
+  // Browsing only: one sponsor may hold at most a share of the window (see
+  // `capPerSource`). A typed search keeps the ranker's order, so searching an
+  // employer's name still shows that employer.
+  if (query.terms.length === 0) filtered = capPerSource(filtered, sourceCapFor(filters.limit ?? 500), (item) => item.company);
   // Rank first, then trim — never a SQL LIMIT. See the comment on the query
   // above: trimming before ranking lets whichever kind was ingested last crowd
   // the other out of the top N entirely.

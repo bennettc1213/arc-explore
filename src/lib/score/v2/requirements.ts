@@ -28,6 +28,8 @@ function count(text: string, subject: "essay" | "letter"): number | null {
 /** Conservative, read-time extraction. Unparsed prose remains a manual check. */
 export function extractOpportunityFacts(input: {
   title: string; criteria: string[]; url: string; observedAt: string; workAuth?: string | null; structuredRubric?: unknown;
+  /** A residency limit the source states as a typed field (see ScholarshipListing.residency). */
+  statedResidency?: { states: string[]; quote: string } | null;
 }): OpportunityFacts {
   const rules: RequirementRule[] = [];
   const evidence: SourceEvidence[] = [];
@@ -94,6 +96,11 @@ export function extractOpportunityFacts(input: {
     const proof: SourceEvidence = { quote: null, url: input.url, observedAt: input.observedAt, field: "workAuth", status: "normalized" };
     evidence.push(proof);
     rules.push({ type: "criterion", id: "source-work-auth", field: "workAuth", label: input.workAuth === "citizenship_required" ? "U.S. citizenship required" : "Visa sponsorship not offered", values: input.workAuth === "citizenship_required" ? ["us_citizen"] : ["us_citizen", "permanent_resident"], evidence: proof });
+  }
+  if (input.statedResidency && input.statedResidency.states.length) {
+    const proof: SourceEvidence = { quote: input.statedResidency.quote, url: input.url, observedAt: input.observedAt, field: "eligibility.residency", status: "normalized" };
+    evidence.push(proof);
+    rules.push({ type: "criterion", id: "source-residency", field: "residency", label: `Residency in ${input.statedResidency.states.join(" or ")}`, values: input.statedResidency.states, evidence: proof });
   }
   if (source.length === 0) rules.push({ type: "manual", id: "source-coverage", label: "Full eligibility requirements need a source check", evidence: { quote: null, url: input.url, observedAt: input.observedAt, field: "eligibility", status: "normalized" } });
   const criteria = rules.filter((rule): rule is Criterion => rule.type === "criterion");
