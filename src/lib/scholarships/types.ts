@@ -20,6 +20,7 @@ export type ScholarshipSource =
   | "unr"
   | "iup"
   | "cfbroward"
+  | "osac"
   | "scholarshipscom"
   | "scholarshipportal";
 
@@ -65,4 +66,14 @@ export interface ScholarshipListing {
    *  states it directly, so there is no "disappeared from a feed" guessing
    *  the way the ATS-polled side has to do it. */
   isOpen: boolean;
+  /**
+   * Stable identity for dedup, used in place of `title` when set. The shared
+   * title normaliser is tuned for job titles and strips parentheticals, `#N`
+   * and years, which is right for "Intern (Summer 2027)" and wrong for award
+   * names: OSAC lists "Harold Alfred Wyatt #3 Scholarship" beside "Harold
+   * Alfred Wyatt Scholarship", and "Roseburg High School Class of 1949" beside
+   * "Class of 1955" — distinct awards that collapsed into one key. Only set by
+   * a source with its own stable id; leaving it unset keeps existing keys.
+   */
+  identityKey?: string;
 }

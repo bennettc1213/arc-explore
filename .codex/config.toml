@@ -1,0 +1,49 @@
+[mcp_servers.fetch]
+command = "npx"
+args = [
+    "-y",
+    "mcp-fetch",
+]
+
+[mcp_servers.filesystem]
+command = "npx"
+args = [
+    "-y",
+    "@modelcontextprotocol/server-filesystem",
+    "c:/Users/benne/OneDrive/Desktop/internshipscholarship",
+]
+
+[mcp_servers.git]
+command = "npx"
+args = [
+    "-y",
+    "@cyanheads/git-mcp-server",
+]
+
+[mcp_servers.memory]
+command = "npx"
+args = [
+    "-y",
+    "@modelcontextprotocol/server-memory",
+]
+
+[mcp_servers.playwright]
+command = "npx"
+args = [
+    "-y",
+    "@playwright/mcp",
+]
+
+[mcp_servers.sequential-thinking]
+command = "npx"
+args = [
+    "-y",
+    "@modelcontextprotocol/server-sequential-thinking",
+]
+
+[mcp_servers.time]
+command = "npx"
+args = [
+    "-y",
+    "time-mcp-server",
+]

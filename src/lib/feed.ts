@@ -21,6 +21,7 @@ import { resolveTermView, parseTermLabel } from "./terms/display";
 import { escapeLike, type DeadlineFilter } from "./feed-search";
 import { escapeRegex, parseQuery } from "./search/query";
 import { trimWithReservation } from "./feed-trim";
+import { canUseCorpusMemo, filterCorpusRows } from "./feed-corpus";
 import { isFlaggedDead } from "./ingest/linkcheck";
 import {
   fieldsForPosting,
@@ -563,7 +564,25 @@ interface FeedRow {
   closedAt: Date | null;
 }
 
-function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
+/*
+ * What a row says about itself, independent of the viewer and the clock:
+ * parsed eligibility, the term view, the field taxonomy and the extracted
+ * requirement facts. Keyed on the row object, so it pays off exactly when rows
+ * are reused — i.e. the open-corpus memo below — and is collected with them.
+ * Sharing is safe because nothing downstream mutates these: `scoreOpportunity`
+ * builds fresh eligibility arrays from `facts.rules` rather than editing them.
+ */
+interface RowDerived {
+  criteria: string[];
+  term: ReturnType<typeof resolveTermView>;
+  fieldKeys: FieldKey[];
+  facts: ReturnType<typeof extractOpportunityFacts>;
+}
+const rowDerived = new WeakMap<FeedRow, RowDerived>();
+
+function deriveRow(r: FeedRow): RowDerived {
+  const cached = rowDerived.get(r);
+  if (cached) return cached;
   const criteria = criteriaFrom(r.eligibility);
   // The structured term columns drive every ended-term check, so they decide
   // what the card says too. A card must never claim a term that has ended.
@@ -575,9 +594,17 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
   });
   const fieldKeys = r.kind === "scholarship" ? scholarshipFields({ title: r.title, sponsorName: r.sponsorName, eligibility: criteria }) : fieldsForPosting({ title: r.title });
   const rubric = r.eligibility && typeof r.eligibility === "object" ? (r.eligibility as { meritRubric?: unknown }).meritRubric : undefined;
+  const facts = extractOpportunityFacts({ title: r.title, criteria, url: r.url, observedAt: r.lastSeenAt.toISOString(), workAuth: r.workAuth, structuredRubric: rubric });
+  const derived = { criteria, term, fieldKeys, facts };
+  rowDerived.set(r, derived);
+  return derived;
+}
+
+function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
+  const { criteria, term, fieldKeys, facts } = deriveRow(r);
   const assessmentFit = process.env.INSTELA_SCORING_VERSION === "legacy" ? null : scoreOpportunity(profile, {
     kind: r.kind, title: r.title, fieldKeys, skills: r.skills, locations: r.locations, isRemote: r.isRemote,
-    facts: extractOpportunityFacts({ title: r.title, criteria, url: r.url, observedAt: r.lastSeenAt.toISOString(), workAuth: r.workAuth, structuredRubric: rubric }),
+    facts,
     url: r.url, observedAt: r.lastSeenAt.toISOString(), deadlineAt: r.deadlineAt,
     amountMin: r.amountMin, amountMax: r.amountMax, amountStatus: r.amountStatus, closed: Boolean(r.closedAt),
   }, now);
@@ -694,6 +721,61 @@ function buildFeedItem(profile: ScoreProfile, r: FeedRow, now: Date): FeedItem {
  * errors, so this form is pinned here with the measurement that chose it.
  */
 const WORD_START = "[[:<:]]";
+
+/*
+ * The open corpus, memoised per instance.
+ *
+ * Measured 2026-11-10 at 25.9k open rows: a bare feed request spent ~7s of ~9s
+ * waiting for the database to send every row and ~3s scoring them, so each new
+ * source made every page load slower and Scout started timing out. The rows
+ * are the same for every visitor and change at most on the ingest cadence
+ * (every 20 minutes), so a short memo of the *unscored* rows removes the fetch
+ * from the hot path without touching the ranking: scoring still runs per
+ * request against the viewer's own profile, and the rank-everything rule is
+ * intact because nothing is trimmed before ranking.
+ *
+ * Only the browse shape is served from it: the visibility rule plus kind,
+ * remote and marketing, all of which are plain columns already in FEED_SELECT
+ * and so filter in memory exactly as SQL would. Anything that narrows by text
+ * or date (search, term, deadline, amount, location, merit, college,
+ * newSince, show-closed, includeInferred) keeps the SQL path, where the
+ * database does the narrowing and the row count is small anyway.
+ *
+ * Staleness is bounded by the TTL, with one exception that must not wait:
+ * hiding a listing is a takedown, so `invalidateFeedCorpus` is called by the
+ * hide/unhide action and the next request refetches.
+ */
+const OPEN_CORPUS_TTL_MS = 3 * 60_000;
+type CorpusRow = Awaited<ReturnType<typeof fetchOpenCorpusRows>>[number];
+let openCorpusMemo: { at: number; rows: Promise<CorpusRow[]> } | null = null;
+
+// `async` is load-bearing: a Drizzle query builder is a lazy thenable that
+// re-runs its SQL on every `await`, so memoising the builder itself caches
+// nothing. Awaiting it here makes the memoised promise hold the rows.
+async function fetchOpenCorpusRows() {
+  return await db
+    .select(FEED_SELECT)
+    .from(postings)
+    .leftJoin(organizations, eq(postings.orgId, organizations.id))
+    .where(and(isNull(postings.hiddenAt), isNull(postings.termEndedFlagAt), isNull(postings.closedAt)))
+    .orderBy(desc(postings.firstSeenAt));
+}
+
+/** Shares one in-flight fetch between concurrent requests; a failed fetch is not cached. */
+function getOpenCorpusRows(): Promise<CorpusRow[]> {
+  if (openCorpusMemo && Date.now() - openCorpusMemo.at < OPEN_CORPUS_TTL_MS) return openCorpusMemo.rows;
+  const memo = { at: Date.now(), rows: fetchOpenCorpusRows() };
+  openCorpusMemo = memo;
+  memo.rows.catch(() => {
+    if (openCorpusMemo === memo) openCorpusMemo = null;
+  });
+  return memo.rows;
+}
+
+/** Drop the memo so the next feed request reads the database. */
+export function invalidateFeedCorpus(): void {
+  openCorpusMemo = null;
+}
 
 export async function getFeed(
   profile: ScoreProfile,
@@ -837,12 +919,18 @@ export async function getFeed(
   // other out of the top N entirely — the exact "one list" this feed exists
   // to be. Rows are ranked, then trimmed. If the corpus outgrows scoring
   // every row per request, the ranking has to move into SQL, not a LIMIT.
-  const rows = await db
-    .select(FEED_SELECT)
-    .from(postings)
-    .leftJoin(organizations, eq(postings.orgId, organizations.id))
-    .where(conditions.length > 0 ? and(...conditions) : undefined)
-    .orderBy(desc(postings.firstSeenAt));
+  const rows = canUseCorpusMemo(filters, query)
+    ? filterCorpusRows(await getOpenCorpusRows(), {
+        kind: kind ?? null,
+        remoteOnly: Boolean(filters.remoteOnly || query.remoteOnly),
+        excludeMarketing: Boolean(filters.excludeMarketing),
+      })
+    : await db
+        .select(FEED_SELECT)
+        .from(postings)
+        .leftJoin(organizations, eq(postings.orgId, organizations.id))
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(postings.firstSeenAt));
 
   const now = new Date();
   const items: FeedItem[] = rows.map((r) => buildFeedItem(profile, r, now));

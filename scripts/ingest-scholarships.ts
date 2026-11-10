@@ -17,6 +17,7 @@ import * as iup from "../src/lib/scholarships/iup";
 import * as parse from "../src/lib/scholarships/parse";
 import * as unl from "../src/lib/scholarships/unl";
 import * as unr from "../src/lib/scholarships/unr";
+import * as osac from "../src/lib/scholarships/osac";
 import { persistScholarships } from "../src/lib/scholarships/persist";
 import type { ScholarshipSource } from "../src/lib/scholarships/types";
 import { describeError } from "../src/lib/ingest/errors";
@@ -34,6 +35,17 @@ const SOURCES: Source[] = [
   { name: "iup", fetchScholarships: iup.fetchScholarships },
   { name: "scholarshipscom", fetchScholarships: parse.fetchScholarshipsCom },
   { name: "scholarshipportal", fetchScholarships: parse.fetchScholarshipPortal },
+];
+
+/*
+ * Run only when named with --source, never by the weekly cron's bare run.
+ * OSAC was imported once on 2026-11-10 and its 602 rows hidden the same hour:
+ * its Oregon-only awards took 14 of the top 20 scholarships for students in
+ * any state (FIXES.md). Until the ranking can tell a local award from a
+ * national one, a scheduled run would insert each new award visibly.
+ */
+const MANUAL_SOURCES: Source[] = [
+  { name: "osac", fetchScholarships: osac.fetchScholarships },
 ];
 
 function requestedSource(): string | undefined {
@@ -106,10 +118,10 @@ async function runSource(source: Source): Promise<boolean> {
 
 async function main() {
   const only = requestedSource();
-  const sources = only ? SOURCES.filter((s) => s.name === only) : SOURCES;
+  const sources = only ? [...SOURCES, ...MANUAL_SOURCES].filter((s) => s.name === only) : SOURCES;
 
   if (sources.length === 0) {
-    console.error(`unknown source "${only}" — known: ${SOURCES.map((s) => s.name).join(", ")}`);
+    console.error(`unknown source "${only}" — known: ${[...SOURCES, ...MANUAL_SOURCES].map((s) => s.name).join(", ")}`);
     process.exit(1);
   }
 

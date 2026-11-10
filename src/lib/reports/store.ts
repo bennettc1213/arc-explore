@@ -2,6 +2,7 @@ import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 
 import { db } from "@/db/client";
 import { listingReports, organizations, postings } from "@/db/schema";
+import { invalidateFeedCorpus } from "@/lib/feed";
 
 import { queuePriority, type ReportInput, type ReportReason } from "./types";
 
@@ -138,6 +139,8 @@ export async function setHidden(
         : { hiddenAt: null, hiddenReason: null, reviewedAt: new Date() },
     )
     .where(eq(postings.id, postingId));
+  // A takedown must not wait out the feed's corpus memo on this instance.
+  invalidateFeedCorpus();
 }
 
 /** Mark a listing as looked at and left up, clearing it from the triage list. */

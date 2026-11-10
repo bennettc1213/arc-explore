@@ -58,8 +58,8 @@ export const SOURCE_CATALOGUE: readonly SourceDefinition[] = [
     runTier: "workday-manual", runSource: "workday",
     staleAfterHours: 24 * 365, cadence: "manual; scheduling deferred",
   },
-  ...(["oracle", "taleo", "rippling", "jobvite", "recruitee"] as const).map(key => ({
-    key, label: { oracle: "Oracle Recruiting Cloud", taleo: "Taleo (discovered job pages)", rippling: "Rippling", jobvite: "Jobvite", recruitee: "Recruitee" }[key],
+  ...(["oracle", "taleo", "rippling", "jobvite", "recruitee", "jazzhr"] as const).map(key => ({
+    key, label: { oracle: "Oracle Recruiting Cloud", taleo: "Taleo (discovered job pages)", rippling: "Rippling", jobvite: "Jobvite", recruitee: "Recruitee", jazzhr: "JazzHR" }[key],
     kind: "internship" as const, method: "employer careers data; manual connection",
     runTier: `${key}-manual`, runSource: key, staleAfterHours: 24 * 365, cadence: "manual; scheduling deferred",
   })),

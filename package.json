@@ -26,6 +26,7 @@
     "sources:connect:workday": "tsx scripts/connect-workday.ts",
     "sources:connect:employers": "tsx scripts/connect-employer-sources.ts",
     "sources:connect:recruitee": "tsx scripts/connect-recruitee.ts",
+    "sources:connect:jazzhr": "tsx scripts/connect-jazzhr.ts",
     "sources:connect:scholarships": "tsx scripts/connect-scholarship-sources.ts",
     "sources:connect:discovery": "tsx scripts/connect-discovery-feeds.ts",
     "sources:connect:usajobs": "tsx scripts/connect-usajobs.ts",

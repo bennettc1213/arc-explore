@@ -60,7 +60,9 @@ export async function persistScholarships(
     const rows = listings.map((l) => {
       const hash = canonicalHash({
         companyName: l.sponsorName,
-        title: l.title,
+        // See ScholarshipListing.identityKey: absent for every source but the
+        // ones whose award names the job-title normaliser would collapse.
+        title: l.identityKey ?? l.title,
         locations: [],
         term: null,
       });

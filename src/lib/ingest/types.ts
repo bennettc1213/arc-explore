@@ -17,6 +17,7 @@ export type SourceName =
   | "jobvite"
   | "taleo"
   | "recruitee"
+  | "jazzhr"
   | "simplify"
   | "usajobs";
 
