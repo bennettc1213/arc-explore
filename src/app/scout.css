@@ -127,3 +127,12 @@
 .scout-form-footer .btn { padding:16px 28px; font-size:16px; }
 .scout-form-footer .scout-text-button { font-size:15px; }
 @media(max-width:540px) { .scout-step-content h2 { font-size:25px; } .scout-kind-options { grid-template-columns:1fr; } .scout-kind-options button { min-height:84px; } }
+
+/* Portal Scout entry, centered with a larger call to action. Restored
+ * 2026-11-10 from the Nov 6 production deployment, which was never committed. */
+.portal-scout-entry { text-align:center; flex-direction:column; justify-content:center; gap:22px; padding:44px 0; }
+.portal-scout-entry h2 { font-size:34px; line-height:1.2; }
+.portal-scout-entry p { font-size:15px; }
+.portal-scout-entry>div:last-child { align-items:center; }
+.portal-scout-entry .btn.portal-scout-cta { gap:14px; padding:20px 44px; font-size:18px; } /* beats .site-shell .btn */
+@media(max-width:540px) { .portal-scout-entry { align-items:center; } .portal-scout-entry h2 { font-size:26px; } .portal-scout-entry .btn.portal-scout-cta { justify-content:center; width:100%; padding:18px 20px; } }

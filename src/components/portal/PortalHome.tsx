@@ -118,8 +118,8 @@ export function PortalHome({
       <PortalTabs current="home" />
 
       <section className="portal-scout-entry" aria-label="Scout">
-        <div><span className="eyebrow">Your next opportunity</span><h2>Send your Scout out.</h2><p>Follow your interests. Find the openings worth a closer look.</p></div>
-        <div><Link href="/scout" className="btn btn-primary">Start a Scout <Icon name="arrow" size={18} /></Link><Link href="/memory" className="portal-scout-memory">Application Memory <Icon name="essay" size={15} /></Link></div>
+        <div><span className="eyebrow">Start here</span><h2>Start searching for opportunities now.</h2><p>Tell your Scout what you’re after and it finds the openings worth a closer look.</p></div>
+        <div><Link href="/scout" className="btn btn-primary portal-scout-cta">Send a Scout <Icon name="arrow" size={18} /></Link><Link href="/memory" className="portal-scout-memory">Application Memory <Icon name="essay" size={15} /></Link></div>
       </section>
 
       <section aria-label="Your numbers" className="portal-stats">
