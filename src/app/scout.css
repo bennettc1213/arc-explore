@@ -103,3 +103,27 @@
 /* The actions were meant to drop below the text on phones (margin-left: 47px
  * above) but the row never wrapped, so a title got ~60px. 2026-11-10. */
 @media(max-width:540px) { .scout-result-row { flex-wrap:wrap; } .scout-result-main { flex:1 1 calc(100% - 47px); min-width:0; } }
+
+/* Centered setup, restored 2026-11-10 from the Nov 6 production deployment,
+ * which had dropped the source map from the setup screen (it still shows
+ * while a Scout runs) and enlarged every control. Recovered from that
+ * deployment's stylesheet because the change was never committed. */
+.scout-setup-grid { grid-template-columns:minmax(0,760px); justify-content:center; }
+.scout-form-surface { width:100%; }
+.scout-steps li { text-align:center; font-size:13px; }
+.scout-steps li>span { width:32px; height:32px; margin:0 auto 10px; font-size:14px; }
+.scout-step-content { text-align:center; min-height:440px; }
+.scout-step-label { font-size:12px; }
+.scout-step-content h2 { margin:14px 0 32px; font-size:32px; }
+.scout-kind-options { gap:16px; margin-bottom:34px; }
+.scout-kind-options button { text-align:center; justify-content:center; min-height:140px; padding:22px 14px; font-size:17px; position:relative; }
+.scout-kind-options button>span { text-align:center; }
+.scout-kind-options button>svg:first-child { width:34px; height:34px; margin:0 auto; display:block; }
+.scout-field { text-align:left; gap:12px; margin-bottom:26px; font-size:15px; }
+.scout-field input,.scout-field select { border-radius:6px; padding:18px; font-size:18px; }
+.scout-suggestions { justify-content:center; gap:8px 22px; }
+.scout-suggestions button { font-size:14px; }
+.scout-review { text-align:left; font-size:16px; }
+.scout-form-footer .btn { padding:16px 28px; font-size:16px; }
+.scout-form-footer .scout-text-button { font-size:15px; }
+@media(max-width:540px) { .scout-step-content h2 { font-size:25px; } .scout-kind-options { grid-template-columns:1fr; } .scout-kind-options button { min-height:84px; } }
