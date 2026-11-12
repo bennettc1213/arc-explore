@@ -4,6 +4,9 @@ import Link from "next/link";
 import { Mascot } from "@/components/chrome/Mascot";
 import { FilterPanel } from "@/components/FilterPanel";
 import { PostingRow } from "@/components/PostingRow";
+import { HiddenMatches } from "@/components/pricing/HiddenMatches";
+import { LivePulseStrip } from "@/components/live/LivePulseStrip";
+import { previousFeedVisit } from "@/lib/profile/feed-visits";
 import { SavedSearches } from "@/components/SavedSearches";
 import { ToolsTease } from "@/components/ToolsTease";
 import { recordEvent } from "@/lib/analytics/record";
@@ -12,7 +15,7 @@ import { getSessionUser } from "@/lib/auth";
 import { getAvailableTerms, getFeed, getFeedStats, getLotteryAwards, newSinceFromDays } from "@/lib/feed";
 import { FREE_RANKED_RESULTS, reservationFor } from "@/lib/feed-trim";
 import { getUserTier } from "@/lib/pricing/entitlements";
-import { ALERT_CADENCE_LABEL, evaluateFeature, TIER_LABELS, TIER_PRICE_USD, TIMING_PRIORITY_POINTS } from "@/lib/pricing/tiers";
+import { ALERT_CADENCE_LABEL, evaluateFeature, TIMING_PRIORITY_POINTS } from "@/lib/pricing/tiers";
 import { getLatestResume, getProfile } from "@/lib/profile/store";
 import { skillsFromParsedResume } from "@/lib/score/skills";
 import { listSearches } from "@/lib/searches/store";
@@ -267,6 +270,10 @@ export default async function FeedPage({
   const dailyCapped = !evaluateFeature(tier, "feed_full_depth").usable;
   const show = dailyCapped ? FREE_RANKED_RESULTS : requested;
 
+  // "Since you last looked": records this visit and returns the previous one.
+  // Before the Promise.all because the feed counts new rows against it.
+  const prevVisit = user ? await previousFeedVisit(user.id) : null;
+
   const [listFeed, stats, terms, lotteryAwards, plan, funding] = await Promise.all([
     // The Plan view ranks through getFeed itself (inside getScholarshipPlan),
     // so the list query is skipped rather than run twice.
@@ -278,6 +285,7 @@ export default async function FeedPage({
       hideBlocked,
       excludeMarketing,
       newSince: newSinceDays ? newSinceFromDays(newSinceDays) : null,
+      countNewSince: prevVisit?.at ?? null,
       limit: show,
       /*
        * EVERY capped window, not just the free one. This used to read
@@ -325,10 +333,12 @@ export default async function FeedPage({
       ? Promise.all([getFundingGoal(user.id), getFundingTotals(user.id)])
       : null,
   ]);
-  const { items, categoryUnclassified, total } = listFeed ?? {
+  const { items, categoryUnclassified, total, hidden, newSinceVisit } = listFeed ?? {
     items: [],
     categoryUnclassified: 0,
     total: 0,
+    hidden: null,
+    newSinceVisit: null,
   };
   const fundingState: FundingState = {
     signedIn: Boolean(user),
@@ -409,9 +419,13 @@ export default async function FeedPage({
     });
   }
 
-  // The Free ranked-depth prompt is about to render: counted by feature only.
+  // The Free ranked-depth prompts about to render: counted by feature and the
+  // surface that showed it, never by who saw it.
   if (dailyCapped && total > items.length) {
-    void recordEvent("upgrade_prompt_viewed", { feature: "feed_full_depth" });
+    void recordEvent("upgrade_prompt_viewed", { feature: "feed_full_depth", surface: "hidden_matches" });
+  }
+  if (dailyCapped && newSinceVisit && newSinceVisit.beyondShown > 0) {
+    void recordEvent("upgrade_prompt_viewed", { feature: "feed_full_depth", surface: "since_visit" });
   }
 
   const guestVerticals = new Set(profile.targetVerticals ?? []);
@@ -461,6 +475,7 @@ export default async function FeedPage({
         </Link>
       </header>
 
+      <LivePulseStrip />
       <section
         className="border-y overview-stats"
         style={{ borderColor: "var(--line)", padding: "22px 0", marginBottom: 32 }}
@@ -565,6 +580,35 @@ export default async function FeedPage({
         </div>
       )}
 
+      {/* "Since you last looked": counted over this search's own ranked set,
+          so it never promises a row the list would not return. */}
+      {!plan && prevVisit && newSinceVisit && newSinceVisit.total > 0 && (
+        <div className="since-visit" role="status">
+          <strong>
+            {newSinceVisit.total.toLocaleString("en-US")} new to Instela {prevVisit.label}
+          </strong>
+          {profileReady && newSinceVisit.strongFit > 0 && (
+            <span> · {newSinceVisit.strongFit.toLocaleString("en-US")} Strong Fit</span>
+          )}
+          {dailyCapped && newSinceVisit.beyondShown > 0 && (
+            <span>
+              {" "}· {newSinceVisit.beyondShown.toLocaleString("en-US")} of them are past your free top {items.length}.{" "}
+              <Link href="/pricing?feature=feed_full_depth" style={{ color: "var(--accent-lite)" }}>
+                see them with Pro
+              </Link>
+            </span>
+          )}
+          {!dailyCapped && (
+            <span>
+              {" "}·{" "}
+              <Link href={`?${new URLSearchParams({ ...Object.fromEntries(Object.entries(sp).flatMap(([k, v]) => (v === undefined || k === "new" ? [] : [[k, Array.isArray(v) ? v[0] : v]]))), new: String(prevVisit.days) }).toString()}`} style={{ color: "var(--accent-lite)" }}>
+                show listings from the last {prevVisit.days} day{prevVisit.days === 1 ? "" : "s"}
+              </Link>
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
         {plan
           ? `03 — your plan, from ${plan.counts.listings.toLocaleString("en-US")} open scholarships`
@@ -643,29 +687,14 @@ export default async function FeedPage({
             Only rendered when there is actually more — a list showing
             everything it found should not imply something is being withheld.
           */}
-          {total > items.length && dailyCapped && (
-            <div
-              className="border"
-              style={{ borderColor: "var(--accent)", padding: "16px 18px", marginTop: 18 }}
-            >
-              <div className="mono-strong" style={{ color: "var(--accent)" }}>
-                your top {items.length} ranked matches for this search, of {total.toLocaleString()}
-              </div>
-              <p className="t-sm" style={{ color: "var(--muted)", marginTop: 6, maxWidth: "64ch" }}>
-                {TIER_LABELS.free} shows the top {FREE_RANKED_RESULTS} for each search. Change the
-                filters or the search and you get that search&rsquo;s top {FREE_RANKED_RESULTS}.
-                The set moves as we find new listings and as deadlines approach. Searching,
-                filtering and opening any listing are never limited, and every warning and source
-                fact shows on every plan.
-              </p>
-              <Link
-                href="/pricing?feature=feed_full_depth"
-                className="btn btn-primary press"
-                style={{ textDecoration: "none", display: "inline-block", marginTop: 12 }}
-              >
-                see all {total.toLocaleString()} with {TIER_LABELS.apply} — ${TIER_PRICE_USD.apply}/mo
-              </Link>
-            </div>
+          {total > items.length && dailyCapped && hidden && (
+            <HiddenMatches
+              hidden={hidden}
+              shownCount={items.length}
+              total={total}
+              freeDepth={FREE_RANKED_RESULTS}
+              profileReady={profileReady}
+            />
           )}
 
           {total > items.length && !dailyCapped && (

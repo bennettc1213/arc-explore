@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { rankingScore, scoreFit, type FitResult, type ScoreProfile, type ScorePosting } from "./fit";
-import { scoreTiming } from "./timing";
+import { describeTiming, scoreTiming } from "./timing";
 
 const profile: ScoreProfile = {
   major: "Computer Science",
@@ -256,7 +256,7 @@ describe("scoreTiming", () => {
     assert.equal(r.score, 100);
     // "found", not "new": with no employer-stated posting date the only fact
     // we hold is when our own crawler arrived. See the label block in timing.ts.
-    assert.equal(r.label, "found today");
+    assert.equal(r.label, "found 2h ago");
   });
 
   it("says 'posted' only when the employer actually stated a date", () => {
@@ -276,8 +276,20 @@ describe("scoreTiming", () => {
     assert.equal(stated.ageBasis, "posted");
 
     const ours = scoreTiming({ firstSeenAt: hoursAgo(2), lastSeenAt: base, now: base });
-    assert.equal(ours.label, "found today");
+    assert.equal(ours.label, "found 2h ago");
     assert.equal(ours.ageBasis, "first_seen");
+  });
+
+  it("says when we found it to the minute, never 'posted' on our own clock", () => {
+    const r = scoreTiming({ firstSeenAt: hoursAgo(7 / 60), lastSeenAt: base, now: base });
+    assert.equal(r.label, "found 7m ago");
+    // A believable employer date wins over our minute clock: it carries no
+    // time of day, so it can never become "posted 7m ago".
+    const stated = scoreTiming({ firstSeenAt: hoursAgo(7 / 60), lastSeenAt: base, postedAt: hoursAgo(1), now: base });
+    assert.equal(stated.label, "posted today");
+    // Past 24 hours it falls back to calendar words.
+    const older = scoreTiming({ firstSeenAt: hoursAgo(30), lastSeenAt: base, now: base });
+    assert.ok(!/m ago|h ago/.test(older.label), older.label);
   });
 
   it("decays with age", () => {
@@ -423,5 +435,25 @@ describe("scoreTiming", () => {
     });
     assert.equal(r.label, "closes today");
     assert.equal(r.score, 100);
+  });
+});
+
+describe("describeTiming", () => {
+  const now = new Date("2026-08-12T12:00:00Z");
+  const minsAgo = (m: number) => new Date(now.getTime() - m * 60_000);
+
+  it("states a live poll to the minute under a day", () => {
+    const d = describeTiming({ lastSeenAt: minsAgo(12), freshnessTier: "live_polled" }, now);
+    assert.equal(d.verified, "confirmed live 12m ago");
+  });
+
+  it("keeps the tier's own words: only live_polled says 'confirmed live'", () => {
+    const d = describeTiming({ lastSeenAt: minsAgo(90), freshnessTier: "periodic_check" }, now);
+    assert.equal(d.verified, "checked 1h ago");
+  });
+
+  it("falls back to calendar words after a day", () => {
+    const d = describeTiming({ lastSeenAt: minsAgo(60 * 30), freshnessTier: "live_polled" }, now);
+    assert.equal(d.verified, "confirmed live yesterday");
   });
 });

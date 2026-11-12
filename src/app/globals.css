@@ -1585,3 +1585,156 @@ html {
   border: 1px solid var(--line-strong);
   padding: 22px;
 }
+
+/* ------------------------------------------------------------------ *
+ * Free plan: "beyond your top N" (components/pricing/HiddenMatches).
+ * The stub bars are drawn boxes. The server never sends the hidden rows'
+ * titles, so there is no text under them to unblur.
+ * ------------------------------------------------------------------ */
+.hidden-matches-facts {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+.hidden-matches-facts li {
+  font-size: 0.875rem;
+  color: var(--text);
+}
+.hidden-matches-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--accent);
+}
+.hidden-matches-stubs {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.hidden-stub {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "bars lock" "meta lock";
+  gap: 6px 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-strong);
+}
+.hidden-stub-bars {
+  grid-area: bars;
+  display: grid;
+  gap: 5px;
+}
+.hidden-stub-bars span {
+  display: block;
+  height: 9px;
+  background: var(--line-strong);
+  opacity: 0.55;
+}
+.hidden-stub-bars span:first-child { width: min(320px, 80%); }
+.hidden-stub-bars span:last-child { width: min(180px, 50%); opacity: 0.35; }
+.hidden-stub-meta {
+  grid-area: meta;
+  color: var(--faint-readable);
+  overflow-wrap: anywhere;
+}
+.hidden-stub-lock { grid-area: lock; }
+
+/* Live pulse strip (components/live/LivePulseStrip). */
+.live-pulse {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  margin: 0 0 18px;
+  color: var(--faint-readable);
+}
+.live-pulse > span + span:not(:nth-child(2))::before {
+  content: "·";
+  margin-right: 14px;
+  color: var(--line-strong);
+}
+.live-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--system-ok);
+  box-shadow: 0 0 0 0 var(--system-ok);
+  animation: live-pulse-ring 2.4s var(--ease-out) infinite;
+}
+.live-pulse-paused .live-pulse-dot {
+  background: var(--system-danger);
+  animation: none;
+}
+.live-pulse-live > span:nth-child(2) { color: var(--system-ok); }
+.live-pulse-paused > span:nth-child(2) { color: var(--system-danger); }
+.live-pulse-link { color: var(--accent-lite); }
+@keyframes live-pulse-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--system-ok) 60%, transparent); }
+  70% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-pulse-dot { animation: none; }
+}
+
+/* /live source ledger. Scrolls inside its own box on a phone so the page never does. */
+.live-ledger-wrap {
+  overflow-x: auto;
+  border-top: 1px solid var(--line);
+}
+.live-ledger {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.live-ledger th,
+.live-ledger td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 12px 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.live-ledger thead th {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  color: var(--faint-readable);
+  white-space: nowrap;
+}
+.live-ledger .num { text-align: right; font-family: var(--font-mono); white-space: nowrap; }
+.live-ledger-label { display: block; font-weight: 600; color: var(--text); }
+.live-ledger-method { display: block; color: var(--faint-readable); font-weight: 400; max-width: 34ch; }
+.live-ledger-health { font-family: var(--font-mono); white-space: nowrap; }
+.live-health-running { color: var(--system-ok); }
+.live-health-not-reading,
+.live-health-behind-schedule { color: var(--system-danger); }
+
+/* Listing receipt (/listing/[id] #opportunity-receipt). */
+.listing-receipt dl { display: grid; gap: 6px; margin: 0; }
+.listing-receipt dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+  gap: 12px;
+  font-size: 0.875rem;
+}
+.listing-receipt dt { color: var(--faint-readable); }
+.listing-receipt dd { margin: 0; color: var(--text); overflow-wrap: anywhere; }
+.listing-receipt .receipt-ok dd { color: var(--system-ok); }
+.listing-receipt .receipt-warn dd { color: var(--accent-lite); }
+@media (max-width: 520px) {
+  .listing-receipt dl > div { grid-template-columns: 1fr; gap: 0; }
+}
+
+/* "Since you last looked" banner on /explore. */
+.since-visit {
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-dim);
+  font-size: 0.875rem;
+  color: var(--text);
+}

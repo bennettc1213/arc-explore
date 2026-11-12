@@ -109,6 +109,10 @@ export default function PrivacyPage() {
             why="the digest — the timestamp is the whole of what we remember about it. We do not keep a record of which opportunities any digest contained"
           />
           <Row
+            what="When your current and previous visits to the feed started (two timestamps)"
+            why="the “new since you last looked” count. Each visit replaces the older one, and we do not record what you searched for, which listings you opened, or how long you stayed"
+          />
+          <Row
             what="Your email address"
             why="it is how you sign in — there are no passwords here — and where reminders, alerts and the digest go if you leave them on"
           />

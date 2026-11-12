@@ -21,6 +21,7 @@ import { resolveTermView, parseTermLabel } from "./terms/display";
 import { escapeLike, type DeadlineFilter } from "./feed-search";
 import { escapeRegex, parseQuery } from "./search/query";
 import { capPerSource, sourceCapFor, trimWithReservation } from "./feed-trim";
+import { summarizeHidden, summarizeNew, type HiddenSummary, type NewSinceSummary } from "./feed-hidden";
 import { canUseCorpusMemo, filterCorpusRows } from "./feed-corpus";
 import { isFlaggedDead } from "./ingest/linkcheck";
 import {
@@ -179,6 +180,11 @@ export interface FeedFilters {
    * the moment we first saw a row is the only thing we can stand behind.
    */
   newSince?: Date | null;
+  /**
+   * Count (do not filter) rows first seen after this moment: the student's
+   * previous visit, for the "new since you last looked" banner.
+   */
+  countNewSince?: Date | null;
   /** Max rows to return. Applied AFTER ranking, so the list is never
    *  truncated in a way that silently drops one kind. */
   limit?: number;
@@ -233,6 +239,14 @@ export interface FeedResult {
    * says what is on screen; this says what the filters actually matched.
    */
   total: number;
+  /**
+   * What the trimmed-away rows hold, counted (see `feed-hidden.ts`). Null
+   * when nothing was trimmed. Counts only — never titles — so it is safe to
+   * hand to any tier's page.
+   */
+  hidden: HiddenSummary | null;
+  /** Counted only when `countNewSince` was passed (a signed-in visit). */
+  newSinceVisit: NewSinceSummary | null;
 }
 
 export interface FeedStats {
@@ -999,10 +1013,15 @@ export async function getFeed(
   // Rank first, then trim — never a SQL LIMIT. See the comment on the query
   // above: trimming before ranking lets whichever kind was ingested last crowd
   // the other out of the top N entirely.
+  const shown = trimWithReservation(filtered, filters.limit ?? 500, filters.reservePerKind ?? 0);
   return {
-    items: trimWithReservation(filtered, filters.limit ?? 500, filters.reservePerKind ?? 0),
+    items: shown,
     categoryUnclassified,
     total: filtered.length,
+    // Only when something was actually trimmed: a complete list has nothing
+    // hidden to describe, and an empty summary would read as a teaser.
+    hidden: shown.length < filtered.length ? summarizeHidden(filtered, shown) : null,
+    newSinceVisit: filters.countNewSince ? summarizeNew(filtered, shown, filters.countNewSince) : null,
   };
 }
 

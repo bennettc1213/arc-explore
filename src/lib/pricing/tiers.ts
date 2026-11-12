@@ -624,6 +624,13 @@ export interface PresentedFit {
   bucketLabel: string | null;
   /** True when the full number/reasons exist but this viewer cannot see them. */
   locked: boolean;
+  /**
+   * How much a locked score is holding back, as COUNTS only — never the skill
+   * names or the reasons themselves. Lets the Free plan say "Pro shows the 3
+   * skills you match and the 1 you're missing" without sending any of them.
+   * Set only when `locked` is true.
+   */
+  lockedCounts?: { matched: number; missing: number };
 }
 
 export interface PresentFitOptions {
@@ -673,6 +680,9 @@ export function presentFit(
       reasons: full ? fit.reasons : [],
       skills: { matched: full ? fit.skills.matched : [], missing: gap ? fit.skills.missing : [] },
       locked: !full && fit.score !== null,
+      ...(!full && fit.score !== null && !failed
+        ? { lockedCounts: { matched: fit.skills?.matched.length ?? 0, missing: gap ? 0 : (fit.skills?.missing.length ?? 0) } }
+        : {}),
       assessment: presentAssessment(assessment, full),
     };
   }
@@ -751,7 +761,27 @@ export function presentFit(
     skills: { matched: [], missing: [] },
     bucketLabel: FIT_BUCKET_LABELS[bucketFitScore(fit.score)],
     locked: true,
+    lockedCounts: { matched: fit.skills?.matched.length ?? 0, missing: fit.skills?.missing.length ?? 0 },
   };
+}
+
+/**
+ * "Pro shows the exact score, the 3 skills you match and the 1 you're missing."
+ *
+ * Built from `lockedCounts`, so every number in the sentence is one the
+ * server computed for this row and this student; a zero is simply left out
+ * rather than advertised.
+ */
+export function lockedFitTeaser(counts: { matched: number; missing: number } | undefined): string {
+  const parts = ["the exact score"];
+  if (counts && counts.matched > 0) {
+    parts.push(`the ${counts.matched} skill${counts.matched === 1 ? "" : "s"} you match`);
+  }
+  if (counts && counts.missing > 0) {
+    parts.push(`the ${counts.missing} you're missing`);
+  }
+  const list = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+  return `${TIER_LABELS.apply} shows ${list}`;
 }
 
 /** Dimensions that decide whether a student may apply at all. */

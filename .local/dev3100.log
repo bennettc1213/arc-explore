@@ -1,0 +1,16 @@
+▲ Next.js 16.3.0 (Turbopack)
+- Local:         http://localhost:3100
+- Network:       http://10.18.99.4:3100
+- Environments: .env
+✓ Ready in 404ms
+✓ Running next.config.ts took 28ms
+- Experiments (use with caution):
+  · serverActions
+
+ GET /listing/30237209-74a4-4eb9-b508-f87a0d76307c 200 in 3.0s (next.js: 1048ms, proxy.ts: 385ms, application-code: 1585ms)
+ GET /listing/bb77bcdb-eadb-4e1a-a439-a569bdfa2a5f 200 in 766ms (next.js: 294ms, proxy.ts: 11ms, application-code: 460ms)
+ GET /listing/30237209-74a4-4eb9-b508-f87a0d76307c 200 in 368ms (next.js: 121ms, proxy.ts: 12ms, application-code: 235ms)
+ GET /listing/bb77bcdb-eadb-4e1a-a439-a569bdfa2a5f 200 in 616ms (next.js: 145ms, proxy.ts: 115ms, application-code: 356ms)
+ GET /explore?view=list&kind=internship 200 in 9.2s (next.js: 113ms, proxy.ts: 83ms, application-code: 9.0s)
+ GET /live 200 in 4.0s (next.js: 143ms, proxy.ts: 27ms, application-code: 3.8s)
+ GET /live 200 in 510ms (next.js: 23ms, proxy.ts: 287ms, application-code: 199ms)

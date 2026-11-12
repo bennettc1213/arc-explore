@@ -19,6 +19,7 @@ import {
   TIER_PRICE_USD,
   ALERT_INTERVAL_DAYS,
   isCurrentBenefit,
+  lockedFitTeaser,
   tierAtLeast,
 } from "./tiers";
 
@@ -236,6 +237,24 @@ test("free tier never receives the number, the reasons, or the gap", () => {
   // The raw number must not survive anywhere in the returned object.
   assert.ok(!JSON.stringify(shown).includes("87"));
   assert.ok(!JSON.stringify(shown).includes("Kubernetes"));
+});
+
+test("a locked score sends counts of what it holds back, never the contents", () => {
+  // The teaser hook: "Pro shows the 1 skill you match and the 2 you're
+  // missing". Counts only, so the free HTML still holds no skill names and
+  // no number — the test above stays true with this present.
+  const shown = presentFit(FIT, "free", { profileReady: true });
+  assert.deepEqual(shown.lockedCounts, { matched: 1, missing: 2 });
+  assert.equal(
+    lockedFitTeaser(shown.lockedCounts),
+    "Pro shows the exact score, the 1 skill you match and the 2 you're missing",
+  );
+  assert.ok(!JSON.stringify(shown).includes("Python"));
+  assert.ok(!JSON.stringify(shown).includes("87"));
+  // A paid viewer sees the contents themselves, so no teaser counts.
+  assert.equal(presentFit(FIT, "apply", { profileReady: true }).lockedCounts, undefined);
+  // Zero counts are left out rather than advertised.
+  assert.equal(lockedFitTeaser({ matched: 0, missing: 0 }), "Pro shows the exact score");
 });
 
 test("the confidence marker survives the paywall", () => {

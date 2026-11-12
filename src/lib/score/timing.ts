@@ -366,6 +366,12 @@ export function scoreTiming(input: TimingInput): TimingResult {
     label = "posted yesterday";
   } else if (ageBasis === "posted" && ageDays <= 7) {
     label = "posted this week";
+  } else if (ageBasis === "first_seen" && hours < 24) {
+    // Elapsed time, not a calendar day, and only on the `first_seen` basis:
+    // "found 7m ago" is a fact about OUR crawler, which is the one clock we
+    // hold to the minute. It never becomes "posted 7m ago" — an employer date
+    // carries no time of day, and new-to-us is not new-to-the-world.
+    label = `found ${humanAgo(hours * HOUR)}`;
   } else if (ageBasis === "first_seen" && ageDays <= 0) {
     label = "found today";
   } else if (ageBasis === "first_seen" && ageDays === 1) {
@@ -454,7 +460,11 @@ export function describeTiming(
   },
   now: Date = new Date(),
 ): TimingDisplay {
-  const verifiedWord = relativeDayLabel(input.lastSeenAt, now);
+  // Under a day, say it to the hour or minute: "confirmed live 12m ago" is the
+  // strongest claim this product makes, and a sub-hour poll earns precision.
+  const sinceSeen = now.getTime() - input.lastSeenAt.getTime();
+  const verifiedWord =
+    sinceSeen >= 0 && sinceSeen < DAY ? humanAgo(sinceSeen) : relativeDayLabel(input.lastSeenAt, now);
 
   // The tier distinction survives: only sub-hour ATS polling earns
   // "confirmed live". Everything else says what it actually is.

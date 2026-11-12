@@ -21,6 +21,19 @@ import { FEED_PATH } from "@/lib/routes";
 
 export const dynamic = "force-dynamic";
 
+/** Saved (not yet applied), still open, with a stated deadline 0–`days` days out. */
+function savedClosingWithin(
+  rows: Array<{ status: string; closedAt: Date | null; deadlineAt: Date | null }>,
+  days: number,
+): number {
+  const now = Date.now();
+  return rows.filter((r) => {
+    if (r.status !== "saved" || r.closedAt || !r.deadlineAt) return false;
+    const d = Math.floor(r.deadlineAt.getTime() / 86_400_000) - Math.floor(now / 86_400_000);
+    return d >= 0 && d <= days;
+  }).length;
+}
+
 /** "3d ago" — coarse on purpose; the exact minute is noise here. */
 function ago(date: Date): string {
   const days = Math.floor((Date.now() - date.getTime()) / 86_400_000);
@@ -55,6 +68,10 @@ export default async function TrackerPage() {
   const tier = await getUserTier(user.id);
   const activeCount = countActiveSlots(rows.map((r) => ({ status: r.status, closed: r.closedAt !== null })));
   const trackerAccess = evaluateFeature(tier, "tracker", activeCount);
+
+  // Saved but not yet sent, with a stated deadline inside the week. Only a
+  // deadline the source published counts; an unstated one is not "closing".
+  const closingSaved = savedClosingWithin(rows, 7);
 
   // Sorted by where each application sits in a real process, then by
   // most-recently-touched inside each group.
@@ -117,6 +134,15 @@ export default async function TrackerPage() {
             </div>
           )}
         </section>
+      )}
+
+      {closingSaved > 0 && (
+        <div className="since-visit" role="status">
+          <strong>
+            {closingSaved} saved listing{closingSaved === 1 ? "" : "s"} close{closingSaved === 1 ? "s" : ""} within 7 days
+          </strong>{" "}
+          and {closingSaved === 1 ? "has" : "have"} not been marked applied yet.
+        </div>
       )}
 
       {!trackerAccess.unlimited && trackerAccess.limit !== null && (

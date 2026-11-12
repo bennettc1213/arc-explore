@@ -33,6 +33,8 @@ export interface TrackedApplication {
   compensationInterval: "hour" | "year" | null;
   closedAt: Date | null;
   lastSeenAt: Date;
+  /** Employer- or sponsor-stated deadline, when one is published. */
+  deadlineAt: Date | null;
 }
 
 export async function listApplications(userId: string): Promise<TrackedApplication[]> {
@@ -59,6 +61,7 @@ export async function listApplications(userId: string): Promise<TrackedApplicati
       compensationInterval: postings.compensationInterval,
       closedAt: postings.closedAt,
       lastSeenAt: postings.lastSeenAt,
+      deadlineAt: postings.deadlineAt,
     })
     .from(applications)
     .innerJoin(postings, eq(applications.postingId, postings.id))

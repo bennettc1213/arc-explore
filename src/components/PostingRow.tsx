@@ -26,7 +26,9 @@ function formatDate(d: Date): string {
  * as opportunity freshness. That is the same overclaim the label rewrite in
  * `score/timing.ts` exists to stop.
  */
-const URGENT_LABEL = /^(closes|posted today|posted yesterday)/;
+// "found Nm ago" (under an hour) is accented too: a listing our crawler found
+// minutes ago is something a student can act on before most others see it.
+const URGENT_LABEL = /^(closes|posted today|posted yesterday|found (just now|\d+m ago))/;
 
 /**
  * One posting in the feed.
@@ -310,6 +312,7 @@ export function PostingRow({
             known={presented.known}
             total={presented.total}
             bucketLabel={presented.bucketLabel}
+            lockedCounts={presented.lockedCounts}
           />
           {/* Timing now carries its own confidence marker, for the reason fit
               does: a score resting only on when we happened to crawl is a

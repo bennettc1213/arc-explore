@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { BackLink } from "@/components/BackLink";
+import { LivePulseStrip } from "@/components/live/LivePulseStrip";
 import { getSessionUser } from "@/lib/auth";
 import { FREE_RANKED_RESULTS } from "@/lib/feed-trim";
 import { marketReadyFlags } from "@/lib/market-ready/flags";
@@ -102,6 +103,10 @@ export default async function PricingPage({
           )
         )}
       </header>
+
+      {/* Proof before the plans: what the crawler did in the last hour, from our
+          own run records, with a link to the full ledger. */}
+      <LivePulseStrip />
 
       {checkoutState === "success" && (
         <section className="slot" style={{ padding: "14px 16px", marginBottom: 24 }}>

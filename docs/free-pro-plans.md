@@ -159,3 +159,28 @@ No benchmark conversion rate is assumed. With 10 profiles, all test accounts, no
 - Stripe price must be $20.00 for checkout to open; the student coupon does not exist.
 - Email sender (`REMINDER_FROM_EMAIL`) for any delivery.
 - The signed-in flows above have not been driven by a human session; see FIXES.md.
+
+## 11. Upgrade hooks, and the proof under each (2026-11-12)
+
+The Free plan now shows the *shape* of what Pro holds, never fabricated
+content. Every hook is a count over real rows or a timestamp we observed, and
+each is paired with a way to check it.
+
+| Hook | Where | Built from | Proof the student can check |
+|---|---|---|---|
+| "found 7m ago" / "confirmed live 12m ago" | every feed row, listing header | `firstSeenAt` (our crawler), `lastSeenAt` on `live_polled` sources | listing receipt, `/live` |
+| "25,380 more ranked matches past your top 20 · 621 close within 14 days · 258 found in 24h · $X in N confirmed awards" plus 3 redacted stubs | after row 20 on Free | `summarizeHidden` over the rows this request ranked and trimmed | the counts match SQL (verified 2026-11-12) |
+| "Pro shows the exact score, the 3 skills you match and the 1 you're missing" | fit badge tooltip, listing page | `presentFit` `lockedCounts` (counts only, no names) | n/a: the counts are this student's own |
+| "14 new to Instela since Tuesday · 5 Strong Fit · 3 past your free top 20" | above the feed, signed in | `profiles.last_feed_seen_at` / `prev_feed_seen_at` (migration 0035) + `summarizeNew` | the `?new=N` filter |
+| "N saved listings close within 7 days" | tracker | stated `deadline_at` only | the listing's own deadline |
+| live pulse: boards checked in the last hour, last check, new/closed in 24h; "paused" when stale | explore, pricing, `/live` | `organizations.last_polled_at`, `postings` | `/live` source ledger |
+| listing receipt: source, first found, confirmed on the board, apply-link check result | `/listing/[id]` | `posting_sources`, `confirmed_at`, `url_checked_at`/`url_status` | — it is the proof |
+
+**Refused, so nobody rebuilds them:** "N students viewing this" (no per-user
+data, and fewer than ten real users), countdown timers that reset, "posted X
+min ago" without an employer date, testimonials without a named source, and
+delaying listings for Free. Free still sees every listing the moment we find
+it; the owner chose framing over degrading Free.
+
+Events: `upgrade_prompt_viewed` now carries a `surface` (`hidden_matches`,
+`since_visit`, `listing_teaser`) beside `feature`, still with no user id.

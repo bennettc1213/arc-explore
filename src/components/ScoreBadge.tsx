@@ -18,7 +18,7 @@
  * tell "we don't know" from "you're not seeing the number".
  */
 
-import { TIER_LABELS } from "@/lib/pricing/tiers";
+import { lockedFitTeaser } from "@/lib/pricing/tiers";
 export function ScoreBadge({
   label,
   value,
@@ -26,7 +26,10 @@ export function ScoreBadge({
   total,
   size = "row",
   bucketLabel,
+  lockedCounts,
 }: {
+  /** Counts behind a locked score (from `presentFit`), for the teaser. */
+  lockedCounts?: { matched: number; missing: number };
   label: string;
   value: number | null;
   /** Dimensions that contributed. Omitted for scores with no such notion. */
@@ -50,8 +53,8 @@ export function ScoreBadge({
           isCheck
             ? "This conflicts with something in your profile — confirm eligibility before applying."
             : bucketPartial
-              ? `Based on ${known} of ${total} factors — the rest are not stated in this posting. Upgrade to ${TIER_LABELS.apply} for the full score and breakdown.`
-              : "Upgrade to Pro to see the full score and factor breakdown"
+              ? `Based on ${known} of ${total} factors — the rest are not stated in this posting. ${lockedFitTeaser(lockedCounts)}.`
+              : `${lockedFitTeaser(lockedCounts)}.`
         }
       >
         <span className="mono">{label}</span>

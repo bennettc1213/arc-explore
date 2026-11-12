@@ -16,7 +16,8 @@ import { formatAward } from "@/lib/scholarships/display";
 import { formatTerm } from "@/lib/terms/display";
 import { formatCompensation, formatWorkArrangement } from "@/lib/opportunity-details";
 import { presentFit } from "@/lib/pricing/entitlements";
-import { TIER_LABELS, autofillFeature, evaluateFeature } from "@/lib/pricing/tiers";
+import { getListingReceipt } from "@/lib/listing-receipt-store";
+import { TIER_LABELS, autofillFeature, evaluateFeature, lockedFitTeaser } from "@/lib/pricing/tiers";
 import { hasReported } from "@/lib/reports/store";
 import { coerceParsedResume } from "@/lib/resume/types";
 import { resolveViewer, type SearchParams } from "@/app/explore/viewer";
@@ -64,10 +65,14 @@ export default async function ListingPage({
   // not recorded, since "which listings are popular" is not a question worth
   // building a per-listing view log to answer.
   await recordEvent("listing_viewed", { kind: item.kind });
+  if (presented.locked) void recordEvent("upgrade_prompt_viewed", { feature: "fit_score_full", surface: "listing_teaser" });
 
-  const [letter, alreadyReported] = user
-    ? await Promise.all([getCoverLetter(user.id, id), hasReported(user.id, id)])
-    : [null, false];
+  const [[letter, alreadyReported], receipt] = await Promise.all([
+    user
+      ? Promise.all([getCoverLetter(user.id, id), hasReported(user.id, id)])
+      : Promise.resolve([null, false] as const),
+    getListingReceipt(id),
+  ]);
 
   // The one-button apply flow, assembled server-side from the same packet the
   // /apply page shows, so the wizard and the packet can never disagree about
@@ -174,6 +179,7 @@ export default async function ListingPage({
                 known={presented.known}
                 total={presented.total}
                 bucketLabel={presented.bucketLabel}
+                lockedCounts={presented.lockedCounts}
                 size="header"
               />
               <ScoreBadge
@@ -369,10 +375,12 @@ export default async function ListingPage({
             hasResume={Boolean(resume)}
             roleSkills={presented.locked ? [] : item.skills}
           />}
-          {presented.locked && !presented.assessment && (
+          {presented.locked && (
             <p className="mono" style={{ marginTop: 8, color: "var(--faint-readable)" }}>
-              upgrade to {TIER_LABELS.apply} to see the full score, the factor breakdown, and what this role
-              names that your resume does not
+              {lockedFitTeaser(presented.lockedCounts)} for this listing, with the full factor breakdown.{" "}
+              <Link href="/pricing?feature=fit_score_full" style={{ color: "var(--accent-lite)" }}>
+                see {TIER_LABELS.apply}
+              </Link>
             </p>
           )}
         </section>
@@ -387,6 +395,27 @@ export default async function ListingPage({
                 <li key={c}>{c}</li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {receipt && (
+          <section id="opportunity-receipt" className="print-hide listing-receipt" style={{ marginBottom: 32 }}>
+            <div className="eyebrow chrome" style={{ marginBottom: 8 }}>
+              receipt · what we observed
+            </div>
+            <dl>
+              {receipt.map((line) => (
+                <div key={line.label} className={line.tone ? `receipt-${line.tone}` : undefined}>
+                  <dt className="mono">{line.label}</dt>
+                  <dd>{line.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mono" style={{ marginTop: 8, color: "var(--faint-readable)" }}>
+              <Link href="/how-we-verify" style={{ color: "var(--accent-lite)" }}>how we verify</Link>
+              {" · "}
+              <Link href="/live" style={{ color: "var(--accent-lite)" }}>live ledger</Link>
+            </p>
           </section>
         )}
 
