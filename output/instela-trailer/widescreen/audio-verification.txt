@@ -1,0 +1,49 @@
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'widescreen/instela-widescreen-1920x1080-60fps.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    title           : Instela | Why Instela | Widescreen
+    encoder         : Lavf60.16.100
+    comment         : Research context is distinguished from Instela product results. Sources supplied with video.
+  Duration: 00:01:12.00, start: 0.000000, bitrate: 1392 kb/s
+  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1920x1080, 1061 kb/s, 60 fps, 60 tbr, 15360 tbn (default)
+    Metadata:
+      handler_name    : VideoHandler
+      vendor_id       : [0][0][0][0]
+      encoder         : Lavc60.31.102 libx264
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 318 kb/s (default)
+    Metadata:
+      handler_name    : SoundHandler
+      vendor_id       : [0][0][0][0]
+Stream mapping:
+  Stream #0:1 -> #0:0 (aac (native) -> pcm_s16le (native))
+Press [q] to stop, [?] for help
+Output #0, null, to 'pipe:':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    title           : Instela | Why Instela | Widescreen
+    comment         : Research context is distinguished from Instela product results. Sources supplied with video.
+    encoder         : Lavf60.16.100
+  Stream #0:0(und): Audio: pcm_s16le, 192000 Hz, stereo, s16, 6144 kb/s (default)
+    Metadata:
+      handler_name    : SoundHandler
+      vendor_id       : [0][0][0][0]
+      encoder         : Lavc60.31.102 pcm_s16le
+size=       0kB time=00:00:00.00 bitrate=N/A speed=   0x    size=N/A time=00:00:11.90 bitrate=N/A speed=22.3x    size=N/A time=00:00:25.90 bitrate=N/A speed=  25x    size=N/A time=00:00:40.50 bitrate=N/A speed=26.4x    size=N/A time=00:00:56.30 bitrate=N/A speed=27.7x    [out#0/null @ 000002042c0df500] video:0kB audio:54000kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: unknown
+size=N/A time=00:01:09.10 bitrate=N/A speed=27.4x    
+[Parsed_loudnorm_0 @ 000002042c19df00] 
+{
+	"input_i" : "-16.64",
+	"input_tp" : "-2.00",
+	"input_lra" : "1.20",
+	"input_thresh" : "-26.66",
+	"output_i" : "-16.37",
+	"output_tp" : "-2.50",
+	"output_lra" : "0.90",
+	"output_thresh" : "-26.39",
+	"normalization_type" : "dynamic",
+	"target_offset" : "0.37"
+}

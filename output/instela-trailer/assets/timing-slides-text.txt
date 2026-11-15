@@ -1,0 +1,438 @@
+
+PAGE 1
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Time Is of the Essence  Experimental Evidence on the Effects of Job Application Timing Sai Zhang  University of Southern California  October 22, 2026  USC   Time Is of the Essence   October 22, 2026
+
+PAGE 2
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Timing in the Labor Market  Matching unfolds over time:   applications, evaluation, interviews, and offers  USC   Time Is of the Essence   1
+
+PAGE 3
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Timing in the Labor Market  Matching unfolds over time:   applications, evaluation, interviews, and offers  Job-seeker side:   a growing literature studies when to search, apply and accept offers  USC   Time Is of the Essence   1
+
+PAGE 4
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Timing in the Labor Market  Matching unfolds over time:   applications, evaluation, interviews, and offers  Job-seeker side:   a growing literature studies when to search, apply and accept offers  Firm side:   when to act on an evolving application pool?  USC   Time Is of the Essence   1
+
+PAGE 5
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Timing in the Labor Market  Matching unfolds over time:   applications, evaluation, interviews, and offers  Job-seeker side:   a growing literature studies when to search, apply and accept offers  Firm side:   when to act on an evolving application pool?  This paper:   how firms’ timing decisions shape who gets considered  USC   Time Is of the Essence   1
+
+PAGE 6
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  In This Paper  Repurposing the resume correspondence experiment of Kline et al. (2022), I ask:  USC   Time Is of the Essence   2
+
+PAGE 7
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  In This Paper  Repurposing the resume correspondence experiment of Kline et al. (2022), I ask: Do earlier applications   receive more contact ?  USC   Time Is of the Essence   2
+
+PAGE 8
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  In This Paper  Repurposing the resume correspondence experiment of Kline et al. (2022), I ask: Do earlier applications   receive more contact ?  1.2 p.p.   ( 57% of the racial contact gap ) ;   0.4 p.p.   per day  USC   Time Is of the Essence   2
+
+PAGE 9
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  In This Paper  Repurposing the resume correspondence experiment of Kline et al. (2022), I ask: Do earlier applications receive more contact?  1.2 p.p.   ( 57% of the racial contact gap ) ;   0.4 p.p.   per day What   drives   this early application advantage?  USC   Time Is of the Essence   2
+
+PAGE 10
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  In This Paper  Repurposing the resume correspondence experiment of Kline et al. (2022), I ask: Do earlier applications receive more contact?  1.2 p.p.   ( 57% of the racial contact gap ) ;   0.4 p.p.   per day What   drives   this early application advantage? Firms   start contacting early , triggered by the   best-so-far   application passing a threshold  USC   Time Is of the Essence   2
+
+PAGE 11
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  In This Paper  Repurposing the resume correspondence experiment of Kline et al. (2022), I ask: Do earlier applications receive more contact?  1.2 p.p.   ( 57% of the racial contact gap ) ;   0.4 p.p.   per day What drives this early application advantage? Firms   start contacting early , triggered by the   best-so-far   application passing a threshold How does it vary with   labor-market conditions ?  USC   Time Is of the Essence   2
+
+PAGE 12
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  In This Paper  Repurposing the resume correspondence experiment of Kline et al. (2022), I ask: Do earlier applications receive more contact?  1.2 p.p.   ( 57% of the racial contact gap ) ;   0.4 p.p.   per day What drives this early application advantage? Firms   start contacting early , triggered by the   best-so-far   application passing a threshold How does it vary with   labor-market conditions ? The timing gradient is   steeper   in   tighter   labor markets  USC   Time Is of the Essence   2
+
+PAGE 13
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  In This Paper  Repurposing the resume correspondence experiment of Kline et al. (2022), I ask: Do earlier applications receive more contact?  1.2 p.p.   ( 57% of the racial contact gap ) ;   0.4 p.p.   per day What drives this early application advantage? Firms   start contacting early , triggered by the   best-so-far   application passing a threshold How does it vary with labor-market conditions? The timing gradient is   steeper   in   tighter   labor markets What is the   cost of speed   for firms?  USC   Time Is of the Essence   2
+
+PAGE 14
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  In This Paper  Repurposing the resume correspondence experiment of Kline et al. (2022), I ask: Do earlier applications receive more contact?  1.2 p.p.   ( 57% of the racial contact gap ) ;   0.4 p.p.   per day What drives this early application advantage? Firms   start contacting early , triggered by the   best-so-far   application passing a threshold How does it vary with labor-market conditions? The timing gradient is   steeper   in   tighter   labor markets What is the   cost of speed   for firms? A stopping model quantifies the tradeoff:   6.6%   relative loss in match quality  USC   Time Is of the Essence   2
+
+PAGE 15
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Literature Contribution  Timing in the labor market  Bandiera et al. (2025), Cort´ es et al. (2023), and Davis and de la Parra (2024)  -   This paper: firm-side timing of contact initiation  USC   Time Is of the Essence   3
+
+PAGE 16
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Literature Contribution  Timing in the labor market  Bandiera et al. (2025), Cort´ es et al. (2023), and Davis and de la Parra (2024)  -   This paper: firm-side timing of contact initiation  Employer screening and recruiting strategy  Bartoˇ s et al. (2016), Hoffman et al. (2018), and Radbruch and Schiprowski (2025)  -   This paper: a threshold-based screening strategy for when firms act  USC   Time Is of the Essence   3
+
+PAGE 17
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Literature Contribution  Timing in the labor market  Bandiera et al. (2025), Cort´ es et al. (2023), and Davis and de la Parra (2024)  -   This paper: firm-side timing of contact initiation  Employer screening and recruiting strategy  Bartoˇ s et al. (2016), Hoffman et al. (2018), and Radbruch and Schiprowski (2025)  -   This paper: a threshold-based screening strategy for when firms act  Recruiting and matching efficiency  Birinci et al. (2025), Carrillo-Tudela et al. (2023), Wolthoff (2018), and Wright et al. (2021)  -   This paper: a within-vacancy timing margin of match formation  USC   Time Is of the Essence   3
+
+PAGE 18
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Literature Contribution  Timing in the labor market  Bandiera et al. (2025), Cort´ es et al. (2023), and Davis and de la Parra (2024)  -   This paper: firm-side timing of contact initiation  Employer screening and recruiting strategy  Bartoˇ s et al. (2016), Hoffman et al. (2018), and Radbruch and Schiprowski (2025)  -   This paper: a threshold-based screening strategy for when firms act  Recruiting and matching efficiency  Birinci et al. (2025), Carrillo-Tudela et al. (2023), Wolthoff (2018), and Wright et al. (2021)  -   This paper: a within-vacancy timing margin of match formation  Audit-study design  Gaddis (2018), Kessler et al. (2019), and Neumark (2018)  -   This paper: multiple applications as tracers  USC   Time Is of the Essence   3
+
+PAGE 19
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Early Application Advantage  USC   Time Is of the Essence   4
+
+PAGE 20
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Experiment Design (Kline et al., 2022)  vacancy open  USC   Time Is of the Essence   5
+
+PAGE 21
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Experiment Design (Kline et al., 2022)  vacancy open  11,114   entry-level vacancies at 108 large U.S. firms  USC   Time Is of the Essence   5
+
+PAGE 22
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Experiment Design (Kline et al., 2022)  vacancy open  8   experimental   applications  3   (Waves 2–5)   or 6   (Wave 1)   days  11,114   entry-level vacancies at 108 large U.S. firms  8 randomized applications   in 4 pairs over 3   (Waves 2–5)   or 6 days   (Wave 1)  USC   Time Is of the Essence   5
+
+PAGE 23
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Experiment Design (Kline et al., 2022)  downstream stages  vacancy open  8   experimental   applications  3   (Waves 2–5)   or 6   (Wave 1)   days application-contact stage  11,114   entry-level vacancies at 108 large U.S. firms  8 randomized applications   in 4 pairs over 3   (Waves 2–5)   or 6 days   (Wave 1)  outcome : employer contact within 30 days   ( ∼ 24%)   design details  USC   Time Is of the Essence   5
+
+PAGE 24
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Experiment Design (Kline et al., 2022)  downstream stages  vacancy open  8   experimental   applications  3   (Waves 2–5)   or 6   (Wave 1)   days experiment onset application-contact stage  11,114   entry-level vacancies at 108 large U.S. firms  8 randomized applications   in 4 pairs over 3   (Waves 2–5)   or 6 days   (Wave 1)  outcome : employer contact within 30 days   ( ∼ 24%)   design details  Market conditions   measured at the first experimental submission   covariates USC   Time Is of the Essence   5
+
+PAGE 25
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Submission Order and Sample Completeness  Order   Full Sample   Incomplete  1   11,114   1,285 2   11,031   1,202 3   10,682   853 4   10,606   777 5   10,278   449 6   10,204   375 7   9,899   70 8   9,829   0  N   applications   83,643   5,011  N   vacancies   11,114   1,285  N   firms   108   39  balance USC   Time Is of the Essence   6
+
+PAGE 26
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Submission Order and Sample Completeness  Order   Full Sample   Incomplete   Wave 1   Waves 2–5 1   11,114   1,285   2,063   9,051 2   11,031   1,202   2,040   8,991 3   10,682   853   1,883   8,799 4   10,606   777   1,879   8,727 5   10,278   449   1,748   8,530 6   10,204   375   1,734   8,470 7   9,899   70   1,604   8,295 8   9,829   0   1,590   8,239  N   applications   83,643   5,011   14,541   69,102  N   vacancies   11,114   1,285   2,063   9,051  N   firms   108   39   85   105  balance USC   Time Is of the Essence   6
+
+PAGE 27
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Measuring Application Timing: Early Indicator  Define the first 4 submissions   (out of 8)   to a job as   early :  early i   =   1   (application   i   among the first 4 applications)  41,112   submissions (49.15%) are classified as early.  USC   Time Is of the Essence   7
+
+PAGE 28
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Measuring Application Timing: Early Indicator  early i   =   1   (application   i   among the first 4 applications) Estimate  Y i   =   α 0   +   β   ·   early i   +   γ ′ X i   +   η j ( i )   +   ε i  where  X i   includes the randomized resume characteristics,   η j ( i )   is a vacancy fixed effect. Standard errors are clustered at the vacancy level (Abadie et al., 2023).  USC   Time Is of the Essence   7
+
+PAGE 29
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Measuring Application Timing: Early Indicator  early i   =   1   (application   i   among the first 4 applications) Estimate  Y i   =   α 0   +   β   ·   early i   +   γ ′ X i   +   η j ( i )   +   ε i  early i   Black i   Female i  0.0116 ∗∗∗   -0.0205 ∗∗∗   -0.0021  (0.0024)   (0.0018)   (0.0022) Full sample:   N   = 83, 643  robustness   by order USC   Time Is of the Essence   7
+
+PAGE 30
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Measuring Application Timing: Days to Last Submission  Let   D 2 L i   be the number of days between application   i   and the   final experimental submission   to the same vacancy,  USC   Time Is of the Essence   8
+
+PAGE 31
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Measuring Application Timing: Days to Last Submission  Let   D 2 L i   be the number of days between application   i   and the   final experimental submission   to the same vacancy, 0 .05 .1 .15 .2 .25 Density 0   20   40   60   80 Days to the Last Submission Wave 1   Wave 2-5  USC   Time Is of the Essence   8
+
+PAGE 32
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Measuring Application Timing: Days to Last Submission  Let   D 2 L i   be the number of days between application   i   and the   final experimental submission   to the same vacancy, define   D 2 L t i   = min { D 2 L i   , 7 } . 0 .05 .1 .15 .2 .25 Density 0   20   40   60   80 Days to the Last Submission Wave 1   Wave 2-5 0 .05 .1 .15 .2 Density 0   1   2   3   4   5   6   7+ Days to the Last Submission Wave 1   Wave 2-5  by order USC   Time Is of the Essence   8
+
+PAGE 33
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Early Application Advantage: Days to Last Submission  Estimate  Y i   =   α 0   +   δ   ·   D 2 L t i   +   γ ′ X i   +   η j ( i )   +   ε i  (1) Full Sample  D 2 L t i   0.0040 ∗∗∗  (0.0008)  N   83,643  robustness USC   Time Is of the Essence   9
+
+PAGE 34
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Early Application Advantage: Days to Last Submission  Estimate  Y i   =   α 0   +   δ   ·   D 2 L t i   +   γ ′ X i   +   η j ( i )   +   ε i  (1)   (2)   (3) Full Sample   Wave 1   Waves 2–5  D 2 L t i   0.0040 ∗∗∗   0.0036 ∗∗∗   0.0043 ∗∗∗  (0.0008)   (0.0013)   (0.0010)  N   83,643   14,541   69,102  robustness USC   Time Is of the Essence   9
+
+PAGE 35
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Early Application Advantage: Days to Last Submission  Y i   =   α   +  7 ∑  d =1  δ d   1 { D 2 L t i   =   d }   +   γ ′ X i   +   η j ( i )   +   ε i  USC   Time Is of the Essence   10
+
+PAGE 36
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Early Application Advantage: Days to Last Submission  Y i   =   α   +  7 ∑  d =1  δ d   1 { D 2 L t i   =   d }   +   γ ′ X i   +   η j ( i )   +   ε i 0 .01 .02 .03 .04 .05 Coefficients 0 1 2 3 4 5 6 7+ Days to the Last Submission  robustness   heterogeneity USC   Time Is of the Essence   10
+
+PAGE 37
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Mechanism: Contact Initiation  USC   Time Is of the Essence   11
+
+PAGE 38
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  A Firm-Side Mechanism  downstream stages  vacancy open  8   experimental   applications  So far:   Earlier experimental applications are more likely to be contacted  USC   Time Is of the Essence   12
+
+PAGE 39
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  A Firm-Side Mechanism  downstream stages  vacancy open  8   experimental   applications  So far:   Earlier experimental applications are more likely to be contacted  Possible families of explanations :   direct-timing   versus   pool-based  USC   Time Is of the Essence   12
+
+PAGE 40
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  A Firm-Side Mechanism  downstream stages  vacancy open  8   experimental   applications  contact phase  So far:   Earlier experimental applications are more likely to be contacted  Possible families of explanations :   direct-timing   versus   pool-based Hypothesis:   Applications arriving in the   contact phase   face a different recruiting environment  USC   Time Is of the Essence   12
+
+PAGE 41
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  A Firm-Side Mechanism  downstream stages  vacancy open  8   experimental   applications  contact phase contact initiation  So far:   Earlier experimental applications are more likely to be contacted  Possible families of explanations :   direct-timing   versus   pool-based Hypothesis:   Applications arriving in the   contact phase   face a different recruiting environment  Key state change:   the timing of   contact initiation  USC   Time Is of the Essence   12
+
+PAGE 42
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Recruiters Initiate Contact Early  Applications:   Contacts happen fast 0 .05 .1 .15 .2 Density 0   10   20   30 Days till Contact, If Contacted within 30 Days  USC   Time Is of the Essence   13
+
+PAGE 43
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Recruiters Initiate Contact Early  Applications:   Contacts happen fast 0 .05 .1 .15 .2 Density 0   10   20   30 Days till Contact, If Contacted within 30 Days   Vacancies:   Contact initiation is early 0 .05 .1 .15 Density -20   -10   0   10   20   30 Days from Contact Initiation to Last Submission  USC   Time Is of the Essence   13
+
+PAGE 44
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Contact Initiation: Changes in the Recruiting Environment  downstream stages  vacancy open  8   experimental   applications  contact phase contact initiation  USC   Time Is of the Essence   14
+
+PAGE 45
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Contact Initiation: Changes in the Recruiting Environment  downstream stages  vacancy open  8   experimental   applications  contact phase contact initiation pre   post  Estimate:  Y i   =   ∑  k ∈K , k 6   = − 1  β k   ·   1   ( e j ( i )   =   k )   +   γ ′ X i   +   η j ( i )   +   ε i   , where   e j ( i )   = submission date i   −   contact initiation date j ( i ) ,   X i   includes randomized resume controls, submission-order FEs, and submission-day-of-week FEs.  USC   Time Is of the Essence   14
+
+PAGE 46
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Contact Initiation: Changes in the Recruiting Environment -.6 -.4 -.2 0 .2 Contact Probability Gap Relative to Day -1  ≤ -7   -6   -5   -4   -3   -2   -1   +1   +2   +3   +4   +5   +6   ≥ 7 Submission Date Relative to Experimental Contact Initiation Date  Contact probability drops sharply   after contact initiation  USC   Time Is of the Essence   14
+
+PAGE 47
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Constructing the Post-Initiation Indicator  Day   0 Day   -1 · · · Day   -T · · ·  i  USC   Time Is of the Essence   15
+
+PAGE 48
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Constructing the Post-Initiation Indicator  Day   0 Day   -1 · · · Day   -T · · ·  i  N ( Contacts ) i   = 2 If application   i   arrives at least one day after contact initiation,   N ( Contacts ) i   >   0.  USC   Time Is of the Essence   15
+
+PAGE 49
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Constructing the Post-Initiation Indicator  Day   0 Day   -1 · · · Day   -T · · ·  i  N ( Contacts ) i   = 2 If application   i   arrives at least one day after contact initiation,   N ( Contacts ) i   >   0.  N ( Contacts ) i   = 0   N ( Contacts ) i   >   0   Diff. .2641 ∗∗∗   .0974 ∗∗∗   -.1667 ∗∗∗  (.0034)   (.0125)   (.0127)  N   70,293   8,339   78,632  Contact probability decreases by   63%   after contact initiation.   N ( Contacts ) alt i  USC   Time Is of the Essence   15
+
+PAGE 50
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Contact Initiation Absorbs the Timing Advantage  Y i   =   α 0   +   β   ·   timing i   + ι   ·   1   ( N ( Contacts ) i   >   0) +   γ ′ X i   +   η j ( i )   +   ε i  (1)   (2)   (3)   (4)  early i   0.0112 ∗∗∗   -0.0099 ∗∗∗  (0.0024)   (0.0022)  D 2 L t i   0.0038 ∗∗∗   -0.0039 ∗∗∗  (0.0008)   (0.0007)  1 ( N ( Contacts ) i   >   0)   -0.1733 ∗∗∗   -0.1760 ∗∗∗  (0.0086)   (0.0087)  N   78,632  N ( Contacts ) alt i  USC   Time Is of the Essence   16
+
+PAGE 51
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Contact Initiation Absorbs the Timing Advantage  Y i   =   α 0   +   β   ·   timing i   + ι   ·   1   ( N ( Contacts ) i   >   0) +   γ ′ X i   +   η j ( i )   +   ε i  (1)   (2)   (3)   (4)  early i   0.0112 ∗∗∗   -0.0099 ∗∗∗  (0.0024)   (0.0022)  D 2 L t i   0.0038 ∗∗∗   -0.0039 ∗∗∗  (0.0008)   (0.0007)  1 ( N ( Contacts ) i   >   0)   -0.1733 ∗∗∗   -0.1760 ∗∗∗  (0.0086)   (0.0087)  N   78,632  But contact initiation is   endogenous .   N ( Contacts ) alt i  USC   Time Is of the Essence   16
+
+PAGE 52
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Instrumenting Contact Initiation  Day   0 Day   -1 · · · Day   -T · · ·  i  Intuition:   the quality of applications before   i   is   randomized ̂  model details   ˆ p ij   validation USC   Time Is of the Essence   17
+
+PAGE 53
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Instrumenting Contact Initiation  Day   0 Day   -1 · · · Day   -T · · ·  i  Intuition:   the quality of applications before   i   is   randomized Quality proxy:   train prediction models on the   first experimental application   to each vacancy ̂  p ij   = Pr(contact ij   = 1   |   x ij   ,   z j   )  model details   ˆ p ij   validation USC   Time Is of the Essence   17
+
+PAGE 54
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Instrumenting Contact Initiation  Day   0 Day   -1 · · · Day   -T · · ·  i  Intuition:   the quality of applications before   i   is   randomized Quality proxy:   train prediction models on the   first experimental application   to each vacancy ̂  p ij   = Pr(contact ij   = 1   |   x ij   ,   z j   )  Instrument:   best out-of-fold predicted screening value   at least one day before   i Q best i   =   max  k : day   ( k ) < day   ( i )   { ˆ p kj   }   →   1   ( N ( Contacts ) i   >   0)  model details   ˆ p ij   validation USC   Time Is of the Essence   17
+
+PAGE 55
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  IV Estimation: Contact Initiation and Subsequent Contacts  Q best i  first stage  − − − − − − →   1   ( N ( Contacts ) i   >   0)   second stage  − − − − − − − →   contact  All Vacancies   Contacted Vacancies (1)   (2)   (3)   (4) IV-2SLS   OLS   IV-2SLS   OLS  1   ( N ( Contacts ) i   >   0)   -1.2642 ∗   -0.1204 ∗∗∗   -1.1077 ∗   -0.1275 ∗∗∗  (0.7380)   (0.0206)   (0.5950)   (0.0217) First Stage   0.0078 ∗∗   0.0235 ∗∗  (0.0039)   (0.0098) Kleibergen-Paap   F   5.218   7.602 Anderson-Rubin   p   0.025   0.023  N   39,300   16,142   (4,036   vacancies )  robustness USC   Time Is of the Essence   18
+
+PAGE 56
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Best-So-Far Application as Contact Initiation Trigger β   = -0.468 (0.223) 5 6 7 8 Days from 1st Submission to Contact Initiation 0   .5   1   1.5   2 Highest Predicted Contact Probability among First 4 (std.)  Higher Early Screening Value,   Earlier Contact Initiation  USC   Time Is of the Essence   19
+
+PAGE 57
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Evidence Points to Threshold-Based Screening  The evidence supports a threshold-based mechanism:  stronger best-so-far application   →   contact initiation   →   lower subsequent contact  USC   Time Is of the Essence   20
+
+PAGE 58
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Evidence Points to Threshold-Based Screening  The evidence supports a threshold-based mechanism:  stronger best-so-far application   →   contact initiation   →   lower subsequent contact  The evidence also weighs against four alternatives:  Pool-quality learning : Best-so-far predicts initiation,   mean-so-far does not   A  USC   Time Is of the Essence   20
+
+PAGE 59
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Evidence Points to Threshold-Based Screening  The evidence supports a threshold-based mechanism:  stronger best-so-far application   →   contact initiation   →   lower subsequent contact  The evidence also weighs against four alternatives:  Pool-quality learning : Best-so-far predicts initiation,   mean-so-far does not   A  Intrinsic value of earliness :   The advantage disappears   for vacancies with contact initiation after all experimental submissions   B  USC   Time Is of the Essence   20
+
+PAGE 60
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Evidence Points to Threshold-Based Screening  The evidence supports a threshold-based mechanism:  stronger best-so-far application   →   contact initiation   →   lower subsequent contact  The evidence also weighs against four alternatives:  Pool-quality learning : Best-so-far predicts initiation,   mean-so-far does not   A  Intrinsic value of earliness :   The advantage disappears   for vacancies with contact initiation after all experimental submissions   B  Full-pool comparison : Screening value of later applications   does not predict earlier contacts   C  USC   Time Is of the Essence   20
+
+PAGE 61
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Evidence Points to Threshold-Based Screening  The evidence supports a threshold-based mechanism:  stronger best-so-far application   →   contact initiation   →   lower subsequent contact  The evidence also weighs against four alternatives:  Pool-quality learning : Best-so-far predicts initiation,   mean-so-far does not   A  Intrinsic value of earliness :   The advantage disappears   for vacancies with contact initiation after all experimental submissions   B  Full-pool comparison : Screening value of later applications   does not predict earlier contacts   C  Pure batching : Later submissions are generally   contacted later   D  USC   Time Is of the Essence   20
+
+PAGE 62
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Evidence Points to Threshold-Based Screening  The evidence supports a threshold-based mechanism:  stronger best-so-far application   →   contact initiation   →   lower subsequent contact  The evidence also weighs against four alternatives:  Pool-quality learning : Best-so-far predicts initiation,   mean-so-far does not   A  Intrinsic value of earliness :   The advantage disappears   for vacancies with contact initiation after all experimental submissions   B  Full-pool comparison : Screening value of later applications   does not predict earlier contacts   C  Pure batching : Later submissions are generally   contacted later   D  The key firm choice : Initiate contact when the best so far   crosses a threshold  USC   Time Is of the Essence   20
+
+PAGE 63
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  A Model of Contact Initiation  USC   Time Is of the Essence   21
+
+PAGE 64
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Application Timing in the Labor Market  downstream stages  vacancy open  8   experimental   applications  contact phase contact initiation  So far:  significant early application advantages driven by recruiters initiating contacts before the application pool is complete contact initiation triggered by best-so-far passing a threshold  USC   Time Is of the Essence   22
+
+PAGE 65
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Application Timing in the Labor Market  downstream stages  vacancy open  8   experimental   applications  contact phase contact initiation  So far:  significant early application advantages driven by recruiters initiating contacts before the application pool is complete contact initiation triggered by best-so-far passing a threshold  How does the timing of contact initiation vary with   labor-market conditions ?  USC   Time Is of the Essence   22
+
+PAGE 66
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Application Timing in the Labor Market  downstream stages  vacancy open  8   experimental   applications  contact phase contact initiation  Z m ( i ), t ( i )   at experiment onset  Y i   = α 0   +   δ D 2 F   t i   +   φ   ( D 2 F   t i   ×   Z m ( i ), t ( i )  )  +   φ pre   ( D 2 F   t i   ×   ¯ Z m ( i ), t ( i ) − 3: t ( i ) − 1  )   +   γ X i   +   η j ( i )   +   ε i   ,  Z m ( i ), t ( i ) : conditions in local labor market   m ( i ) in the month of the   first submission   t ( i )  USC   Time Is of the Essence   22
+
+PAGE 67
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Contact Timing by Labor Market Tightness  Dep. Var.   Contacted   Contact Initiation  D 2 F   t i   -.0026 ∗∗∗   -0.0135 ∗∗∗  (.0010)   (.0006) [.0010]   [.0008]  D 2 F   t i   ×   log   ( V   / U m ( i ), t ( i )  )   -0.0078   -0.0291 ∗∗∗  (.0057)   (.0040) [.0056]   [.0049]  N   78,632   78,632  D 2 F   t i   JOLTS USC   Time Is of the Essence   23
+
+PAGE 68
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Contact Timing by Labor Market Tightness  Dep. Var.   Contacted   Contact Initiation  D 2 F   t i   -.0026 ∗∗∗   -0.0135 ∗∗∗  (.0010)   (.0006) [.0010]   [.0008]  D 2 F   t i   ×   log   ( V   / U m ( i ), t ( i )  )   -0.0078   -0.0291 ∗∗∗  (.0057)   (.0040) [.0056]   [.0049]  N   78,632   78,632  more vacancies to fill   ⇒   firms move faster   ⇒   early advantage   ↑  D 2 F   t i   JOLTS USC   Time Is of the Essence   23
+
+PAGE 69
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Modeling the Application-Contact Stage  downstream stages  vacancy open  8   experimental   applications  contact phase contact initiation  Z m ( i ), t ( i )   at experiment onset application-contact stage  USC   Time Is of the Essence   24
+
+PAGE 70
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Modeling the Application-Contact Stage  downstream stages  vacancy open  8   experimental   applications  contact phase contact initiation  Z m ( i ), t ( i )   at experiment onset application-contact stage  Model :   a partial-equilibrium firm-side policy rule   that  quantifies the   recruiting-speed   versus   screening-value tradeoff   of firms accounts for   organic application inflows  separates two underlying economic forces:   arrival intensity   and   the cost of delay  USC   Time Is of the Essence   24
+
+PAGE 71
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Threshold Rule and Firms’ Tradeoff  within-vacancy time   d  best-so-far   v   max ( d )  T 1   T 2   T 3   T 4   T 5  USC   Time Is of the Essence   25
+
+PAGE 72
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Threshold Rule and Firms’ Tradeoff  within-vacancy time   d  best-so-far   v   max ( d )  r T 1   T 2   T 3   T 4   T 5  τ  shadow cost of delay   κ ( θ m , t   ,   ξ m , t   )  initiate contact when   v   max ( d )   ≥   r  The firm’s optimization problem   is max  τ   E  [  e − δτ   v   max ( τ   )  ︸   ︷︷   ︸  value of the best application  −  ∫   τ  0  e − δ s   κ d s  ︸   ︷︷   ︸  cost of delay  ]  USC   Time Is of the Essence   25
+
+PAGE 73
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Threshold Rule and Firms’ Tradeoff  within-vacancy time   d  best-so-far   v   max ( d )  r T 1   T 2   T 3   T 4   T 5  τ  shadow cost of delay   κ ( θ m , t   ,   ξ m , t   )  initiate contact when   v   max ( d )   ≥   r  Poisson arrivals with intensity   λ   ∝   ξ m , t   θ − α c  m , t  The optimal threshold   is characterized by  δ r   +   κ  ︸ ︷︷ ︸  cost of delay  =   λ E   [ ( v   −   r   ) + ] ︸   ︷︷   ︸  option value of another applicant  ,   v   ∼ N   (0, 1)  USC   Time Is of the Essence   25
+
+PAGE 74
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Identification and Estimation  Observed : submission dates and experimental contact initiators  Mapping : threshold crossing and survival from earlier initiation  Estimation : Method of Simulated Moments  Two families of moments : 33 moments, 9 or 12 parameters  Experimental initiator mass by day ( D 2 F   t i   = 0,   · · ·   , 6), and residual   none   mass tightness gradient of contact initiation  Contact-initiation policy on a   normalized screening-value   scale  targeted moments USC   Time Is of the Essence   26
+
+PAGE 75
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Identification and Estimation 0 .1 .2 .3 Contact Initiation Probability 0   1   2   3   4   5   6   7+ Day Bin Wave 1 (Target)   Wave 1 (Simulated) Wave 2 (Target)   Wave 2 (Simulated) Waves 3-4 (Target)   Waves 3-4 (Simulated) Wave 5 (Target)   Wave 5 (Simulated)  fit summary   robustness USC   Time Is of the Essence   26
+
+PAGE 76
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Screening-Value Cost of Early Contact Initiation  downstream stages  vacancy open  8   experimental   applications  contact phase contact initiation pre   post  USC   Time Is of the Essence   27
+
+PAGE 77
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Screening-Value Cost of Early Contact Initiation  downstream stages  vacancy open  best:   A max  j  contact phase  A ij  best:   A j   ( d )   post  If initiation is assigned to experimental application   i , then  A max  j   −   A ij   =   A max  j   −   A j   ( d )  ︸   ︷︷   ︸  timing component  +   A j   ( d )   −   A ij  ︸   ︷︷   ︸  within-pool value gap  USC   Time Is of the Essence   27
+
+PAGE 78
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  The Screening-Value Cost of Early Contact Initiation  downstream stages  vacancy open  best:   A max  j  contact phase  A ij  best:   A j   ( d )   post  If initiation is assigned to experimental application   i , then  A max  j   −   A ij   =   A max  j   −   A j   ( d )  ︸   ︷︷   ︸  timing component  +   A j   ( d )   −   A ij  ︸   ︷︷   ︸  within-pool value gap  Construct two   conditional   loss measures:  Missed-Best Probability = Pr   ( A j   ( d )   <   A max  j  )   ,   Relative Timing Loss =   E   [ A max  j   −   A j   ( d ) ]  E [ A ij   ]  USC   Time Is of the Essence   27
+
+PAGE 79
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Early Contact Initiation Has Meaningful Screening-Value Costs  ¯ P exp ( ̂ Θ)   Missed-Best Probability   Relative Timing Loss Baseline   0.4079   0.5156   0.0656  [0.3985, 0.4177]   [0.5069, 0.5234]   [0.0642, 0.0674]  robustness USC   Time Is of the Essence   28
+
+PAGE 80
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Early Contact Initiation Has Meaningful Screening-Value Costs  ¯ P exp ( ̂ Θ)   Missed-Best Probability   Relative Timing Loss Baseline   0.4079   0.5156   0.0656  [0.3985, 0.4177]   [0.5069, 0.5234]   [0.0642, 0.0674] One Day Earlier ∆   0.1175   0.0217 [0.1144, 0.1209]   [0.0211, 0.0223] One Day Later ∆   -0.1713   -0.0292 [-0.1733, -0.1691]   [-0.0301, -0.0285]  robustness USC   Time Is of the Essence   28
+
+PAGE 81
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Early Contact Initiation Has Meaningful Screening-Value Costs  ¯ P exp ( ̂ Θ)   Missed-Best Probability   Relative Timing Loss Baseline   0.4079   0.5156   0.0656  [0.3985, 0.4177]   [0.5069, 0.5234]   [0.0642, 0.0674] One Day Earlier ∆   0.1175   0.0217 [0.1144, 0.1209]   [0.0211, 0.0223] One Day Later ∆   -0.1713   -0.0292 [-0.1733, -0.1691]   [-0.0301, -0.0285]  Wage-equivalent timing loss = RTL ︸︷︷︸  0.0656  ×   ¯ w ︸︷︷︸  $47,150  ×   ∆ p contact  ︸   ︷︷   ︸  63.12%  ×   π H | C  ︸︷︷︸  [0.20,0.40]  = [$390, $781]  robustness USC   Time Is of the Essence   28
+
+PAGE 82
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Firms’ Tradeoff: Speed-Loss Frontier  Across recruiting environments, earlier contact comes with larger timing losses: .4 .45 .5 .55 .6 .65 Missed-Best Probability .8   .9   1   1.1   1.2   1.3   1.4   1.5 Cond. Expected Day Bin of Contact Initiation  Missed-Best Probability .04 .05 .06 .07 .08 .09 Relative Timing Loss .8   .9   1   1.1   1.2   1.3   1.4   1.5 Cond. Expected Day Bin of Contact Initiation   Relative Timing Loss  USC   Time Is of the Essence   29
+
+PAGE 83
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Firms’ Tradeoff: Speed-Loss Frontier  Across recruiting environments, earlier contact comes with larger timing losses: Baseline  κ   x 0.5  κ   x 2 .4 .45 .5 .55 .6 .65 Missed-Best Probability .8   .9   1   1.1   1.2   1.3   1.4   1.5 Cond. Expected Day Bin of Contact Initiation  Missed-Best Probability Baseline  κ   x 0.5  κ   x 2 .04 .05 .06 .07 .08 .09 Relative Timing Loss .8   .9   1   1.1   1.2   1.3   1.4   1.5 Cond. Expected Day Bin of Contact Initiation   Relative Timing Loss   magnitude USC   Time Is of the Essence   29
+
+PAGE 84
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Quantifying Firms’ Tradeoff: Counterfactuals  Tighter markets increase timing losses, mainly through the   arrival-intensity channel : -.02 -.01 0 .01 .02 Loss Deviation from Baseline -.5   0   .5 Deviation from Baseline Log Tightness arrival intensity   λ  flow cost   κ  Missed-Best Probability -.004 -.002 0 .002 .004 Loss Deviation from Baseline -.5   0   .5 Deviation from Baseline Log Tightness arrival intensity   λ  flow cost   κ   Relative Timing Loss  other counterfactuals USC   Time Is of the Essence   30
+
+PAGE 85
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Quantifying Firms’ Tradeoff: Counterfactuals  Within-pool reallocation   cannot eliminate timing loss : .04 .06 .08 .1 Relative Timing Loss Baseline   0.5   Full Degree of Within-Day Reallocation  USC   Time Is of the Essence   30
+
+PAGE 86
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Welfare Implications of Timing Frictions  Sequential arrival   creates a queue-position wedge   even when firms optimize :  USC   Time Is of the Essence   31
+
+PAGE 87
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Welfare Implications of Timing Frictions  Sequential arrival   creates a queue-position wedge   even when firms optimize :  firm competition : recruiting speed is a margin alongside wages and amenities   (Carrillo-Tudela et al., 2023)   external validity  USC   Time Is of the Essence   31
+
+PAGE 88
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Welfare Implications of Timing Frictions  Sequential arrival   creates a queue-position wedge   even when firms optimize :  firm competition : recruiting speed is a margin alongside wages and amenities   (Carrillo-Tudela et al., 2023)   external validity  speed premium : applicants have an incentive to reallocate effort toward being early   (Davis and de la Parra, 2024; Stanton and Thomas, 2025)  USC   Time Is of the Essence   31
+
+PAGE 89
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Welfare Implications of Timing Frictions  Sequential arrival   creates a queue-position wedge   even when firms optimize :  firm competition : recruiting speed is a margin alongside wages and amenities   (Carrillo-Tudela et al., 2023)   external validity  speed premium : applicants have an incentive to reallocate effort toward being early   (Davis and de la Parra, 2024; Stanton and Thomas, 2025)  arms race to be early   (Horton et al., 2024)  sorting by constraint   (Bandiera et al., 2025; Philippe and Skandalis, 2026; Tekleselassie et al., 2025)  USC   Time Is of the Essence   31
+
+PAGE 90
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Welfare Implications of Timing Frictions  Sequential arrival   creates a queue-position wedge   even when firms optimize :  firm competition : recruiting speed is a margin alongside wages and amenities   (Carrillo-Tudela et al., 2023)   external validity  speed premium : applicants have an incentive to reallocate effort toward being early   (Davis and de la Parra, 2024; Stanton and Thomas, 2025)  arms race to be early   (Horton et al., 2024)  sorting by constraint   (Bandiera et al., 2025; Philippe and Skandalis, 2026; Tekleselassie et al., 2025)  micro-to-macro link : recruiting conditions shape when firms act and who receives consideration  USC   Time Is of the Essence   31
+
+PAGE 91
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Welfare Implications of Timing Frictions  Sequential arrival   creates a queue-position wedge   even when firms optimize :  firm competition : recruiting speed is a margin alongside wages and amenities   (Carrillo-Tudela et al., 2023)   external validity  speed premium : applicants have an incentive to reallocate effort toward being early   (Davis and de la Parra, 2024; Stanton and Thomas, 2025)  arms race to be early   (Horton et al., 2024)  sorting by constraint   (Bandiera et al., 2025; Philippe and Skandalis, 2026; Tekleselassie et al., 2025)  micro-to-macro link : recruiting conditions shape when firms act and who receives consideration  time-varying matching efficiency   (Barlevy et al., 2024; Barnichon and Figura, 2015; Davis, Faberman, et al., 2006; Sedl´ aˇ cek, 2014)  cyclical match quality   (Barlevy, 2002; Bellou and Kaymak, 2021; Bils et al., 2023)  USC   Time Is of the Essence   31
+
+PAGE 92
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Conclusion  USC   Time Is of the Essence   32
+
+PAGE 93
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Timing Is Part of the Matching Process  Novel evidence on   early application advantages   in job applications:  USC   Time Is of the Essence   33
+
+PAGE 94
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Timing Is Part of the Matching Process  Novel evidence on   early application advantages   in job applications:  Significance :   1.2 p.p.   contact gap,   0.4 p.p. daily   , equivalent to 57% of the racial contact gap  USC   Time Is of the Essence   33
+
+PAGE 95
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Timing Is Part of the Matching Process  Novel evidence on   early application advantages   in job applications:  Significance :   1.2 p.p.   contact gap,   0.4 p.p. daily   , equivalent to 57% of the racial contact gap  Firm behavior :   threshold-triggered contact initiation   is the key mechanism  USC   Time Is of the Essence   33
+
+PAGE 96
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Timing Is Part of the Matching Process  Novel evidence on   early application advantages   in job applications:  Significance :   1.2 p.p.   contact gap,   0.4 p.p. daily   , equivalent to 57% of the racial contact gap  Firm behavior :   threshold-triggered contact initiation   is the key mechanism  Cyclicality : the timing gradient is   steeper   in tighter labor markets  USC   Time Is of the Essence   33
+
+PAGE 97
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Timing Is Part of the Matching Process  Novel evidence on   early application advantages   in job applications:  Significance :   1.2 p.p.   contact gap,   0.4 p.p. daily   , equivalent to 57% of the racial contact gap  Firm behavior :   threshold-triggered contact initiation   is the key mechanism  Cyclicality : the timing gradient is   steeper   in tighter labor markets  Welfare implications   of the timing wedge  A within-vacancy mechanism of   application inflow   and   flow cost  Quantifying the cost of the   timing friction  Microfounding   cyclicality   of matching efficiency and quality  USC   Time Is of the Essence   33
+
+PAGE 98
+Introduction   Early Application Advantage   Mechanism: Contact Initiation   A Model of Contact Initiation   Conclusion  Timing Is Part of the Matching Process  Novel evidence on   early application advantages   in job applications:  Significance :   1.2 p.p.   contact gap,   0.4 p.p. daily   , equivalent to 57% of the racial contact gap  Firm behavior :   threshold-triggered contact initiation   is the key mechanism  Cyclicality : the timing gradient is   steeper   in tighter labor markets  Welfare implications   of the timing wedge  A within-vacancy mechanism of   application inflow   and   flow cost  Quantifying the cost of the   timing friction  Microfounding   cyclicality   of matching efficiency and quality  Future work   can  embed the application-timing wedge in a   general equilibrium   model study how recruiters   update their beliefs  USC   Time Is of the Essence   33
+
+PAGE 99
+Thank you!  Contact me: saizhang@usc.edu
+
+PAGE 100
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Sampling Firms and Vacancies  2018 Fortune 500 123 firms  Sufficient geographic scope  108 firms  Auditable hiring portals  Recent entry-level vacancies  Most recent eligible posting   in a new county prioritized  Target:   25 vacancies per firm-wave; 5 waves, 2019–2021.   back USC   Time Is of the Essence   35
+
+PAGE 101
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Application Protocol and Randomization  submission protocol:   up to   8 applications   per vacancy in   4 pairs Pair 1  Black   White  Pair 2  Black   White  Pair 3  Black   White  Pair 4  Black   White  timing : typically every other day in   Wave 1 , typically daily in   Wave 2–5 other randomized attributes :  Identity signals  Gender, age, clubs, pronouns  Credentials  Education, work experience  Other attributes  Resume design, personality-test responses  outcome:   employer contact within 30 days, phone numbers and/or email addresses recorded.   back USC   Time Is of the Essence   36
+
+PAGE 102
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Example Experimental Resumes Example resumes Joshua Erickson  Preferred Pronouns: They | Them | Theirs  (224)-478-1806  joshuaerickson9@gmail.com  124 Carol Louise Dr Caseyville, IL  J|E  Education History   Young Magnet High School | Chicago, IL  1990 to 1994  Previous Employment   Retail Associate | O Fallon, IL  11/2019 to Present Good Feet Store 1. Performed visual merchandising in sales areas. 2. Wrote up inventory logs daily.  Host | Marine, IL  10/2018 to 11/2019 Phyl's Chet Rose's Tavern 1. Communicated efficiently with all restaurant staff. 2. Monitored guests needs and workflow of the restaurant seating customers accordingly. 3. Recognized for hard work, dedication, dependability, prompt and reliable attendance, and willingness to work overtime as needed.  Professional References   Juliet Romero: Previous supervisor at Good Feet Store Cassandra Edwards: Previous supervisor at Phyl's Chet Rose's Tavern Maurice Randle  (781)-790-4717 3620 232Nd St Bothell, WA mrandle667@verizonmail.me  MR  Previous Employment   Retail Associate | Seattle, WA   9/2018 to Present Oiselle Running Reference | Salvador Porter | (206) 160-2193 I. Received, unpacked, tagged, and issued sales floor merchandise. II. Participated in year-end inventory and cycle counts. III. Served as a consultant to help customer make the right selection.  Cashier | Bellevue, WA   1/2017 to 9/2018 Crossroads Farmers Market Reference | Ezequiel Stephens | (425) 885-1919 I. Operated registers, scanners, scales and credit card/debit card terminals. II. Served customers with a friendly demeanor and positive attitude. III. Maintained clean and orderly checkout areas and completed other general cleaning duties, such as mopping floors and emptying trash cans.  Cashier | Redmond, WA   7/2015 to 1/2017 Redmond Marriott Town Center Reference | Kayley Gonzalez | (206) 538-2874 I. Used coupons effectively & discounts. II. Other responsibilities included scanning items, processing payments, applying coupons, providing change. III. Operated scanners, scales, cash registers, and other electronics on a daily basis.  Education History   Everett Community College   1995 to 1997 Everett, WA Associates | Marketing  Naches Valley High School   1991 to 1995 Naches, WA General Studies  Skills   Communication Prioritizing tasks Highly detail oriented Example resumes Joshua Erickson  Preferred Pronouns: They | Them | Theirs  (224)-478-1806  joshuaerickson9@gmail.com  124 Carol Louise Dr Caseyville, IL  J|E  Education History   Young Magnet High School | Chicago, IL  1990 to 1994  Previous Employment   Retail Associate | O Fallon, IL  11/2019 to Present Good Feet Store 1. Performed visual merchandising in sales areas. 2. Wrote up inventory logs daily.  Host | Marine, IL  10/2018 to 11/2019 Phyl's Chet Rose's Tavern 1. Communicated efficiently with all restaurant staff. 2. Monitored guests needs and workflow of the restaurant seating customers accordingly. 3. Recognized for hard work, dedication, dependability, prompt and reliable attendance, and willingness to work overtime as needed.  Professional References   Juliet Romero: Previous supervisor at Good Feet Store Cassandra Edwards: Previous supervisor at Phyl's Chet Rose's Tavern Maurice Randle  (781)-790-4717 3620 232Nd St Bothell, WA mrandle667@verizonmail.me  MR  Previous Employment   Retail Associate | Seattle, WA   9/2018 to Present Oiselle Running Reference | Salvador Porter | (206) 160-2193 I. Received, unpacked, tagged, and issued sales floor merchandise. II. Participated in year-end inventory and cycle counts. III. Served as a consultant to help customer make the right selection.  Cashier | Bellevue, WA   1/2017 to 9/2018 Crossroads Farmers Market Reference | Ezequiel Stephens | (425) 885-1919 I. Operated registers, scanners, scales and credit card/debit card terminals. II. Served customers with a friendly demeanor and positive attitude. III. Maintained clean and orderly checkout areas and completed other general cleaning duties, such as mopping floors and emptying trash cans.  Cashier | Redmond, WA   7/2015 to 1/2017 Redmond Marriott Town Center Reference | Kayley Gonzalez | (206) 538-2874 I. Used coupons effectively & discounts. II. Other responsibilities included scanning items, processing payments, applying coupons, providing change. III. Operated scanners, scales, cash registers, and other electronics on a daily basis.  Education History   Everett Community College   1995 to 1997 Everett, WA Associates | Marketing  Naches Valley High School   1991 to 1995 Naches, WA General Studies  Skills   Communication Prioritizing tasks Highly detail oriented  Source: Kline et al. (2022)   back USC   Time Is of the Essence   37
+
+PAGE 103
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Market Conditions and Other Covariates  Main measure at experiment onset : state-month labor-market tightness  job openings per unemployed worker (JOLTS and LAUS)  Additional recruiting conditions  hires, quits, layoffs and discharges, and job-opening rates (JOLTS)  Descriptive external-validity covariates  industry and job content (O*NET; BLS CES and ECI) state income, institutions, and employment composition (IDDA, Kondo et al., 2023) (DOL; LAUS) firm organization, financial characteristics, and job postings (Compustat; Revelio Labs)  back USC   Time Is of the Essence   38
+
+PAGE 104
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Construction of Application Timing Measures  early i   early   2  i   early   3  i   Order i   D 2 L t i   N ( Contacts ) i  early i   1  early   2  i   0.9786   1  early   3  i   0.9569   0.9710   1  Order i   -0.8164   -0.8076   -0.8006   1  D 2 L t i   0.7169   0.7195   0.7146   -0.7406   1  N ( Contacts ) i   -0.2048   -0.2006   -0.1993   0.2385   -0.1790   1  early i   =   1   (application   i   among the first 4 applications)  early   2  i   =   1   (application   i   not among the last 4 applications)  early   3  i   =   1   (application   i   not among the last 2 pairs of applications)  back USC   Time Is of the Essence   39
+
+PAGE 105
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Balance of Timing Measures  (1)   (2)   (3)   (4)   (5)   (6) Dep.Var.   early   1   early   2   early   3   Order   Order   pair   D 2 L t  Balanced   1.55   1.37   1.19   0.73   1.02   1.25 [0.1228]   [0.1938]   [0.2967]   [0.6864]   [0.4212]   [0.2568] Full   1.07   0.98   0.83   0.63   0.83   0.97 [0.3831]   [0.4564]   [0.5857]   [0.7692]   [0.5876]   [0.4618] Complete   0.99   0.99   0.82   0.53   1.11   0.92 [0.4481]   [0.4481]   [0.5988]   [0.8540]   [0.3519]   [0.5040] Incomplete   1.10   1.06   0.87   0.93   1.03   0.75 [0.3566]   [0.3931]   [0.5478]   [0.5007]   [0.4142]   [0.6610]  back USC   Time Is of the Essence   40
+
+PAGE 106
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Robustness: Early Indicator  (1)   (2)   (3)   (4)   (5)   (6) Complete   Incomplete   Wave 1   Waves 2–5   Full Sample   Full Sample  early i   0.0112 ∗∗∗   0.0240 ∗   0.0128 ∗∗   0.0113 ∗∗∗  (0.0024)   (0.0127)   (0.0061)   (0.0025)  early   2  i   0.0135 ∗∗∗  (0.0023)  early   3  i   0.0105 ∗∗∗  (0.0023 )  N   78,632   5,011   14,541   69,102   83,643   83,643  construction   back USC   Time Is of the Essence   41
+
+PAGE 107
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Early Application Advantage: Submission Order  Y i   =   α   +  8 ∑  k =2  β k   1 { Order i   =   k }   +   γ ′ X i   +   η j ( i )   +   ε i -.03 -.02 -.01 0 .01 Coefficients 1   2   3   4   5   6   7   8 Order of Submission  robustness   back USC   Time Is of the Essence   42
+
+PAGE 108
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Robustness: Submission Order -.03 -.02 -.01 0 .01 Coefficients 1   2   3   4   5   6   7   8 Order of Submission  Complete vacancies -.15 -.1 -.05 0 .05 Coefficients 1   2   3   4   5   6   7   8 Order of Submission   Incomplete vacancies   back USC   Time Is of the Essence   43
+
+PAGE 109
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Robustness: Days to Last Submission  (1)   (2)   (3)   (4)   (5) Full Sample   Wave 1   Waves 2–5   Complete   Incomplete  D 2 L i   (w.)   0.0039 ∗∗∗   0.0034 ∗∗∗   0.0042 ∗∗∗  (0.0008)   (0.0013)   (0.0010)  D 2 L t i   0.0038 ∗∗∗   0.0087 ∗∗  (0.0008)   (0.0035)  N   83,643   14,541   69,102   78,632   5,011  back USC   Time Is of the Essence   44
+
+PAGE 110
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Robustness: Days to Last Submission 0 .1 .2 .3 .4 Density 0 1 2 3 4 5 6 7+ Days to the Last Submission order=1   order=2   order=3   order=4 order=5   order=6   order=7  Full Sample 0 .1 .2 .3 Density 0 1 2 3 4 5 6 7+ Days to the Last Submission Order = 1 or 2   Order = 3 or 4   Order = 5 or 6 < 8 sub.   < 8 sub.   < 8 sub.   Complete vs. Incomplete   back USC   Time Is of the Essence   45
+
+PAGE 111
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Robustness: Days to Last Submission -.04 -.02 0 .02 .04 .06 Coefficients 0 1 2 3 4 5 6 7+ Days to the Last Submission  Wave 1 -.02 0 .02 .04 .06 Coefficients 0 1 2 3 4 5 6 7+ Days to the Last Submission   Waves 2–5   back USC   Time Is of the Essence   46
+
+PAGE 112
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Robustness: Days to Last Submission 0 .02 .04 .06 Coefficients 0 1 2 3 4 5 6 7+ Days to the Last Submission  Complete -.1 0 .1 .2 Coefficients 0 1 2 3 4 5 6 7+ Days to the Last Submission   Incomplete   back USC   Time Is of the Essence   46
+
+PAGE 113
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Constructing the Post-Initiation Indicator  Day   0 Day   -1 · · · Day   -T · · ·  i  N ( Contacts ) i   = 2  N ( Contacts ) alt i   = 3  N ( Contacts ) alt i   = 0   N ( Contacts ) alt i   >   0   Diff. .2686 ∗∗∗   .1536 ∗∗∗   -.1150 ∗∗∗  (.0035)   (.0116)   (.0123)  N   67,082   11,550   78,632  back USC   Time Is of the Essence   47
+
+PAGE 114
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Contact Initiation Absorbs the Timing Advantage  (1)   (2)   (3)   (4)  early i   0.0112 ∗∗∗   -0.0017 (0.0024)   (0.0022)  D 2 L t i   0.0038 ∗∗∗   -0.0011 (0.0008)   (0.0008)  1 ( N ( Contacts ) alt i   >   0)   -0.1257 ∗∗∗   -0.1273 ∗∗∗  (0.0094)   (0.0094)  N   78,632  back USC   Time Is of the Essence   48
+
+PAGE 115
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Machine Learning Prediction Models  Training sample : first experimental application to each vacancy,   N   = 11, 114  Input predictors : all resume characteristics, SOC3 categories of vacancies, detailed resume entry categories   (1,512 job-type categories, 23 job titles, duration in months)  Out-of-fold construction : Posting-level five-fold cross-fitting Each vacancy scored using a model trained on other vacancies  Model candidates : Elastic-net logistic regression, ExtraTrees classifier, CatBoost gradient boosting (with native and encoded category handling)  Model selection criteria : prediction accuracy and within-vacancy score dispersion  performance score   visual comparison   back USC   Time Is of the Essence   49
+
+PAGE 116
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Pre-Tuning Model Comparison  Model   ROC-AUC   Log Loss   Brier   Average Precision CatBoost (native categories)   0.758   0.474   0.154   0.525 ExtraTrees (encoded)   0.743   0.491   0.160   0.511 CatBoost (encoded)   0.740   0.484   0.158   0.504 Elastic-net logit (encoded)   0.734   0.491   0.161   0.488  model details   back USC   Time Is of the Essence   50
+
+PAGE 117
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Machine Learning Model Comparison 0.0   0.2   0.4   0.6   0.8   1.0 False Positive Rate 0.0 0.2 0.4 0.6 0.8 1.0 True Positive Rate ElasticNet (AUC=0.734) ExtraTrees (AUC=0.743) CatBoost_grouped (AUC=0.740) CatBoost_native (AUC=0.758)  ROC Curve 0.0   0.1   0.2   0.3   0.4   0.5   0.6   0.7   0.8 range 0.0 0.2 0.4 0.6 0.8 1.0 ECDF ElasticNet ExtraTrees CatBoost_grouped CatBoost_native   Predicted Score Range  model details   back USC   Time Is of the Essence   51
+
+PAGE 118
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Prediction Score Validation  (1)   (2)   (3)   (4)   (5)   (6) All Vacancies   Vacancies w.   ≥   1 Contact Main index   0.1587 ∗∗∗   0.2807 ∗∗∗  (0.0404)   (0.0715) Alternative 1   0.1240 ∗∗∗   0.2525 ∗∗∗  (0.0282)   (0.0573) Alternative 2   0.1078 ∗∗∗   0.2060 ∗∗∗  (0.0278)   (0.0533) Vacancy FEs   X   X   X   X   X   X  N   78,632   78,632   78,632   32,288   32,288   32,288  back USC   Time Is of the Essence   52
+
+PAGE 119
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Prediction Score Validation  (1)   (2)   (3)   (4)   (5)   (6) All Vacancies   Vacancies w.   ≥   1 Contact Main index   1.0120 ∗∗∗   0.6084 ∗∗∗  (0.0182)   (0.0253) Alternative 1   1.1650 ∗∗∗   0.6988 ∗∗∗  (0.0214)   (0.0293) Alternative 2   1.1340 ∗∗∗   0.6743 ∗∗∗  (0.0208)   (0.0285) St-Mth FEs   X   X   X   X   X   X  N   78,632   78,632   78,632   32,288   32,288   32,288  back USC   Time Is of the Essence   52
+
+PAGE 120
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Prediction Score Validation  (1)   (2)   (3)   (4)   (5)   (6) Dep.Var.   Main Index   Alternative 1   Alternative 2  early   1  i   -0.0003   0.0004   0.0003 (0.0002)   (0.0003)   (0.0003)  D 2 L t i   -0.0001   0.0002   0.0001 (0.0001)   (0.0001)   (0.0001) Vacancy FEs   X   X   X   X   X   X  N   78,632   78,632   78,632   78,632   78,632   78,632  back USC   Time Is of the Essence   52
+
+PAGE 121
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  IV Estimation: Robustness  Using an alternative index built from a CatBoost model with frequency-based grouping  All Vacancies   Contacted Vacancies (1)   (2)   (3)   (4) IV-2SLS   OLS   IV-2SLS   OLS  1   ( N ( Contacts ) i   >   0)   -0.6520   -0.1205 ∗∗∗   -0.5742 ∗   -0.1277 ∗∗∗  (0.3981)   (0.0206)   (0.3469)   (0.0217) Kleibergen-Paap   F   10.781   15.172 Anderson-Rubin   p   0.083   0.085  N   39,300   16,142   (4,036   vacancies )  back USC   Time Is of the Essence   53
+
+PAGE 122
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  IV Estimation: Robustness  Using an alternative index built from a CatBoost model with text-based grouping  All Vacancies   Contacted Vacancies (1)   (2)   (3)   (4) IV-2SLS   OLS   IV-2SLS   OLS  1   ( N ( Contacts ) i   >   0)   -1.0857   -0.1204 ∗∗∗   -0.9264   -0.1275 ∗∗∗  (0.8640)   (0.0206)   (0.6883)   (0.0217) Kleibergen-Paap   F   3.406   5.112 Anderson-Rubin   p   0.112   0.113  N   39,300   16,142   (4,036   vacancies )  back USC   Time Is of the Essence   53
+
+PAGE 123
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Contact Initiation and the Best Application Arrival -.6 -.4 -.2 0 .2 Contact Probability Gap Relative to Day -1  ≤ -7   -6   -5   -4   -3   -2   -1   +1   +2   +3   +4   +5   +6   ≥ 7 Submission Date Relative to Experimental Contact Initiation Date  Before Initiation -.6 -.4 -.2 0 .2 Contact Probability Gap Relative to Day -1  ≤ -7   -6   -5   -4   -3   -2   -1   +1   +2   +3   +4   +5   +6   ≥ 7 Submission Date Relative to Experimental Contact Initiation Date   After Initiation  main event study   back USC   Time Is of the Essence   54
+
+PAGE 124
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Alternative Explanation: Pool-Quality Learning  (1)   (2)   (3)   (4) Outcome: Contact Initiation All Vacancies   Vacancies w.   ≥   1 Contact  Q best i   0.0078 ∗∗   0.0235 ∗∗  (0.0039)   (0.0098)  Q mean i   0.0040   0.0134 (0.0079)   (0.0180)  N   39,300   39,300   16,142   16,142  back USC   Time Is of the Essence   55
+
+PAGE 125
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Alternative Explanation: Pool-Quality Learning  (1)   (2)   (3)   (4)   (5)   (6) Outcome: Contact All Vacancies   Vacancies w.   ≥   1 Contact  Q best i   -0.0102 ∗∗   -0.0099   -0.0271 ∗∗   -0.0274 ∗  (0.0050)   (0.0064)   (0.0130)   (0.0165)  Q mean i   -0.0129   -0.0007   -0.0309   0.0008 (0.0098)   (0.0126)   (0.0233)   (0.0295)  N   39,300   39,300   39,300   16,142   16,142   16,142  back USC   Time Is of the Essence   55
+
+PAGE 126
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Alternative Explanation: Pool-Quality Learning β   = -0.176 (0.513) 5 6 7 8 Days from 1st Submission to Contact Initiation -.4   -.2   0   .2   .4   .6 Average Predicted Contact Probability among First 4 (std.)  back USC   Time Is of the Essence   55
+
+PAGE 127
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Alternative Explanation: Intrinsic Value of Earliness  (1)   (2)   (3)   (4)   (5)   (6) All Vacancies   Early Contact Init.   Late Contact Init.  early   0.0273 ∗∗∗   0.0933 ∗∗∗   -0.0523 ∗∗∗  (0.0058)   (0.0076)   (0.0085)  D 2 L t   0.0096 ∗∗∗   0.0326 ∗∗∗   -0.0243 ∗∗∗  (0.0020)   (0.0025)   (0.0031)  N   32,288   32,288   17,616   17,616   14,672   14,672  back USC   Time Is of the Essence   56
+
+PAGE 128
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Alternative Explanation: Full-Pool Comparison  (1)   (2)   (3)   (4) All Vacancies   Vacancies w.   ≥   1 Contact  Q best , post i   0.0053   0.0122 (0.0048)   (0.0118)  Q mean , post i   0.0027   0.0044 (0.0099)   (0.0233)  N   39,281   39,281   16,143   16,143  back USC   Time Is of the Essence   57
+
+PAGE 129
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Alternative Explanation: Pure Batching 0 1 2 3 4 5 Days from Contact Initiation to A Contact -2   0   2   4   6 Days from the First Submission to A Submission  back USC   Time Is of the Essence   58
+
+PAGE 130
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Contact Timing by Labor Market Tightness: Robustness  (1)   (2)   (3)   (4)   (5) Pr (Contact Initiator)  D 2 F   t i   ×   log ( hires m ( i ), t ( i )  )   -0.0097 ∗   -0.0054 (0.0052)   (0.0063)  D 2 F   t i   ×   log  (  layoffs m ( i ), t ( i )  )  0.0006   -0.0062 ∗∗∗  (0.0011)   (0.0014)  D 2 F   t i   ×   log  (  quits m ( i ), t ( i )  )  -0.0166 ∗∗∗   0.0021 (0.0047)   (0.0053)  D 2 F   t i   ×   log  (  job opening m ( i ), t ( i )  )  -0.0278 ∗∗∗   0.0024 (0.0055)   (0.0103)  D 2 F   t i   ×   log  (  tightness m ( i ), t ( i )  )  -0.0368 ∗∗∗  (0.0080)  N   78,632   78,632   78,632   78,632   78,632  back USC   Time Is of the Essence   59
+
+PAGE 131
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Construction of   D 2 F   t i  D 2 F   t i   is constructed similarly to   D 2 L t i   :  D 2 F   t i   = min   { days between application   i   and the first application, 7 }  D 2 F   t i   and   D 2 L t i   are almost perfectly negatively correlated:  D 2 F   t i  D 2 L t i   -0.9748 ∗∗∗  (0.0018) Vacancy FEs   X  N   78,632   back USC   Time Is of the Essence   60
+
+PAGE 132
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Targeted Moments  Level moments: Contact-initiation day mass d   = 0   d   = 1   d   = 2   d   = 3   d   = 4   d   = 5   d   = 6   None  h ( j ) = 1   0.1628   0.0478   0.0345   0.0294   0.0263   0.0179   0.0234   0.6384 (0.0088)   (0.0051)   (0.0042)   (0.0038)   (0.0036)   (0.0030)   (0.0034)   (0.0118)  h ( j ) = 2   0.2120   0.0768   0.0580   0.0446   0.0123   0.0035   0.0026   0.5867 (0.0088)   (0.0050)   (0.0041)   (0.0037)   (0.0022)   (0.0011)   (0.0011)   (0.0111)  h ( j ) = 3   0.1552   0.0766   0.0670   0.0503   0.0174   0.0039   0.0021   0.6255 (0.0051)   (0.0035)   (0.0032)   (0.0029)   (0.0018)   (0.0009)   (0.0006)   (0.0072)  h ( j ) = 4   0.2465   0.1131   0.0818   0.0629   0.0134   0.0018   0.0005   0.4792 (0.0083)   (0.0060)   (0.0048)   (0.0045)   (0.0021)   (0.0009)   (0.0005)   (0.0107) Tightness moment   -0.0291 (0.0037) back USC   Time Is of the Essence   61
+
+PAGE 133
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Moment Fitting -.2 0 .2 .4 .6 .8 Simulated Moments -.2   0   .2   .4   .6   .8 Target Moments Level Moments Tightness Moments  back USC   Time Is of the Essence   62
+
+PAGE 134
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Moment Fitting Robustness -.2 0 .2 .4 .6 .8 Simulated Moments -.2   0   .2   .4   .6   .8 Target Moments  Alternative Moment Set A -.2 0 .2 .4 .6 .8 Simulated Moments -.2   0   .2   .4   .6   .8 Target Moments Level Moments Tightness Moments   Alternative Moment Set B   back USC   Time Is of the Essence   63
+
+PAGE 135
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Headline Result Robustness: Screening-Value Costs 0 .2 .4 .6 Loss w. Frequency-Based Categories 0   .2   .4   .6 Loss w. Native Categories Missed-Best Probability   Relative Timing Loss  Frequency-Based Category Scores 0 .2 .4 .6 Loss w. Text-Based Categories 0   .2   .4   .6 Loss w. Native Categories Missed-Best Probability   Relative Timing Loss   Text-Based Category Scores   back USC   Time Is of the Essence   64
+
+PAGE 136
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Selected Counterfactuals on the Frontier  Counterfactual Expected Initiation-Day Bin   ¯ P exp ( ̂   Θ) Missed-Best Probability Relative Timing Loss Baseline   1.213   0.4079   0.5156   0.0656  κ j   ×   0.5   1.326   0.3726   0.4937   0.0620  κ j   ×   2   1.044   0.4579   0.5482   0.0711 Mean log( θ ) to   p 10   1.248   0.3754   0.5081   0.0643 Mean log( θ ) to   p 90   1.182   0.4359   0.5221   0.0667  back USC   Time Is of the Essence   65
+
+PAGE 137
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  Quantifying Firms’ Tradeoff: Counterfactuals -.01 0 .01 .02 Loss Deviation from Baseline -2   -1   0   1   2 Hire Rate Deviation from Baseline, z-score arrival intensity   λ  flow cost   κ  by Hires -.01 0 .01 .02 Loss Deviation from Baseline -2   -1   0   1   2 Layoff Rate Deviation from Baseline, z-score arrival intensity   λ  flow cost   κ   by Layoffs/Discharges -.01 0 .01 .02 Loss Deviation from Baseline -2   -1   0   1   2 Quit Rate Deviation from Baseline, z-score arrival intensity   λ  flow cost   κ   by Quits  back USC   Time Is of the Essence   66
+
+PAGE 138
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  External Validity: Market Concentration Entry-Level Posting HH Index in State All Posting HH Index in State Entry-Level Posting HH Index in State-Industry All Posting HH Index in State-Industry -.04   -.03   -.02   -.01   0   .01 Daily Early Application Advantage  welfare implications USC   Time Is of the Essence   67
+
+PAGE 139
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  External Validity: Local Recruitment Prominence Wave 1   Pandemic   Wave 2   Wave 3-4   Wave 5 -.01 0 .01 Daily Early Application Advantage Oct 19   Jan 20   Apr 20   Jul 20   Oct 20   Jan 21   Apr 21 Month of First Submission  welfare implications USC   Time Is of the Essence   68
+
+PAGE 140
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  External Validity: Offer Competitiveness Remote-Friendliness Shortfalls, in State Log Position Duration Shortfalls, in State Log Salary Shortfalls, in State Remote-Friendliness Shortfalls, in State-Industry Log Position Duration Shortfalls, in State-Industry Log Salary Shortfalls, in State-Industry -.02   0   .02   .04   .06 Daily Early Application Advantage  welfare implications USC   Time Is of the Essence   69
+
+PAGE 141
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  External Validity: Market, Firm and Vacancy Characteristics Log Employment (ind.) Analytical skill intensity (ind.) Median log(wage/income) (state) Centralization Federal contractor (1/0) Employment in Log Total assets / emp. Revenue / emp. -.005   0   .005   .01   .015 Daily Early Application Advantage Univariate   Multivariate (full) Multivariate (market-only)  early application advantage   welfare implications USC   Time Is of the Essence   70
+
+PAGE 142
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  References I  Abadie, A., Athey, S., Imbens, G. W., & Wooldridge, J. M. (2023). When should you adjust standard errors for clustering?   The Quarterly Journal of Economics ,   138 (1), 1–35.  Bandiera, O., Jalal, A., & Roussille, N. (2025).   The illusion of time: Gender gaps in job search and employment . (Working Paper No. 34051). National Bureau of Economic Research. doi: 10.3386/w34051  Barlevy, G. (2002). The sullying effect of recessions.   The Review of Economic Studies ,   69 (1), 65–96.  Barlevy, G., Faberman, R. J., Hobijn, B., & S ¸ahin, A. (2024). The shifting reasons for beveridge curve shifts.   Journal of Economic Perspectives ,   38 (2), 83–106.  Barnichon, R., & Figura, A. (2015). Labor market heterogeneity and the aggregate matching function.   American Economic Journal: Macroeconomics ,   7 (4), 222–249.  Bartoˇ s, V., Bauer, M., Chytilov´ a, J., & Matˇ ejka, F. (2016). Attention discrimination: Theory and field experiments with monitoring information acquisition.   American Economic Review ,  106 (6), 1437–1475.  USC   Time Is of the Essence   71
+
+PAGE 143
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  References II  Bellou, A., & Kaymak, B. (2021). The cyclical behavior of job quality and real wage growth.  American Economic Review: Insights ,   3 (1), 83–96.  Bils, M., Kudlyak, M., & Lins, P. (2023). The quality-adjusted cyclical price of labor.   Journal of Labor Economics ,   41 (S1), S13–S59.  Birinci, S., See, K., & Wee, S. L. (2025). Job applications and labour market flows.   Review of Economic Studies ,   92 (3), 1438–1496.  Carrillo-Tudela, C., Gartner, H., & Kaas, L. (2023). Recruitment policies, job-filling rates, and matching efficiency.   Journal of the European Economic Association ,   21 (6), 2413–2459.  Cort´ es, P., Pan, J., Pilossoph, L., Reuben, E., & Zafar, B. (2023). Gender differences in job search and the earnings gap: Evidence from the field and lab.   The Quarterly Journal of Economics ,   138 (4), 2069–2126.  Davis, S. J., & de la Parra, B. S. (2024).   Application flows . National Bureau of Economic Research.  Davis, S. J., Faberman, R. J., & Haltiwanger, J. (2006). The flow approach to labor markets: New data sources and micro–macro links.   Journal of Economic perspectives ,   20 (3), 3–26.  USC   Time Is of the Essence   72
+
+PAGE 144
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  References III  Gaddis, S. M. (Ed.). (2018).   Audit Studies: Behind the Scenes with Theory, Method, and Nuance . doi: 10.1007/978-3-319-71153-9  Hoffman, M., Kahn, L. B., & Li, D. (2018). Discretion in hiring.   The Quarterly Journal of Economics ,   133 (2), 765–800.  Horton, J. J., Vasserman, N., Stanford, G., & Watt, N. (2024).   Reducing congestion in labor markets: A case study in simple market design . Technical Report, National Bureau of Economic Research.  Kessler, J. B., Low, C., & Sullivan, C. D. (2019). Incentivized resume rating: Eliciting employer preferences without deception.   American Economic Review ,   109 (11), 3713–3744. doi: 10.1257/aer.20181714  Kline, P., Rose, E. K., & Walters, C. R. (2022). Systemic discrimination among large u.s. employers.   The Quarterly Journal of Economics ,   137 (4), 1963–2036.  USC   Time Is of the Essence   73
+
+PAGE 145
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  References IV  Kondo, I., Rinz, K., Hawkins, B., Gubbay, N., Voorheis, J., & Wozniak, A. (2023).   Granular income inequality and mobility using idda . (Working Paper No. CES-23-55). U.S. Census Bureau Center for Economic Studies. Associated dataset: version 1.0. Retrieved from  https://doi.org/10.21034/data.idda  Neumark, D. (2018). Experimental research on labor market discrimination.   Journal of Economic Literature ,   56 (3), 799–866. doi: 10.1257/jel.20161309  Philippe, A., & Skandalis, D. (2026).   Motherhood and constraints during job search . (Discussion Paper No. 21431). Centre for Economic Policy Research. Paris & London. Retrieved from  https://cepr.org/publications/dp21431  Radbruch, J., & Schiprowski, A. (2025). Interview sequences and the formation of subjective assessments.   Review of Economic Studies ,   92 (2), 1226–1256.  Sedl´ aˇ cek, P. (2014). Match efficiency and firms’ hiring standards.   Journal of Monetary Economics ,   62 , 123–133.  Stanton, C. T., & Thomas, C. (2025). Who benefits from online gig economy platforms?  American Economic Review ,   115 (6), 1857–1895.  USC   Time Is of the Essence   74
+
+PAGE 146
+Design and Data   Early Application Advantage: Robustness   Mechanism: Robustness   Modeling Results   References  References V  Tekleselassie, T., Witte, M., Radbruch, J., Hensel, L., & Isphording, I. E. (2025).   Feedback, confidence and job search behavior . IZA Institute of Labor Economics. IZA Discussion Paper.  Wolthoff, R. (2018). Applications and interviews: Firms’ recruiting decisions in a frictional labour market.   The Review of Economic Studies ,   85 (2), 1314–1351.  Wright, R., Kircher, P., Julien, B., & Guerrieri, V. (2021). Directed search and competitive search equilibrium: A guided tour.   Journal of Economic Literature ,   59 (1), 90–148.  USC   Time Is of the Essence   75
