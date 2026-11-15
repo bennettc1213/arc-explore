@@ -1,0 +1,10 @@
+import {chromium} from 'playwright-core';
+import fs from 'node:fs/promises';
+const b=await chromium.launch({executablePath:'C:/Users/benne/AppData/Local/ms-playwright/chromium-1248/chrome-win64/chrome.exe',headless:true});
+const p=await b.newPage({viewport:{width:1180,height:1150},deviceScaleFactor:1.5});
+await p.goto('https://instela.org/explore?kind=scholarship&view=list',{waitUntil:'domcontentloaded',timeout:60000});
+await p.waitForTimeout(2500);await p.evaluate(()=>document.fonts.ready);
+await p.screenshot({path:'assets/feed.png'});
+await fs.writeFile('assets/feed-text.txt',await p.locator('body').innerText());
+console.log((await p.locator('body').innerText()).slice(0,3000));
+await b.close();

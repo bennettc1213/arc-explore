@@ -1,0 +1,42 @@
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'instela-linkedin-1080x1350-60fps.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    title           : Instela | Your next move
+    encoder         : Lavf60.16.100
+    comment         : Original motion design and original instrumental. Sources supplied alongside video.
+  Duration: 00:01:00.00, start: 0.000000, bitrate: 1170 kb/s
+  Stream #0:0[0x1](und): Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709, progressive), 1080x1350, 839 kb/s, 60 fps, 60 tbr, 15360 tbn (default)
+    Metadata:
+      handler_name    : VideoHandler
+      vendor_id       : [0][0][0][0]
+      encoder         : Lavc60.31.102 libx264
+  Stream #0:1[0x2](und): Audio: aac (LC) (mp4a / 0x6134706D), 48000 Hz, stereo, fltp, 317 kb/s (default)
+    Metadata:
+      handler_name    : SoundHandler
+      vendor_id       : [0][0][0][0]
+Stream mapping:
+  Stream #0:0 -> #0:0 (h264 (native) -> wrapped_avframe (native))
+  Stream #0:1 -> #0:1 (aac (native) -> pcm_s16le (native))
+Press [q] to stop, [?] for help
+Output #0, null, to 'pipe:':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    title           : Instela | Your next move
+    comment         : Original motion design and original instrumental. Sources supplied alongside video.
+    encoder         : Lavf60.16.100
+  Stream #0:0(und): Video: wrapped_avframe, yuv420p(tv, bt709, progressive), 1080x1350, q=2-31, 200 kb/s, 60 fps, 60 tbn (default)
+    Metadata:
+      handler_name    : VideoHandler
+      vendor_id       : [0][0][0][0]
+      encoder         : Lavc60.31.102 wrapped_avframe
+  Stream #0:1(und): Audio: pcm_s16le, 48000 Hz, stereo, s16, 1536 kb/s (default)
+    Metadata:
+      handler_name    : SoundHandler
+      vendor_id       : [0][0][0][0]
+      encoder         : Lavc60.31.102 pcm_s16le
+frame=    0 fps=0.0 q=-0.0 size=       0kB time=00:00:00.12 bitrate=   0.0kbits/s speed=4.72x    frame= 1214 fps=0.0 q=-0.0 size=N/A time=00:00:20.35 bitrate=N/A speed=38.6x    frame= 2743 fps=2670 q=-0.0 size=N/A time=00:00:45.84 bitrate=N/A speed=44.6x    [out#0/null @ 000002179179ee80] video:1688kB audio:11252kB subtitle:0kB other streams:0kB global headers:0kB muxing overhead: unknown
+frame= 3600 fps=2771 q=-0.0 Lsize=N/A time=00:00:59.98 bitrate=N/A speed=46.2x    

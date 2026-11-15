@@ -70,7 +70,8 @@ Official pages only. "Unknown" means the official source did not state it or cou
 | Essay review | 1 72-hour session every 30 days | unlimited |
 | Timing-weighted ranking | — | up to 20 points |
 | Internship autofill extension | — | usable with a "not verified end to end" caveat; **not listed as a benefit** |
-| Smart Resume, scholarship autofill, answer bank, one-click reapply, deadline triage, semester recap | not built | not built |
+| Smart Resume (ATS layout, or tailored to one listing) | 1 conversion every 30 days, on screen only (added 2026-11-15) | unlimited, with PDF export |
+| Scholarship autofill, answer bank, one-click reapply, deadline triage, semester recap | not built | not built |
 
 **Why these boundaries.** Free has to finish a real workflow — find, check, organize, produce one artifact — or nobody learns whether the product is any good. Twenty ranked results per search (not per day) means a student who changes filters always sees a fresh top 20, so depth is a limit on *scrolling*, never on *exploring*. Pro is priced on the things that scale with how hard someone is applying: many drafts, many active applications, detailed guidance across many listings, and faster alerts. Safety, eligibility and source evidence are never on the Pro side, because a student deciding whether to apply must not need to pay to learn they are ineligible. Free ranking is the same ranking Pro gets, minus the timing bonus; nothing was made worse to create a gap.
 

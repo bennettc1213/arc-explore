@@ -68,7 +68,7 @@ One combined feed, one honest Fit Score per listing, plus the materials
 |---|---|
 | 01 Foundation | Done except two aggregator sources (one blocked on a key) and "more scholarship sources" |
 | 02 Core Matching MVP | Done. Only the "test with real students" line is open, and it needs real students |
-| 03 Resume & Cover Letters | Done except the Smart Resume converter, which is **blocked on the owner** |
+| 03 Resume & Cover Letters | Done. Smart Resume converter built 2026-11-15 on the owner's chosen logic |
 | 04 Professional Profiles | Complete |
 | 05 Trust, Applications & Tracking | Complete. The auto-submit line is a deliberate refusal — see §4 |
 | 06 Engagement | Complete except peer reviews (deferred) and part of gamification (refused) |
@@ -132,9 +132,10 @@ Breaking one is not a refactor, it is a regression.
 - **The GitHub audit may call GitHub's public REST/GraphQL API directly.** No
   auth required for public data. A `GITHUB_TOKEN` is read if present and raises
   the rate limit, but is not required.
-- **Do not invent a structure for the Smart Resume converter.** The roadmap line
-  says "the logic you provide" and that logic has not landed. Leave it
-  unchecked and flag it if asked to work on Phase 03.
+- **The Smart Resume converter's logic is the owner's, not yours to extend.**
+  Chosen 2026-11-15 (ATS layout + optional tailor-to-listing) and written out
+  at the top of `src/lib/resume/smart.ts`. It may reorder, select and reformat
+  dates; it may never rewrite a bullet or add a skill.
 - **Auto-submitting applications is refused**, decided 2026-08-14, for three
   reasons written out in the Phase 05 roadmap note. Do not build it. **The route
   back in was taken on 2026-08-19: `extension/` now exists** — it autofills the
@@ -306,7 +307,6 @@ temporary stub — never by a human logging in. `FIXES.md` §3 lists them all.
 | `DATABASE_URL` repo secret | `ingest-fast` / `ingest-daily` cannot run in CI |
 | Adzuna app id/key | Free tier, nothing to build against until registered |
 | Parse credit balance | ScholarshipPortal's ~3,666 rows have never persisted across three attempts. Free tier is 200/month, one crawl ~19. **Check the balance before re-running** |
-| Smart Resume structuring logic | Phase 03. Do not invent one |
 
 **Decisions he owes, each with a recommendation already written in `FIXES.md`:**
 

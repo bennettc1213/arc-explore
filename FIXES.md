@@ -187,8 +187,12 @@ only you can make, and the feature on the other side of it is already written.
   fixed; what is unproven is the multi-batch path at that scale. Free tier is
   **200 credits/month**, one crawl is ~19. Check the balance *before*
   re-running `npm run ingest:scholarships -- --source scholarshipportal`.
-- [ ] **Smart Resume structuring logic (Phase 03).** The roadmap line says "the
+- [x] **Smart Resume structuring logic (Phase 03).** The roadmap line says "the
   logic you provide" and it has not landed. Do not invent a structure for it.
+  _Supplied 2026-11-15: the owner chose "ATS-standard layout plus an optional
+  tailor-to-one-listing pass", with Free limited to one conversion every 30
+  days and no PDF. Built as `lib/resume/smart.ts` + `/resume/smart`; the rules
+  are written out at the top of that file and CLAUDE.md now points there._
 - [x] **`DATABASE_URL` repo secret — DONE, and the cron is live.**
   _Verified 2026-08-26 against the Actions API: **460 workflow runs**,
   `ingest-fast` succeeding on schedule with the last run 26 minutes before
@@ -1343,6 +1347,8 @@ only you can make, and the feature on the other side of it is already written.
 
 ## 3. Never verified with a real signed-in session
 
+- [ ] **`/resume/smart` (2026-11-15).** The Smart Resume converter. The pure module has 15 tests and was run read-only over the 5 newest resumes in the live database against a real Software Intern listing (that run found the per-entry cap trimming a resume that already fit one page; fixed and pinned). `SmartResumeSheet` was rendered to HTML against the same resumes, and signed out the route redirects to `/login`. Never loaded signed in: the Free "convert my resume" click (`run=1`) spending exactly one allowance, the replay on reopening, the upgrade wall on a second listing in the same period, Pro converting on load with the print button, and the Free print notice actually replacing the sheet in a real print preview.
+
 - [ ] **`/admin/sources` (2026-11-03).** The source-health portal. Its report ran against the live database and the page was rendered locally with `requireAdmin` stubbed for one request and then restored; signed out it shows the not-found page. Never loaded by a signed-in admin, and `ADMIN_EMAILS` is still unset on Vercel (§1), so in production it 404s for everyone.
 
 - [x] **The mobile swipe sheet has only been driven with synthetic pointer events (2026-11-02).** _Moot 2026-11-03: the Cards deck was taken out of Explore (pivot to Scout), so nothing renders this sheet. If Cards returns, the unverified items below return with it._ On screens ≤900px the Cards deck (`OpportunityDeck`) is a bottom sheet that rises on its own, with swipe-right-to-save, swipe-left-to-skip and drag-down-to-minimize. Verified in Chromium at an emulated 390×844 touch viewport signed out (save, skip, snap-back on a short drag, minimize, reopen, scroll lock, no console errors; desktop unchanged). Not verified: a real finger on real iOS Safari/Android Chrome (rubber-banding, the `100dvh` sheet height against the collapsing URL bar, vertical-scroll-vs-horizontal-swipe feel inside a long card), and the signed-in save path from a swipe (same §3 gap as the tracker).
@@ -1802,6 +1808,15 @@ refused, not merely hidden):
   account to attach a quota to. Metering by IP or fingerprint was rejected as
   its own privacy problem rather than attempted quietly. A determined free user
   signs out and keeps auditing.
+- [ ] **Smart Resume's "no PDF on Free" is a browser-side lock (2026-11-15).**
+  The conversion allowance is server-enforced (`withAllowance`, keyed on
+  resume revision + listing). The PDF half is not: Free gets no print button,
+  and a print stylesheet swaps the sheet for a notice (`.smart-print-locked`),
+  but the converted resume is on screen, so a screenshot, copy-paste or
+  devtools edit gets it out. Withholding the on-screen text would mean Free
+  sees nothing, which is not what the owner asked for. A true export gate
+  needs a server-rendered PDF, which the no-dependency rule has so far
+  refused. Recorded rather than oversold.
 - [x] **Quotas are lifetime, not monthly.** _Fixed 2026-11-03: every Free tool allowance renews 30 days after its period starts (`allowance.ts`), independent of Stripe; lifetime counts were not carried over (`docs/free-pro-plans.md` §4, §8)._ There is no billing cycle to reset
   against — no subscription, no renewal timestamp — so "1 free run" currently
   means "1 ever". Enforcing a monthly cap this codebase cannot observe would be
@@ -1832,6 +1847,10 @@ refused, not merely hidden):
   built and `live` — see Session 4 above._ A test asserts
   no `coming_soon` feature is usable on any tier, so the Apply tier can never
   advertise a working control for something unbuilt.
+  _**2026-11-15: five now.** Smart Resume is built and `live` (with a separate
+  `smart_resume_pdf` entry, Pro only); the remaining `coming_soon` set is
+  deadline triage, answer bank, one-click reapply and semester recap, plus
+  scholarship autofill, which is `unverified` rather than unbuilt._
 - [ ] **Migration `0017_pricing_tiers` was hand-written.** `drizzle-kit
   generate` needs an interactive TTY this environment does not have — the same
   limitation `0015` and `0016` hit. No columns are renamed or dropped, so there

@@ -448,6 +448,28 @@ export default async function ListingPage({
           )}
         </section>
 
+        {item.kind === "internship" && (
+          <section id="smart-resume" className="print-hide" style={{ marginTop: 32 }}>
+            <div className="eyebrow chrome" style={{ marginBottom: 12 }}>
+              06 — smart resume
+            </div>
+            <p className="t-sm" style={{ color: "var(--muted)", maxWidth: "62ch" }}>
+              Reorder your resume for this role: the experience and skills it asks for come first,
+              on one ATS-standard page. Nothing is rewritten.{" "}
+              {/* prefetch off: a Free conversion is metered, and the page
+                  itself waits for a click before spending one, but there is
+                  no reason to warm it either. */}
+              <Link
+                href={user ? `/resume/smart?listing=${item.id}` : `/login?next=${encodeURIComponent(`/resume/smart?listing=${item.id}`)}`}
+                prefetch={false}
+                style={{ color: "var(--accent)" }}
+              >
+                {user ? "open Smart Resume for this listing" : "sign in to use Smart Resume"}
+              </Link>
+            </p>
+          </section>
+        )}
+
         <section className="print-hide" style={{ marginTop: 40 }}>
           {user ? (
             <ReportListing postingId={item.id} alreadyReported={alreadyReported} />

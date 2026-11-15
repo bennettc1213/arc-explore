@@ -50,9 +50,14 @@ export default async function ResumePage() {
                 uploaded {resume.createdAt.toISOString().slice(0, 10)}
               </div>
             </div>
-            <Link href="/profile" className="btn press" style={{ textDecoration: "none" }}>
-              upload a new one
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/resume/smart" prefetch={false} className="btn press" style={{ textDecoration: "none" }}>
+                smart resume
+              </Link>
+              <Link href="/profile" className="btn press" style={{ textDecoration: "none" }}>
+                upload a new one
+              </Link>
+            </div>
           </div>
 
           {/* The uploaded file is still whatever it was; what changed is that

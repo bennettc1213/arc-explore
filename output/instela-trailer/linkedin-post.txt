@@ -1,0 +1,13 @@
+I built Instela to help students turn the search for internships and scholarships into a clearer next step.
+
+Find opportunities checked at the source. See how they line up with your background. Prepare with resume, cover letter, GitHub, LinkedIn, and essay tools. Track what you save and send.
+
+You can explore for free. Pro adds the full ranked feed, detailed fit guidance, unlimited preparation and tracking, and daily saved-search alerts.
+
+Eligible students get 50% off Pro: $10/month instead of $20 after school-email and current-enrollment verification.
+
+Here's a one-minute look at what I've been building.
+
+Try it: https://instela.org
+
+If you're applying this semester, I'd like to hear which part of the process is taking the most out of you.

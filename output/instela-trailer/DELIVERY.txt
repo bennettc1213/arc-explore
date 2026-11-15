@@ -1,0 +1,19 @@
+INSTELA — YOUR NEXT MOVE
+
+Main video: instela-linkedin-1080x1350-60fps.mp4
+Duration: 60.000 seconds
+Dimensions: 1080 x 1350 (4:5)
+Frame rate: 60 fps, 3,600 decoded video frames
+Video: H.264 High, progressive, YUV 4:2:0, Rec.709
+Audio: AAC-LC, stereo, 48,000 Hz, approximately 317 kb/s
+Measured integrated audio loudness: -16.13 LUFS
+Size: 8,778,645 bytes
+Streaming: MP4 fast-start enabled
+
+Verification: the full MP4 was decoded successfully; representative frames
+from the encoded file were visually inspected. Verification logs and the
+encoded contact sheet are included. No app source files were changed.
+
+Cover: instela-poster.png
+Optional founder post: linkedin-post.txt
+Claim sources, limitations and re-render instructions: README.md

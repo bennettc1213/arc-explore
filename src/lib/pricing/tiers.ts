@@ -168,6 +168,7 @@ export const FEATURE_KEYS = [
   "fit_score_gap_closer",
   "resume_critique",
   "smart_resume",
+  "smart_resume_pdf",
   "cover_letter",
   "github_tools",
   "linkedin_tools",
@@ -301,11 +302,21 @@ export const FEATURES: Record<FeatureKey, FeatureEntitlement> = {
   },
   smart_resume: {
     key: "smart_resume",
-    label: "Smart Resume + PDF",
+    label: "Smart Resume",
     description:
-      "The Smart Resume converter and its PDF export. Blocked on resume-structuring logic " +
-      "that has not been supplied.",
-    status: "coming_soon",
+      "Rebuilds your resume into a one-page, ATS-standard layout, or reorders it for one " +
+      "listing so the experience it asks for comes first. It never rewrites your words or " +
+      "adds a skill you did not list.",
+    status: "live",
+    meter: "period",
+    useMeans: "converting a resume revision for a listing (or the standard layout) you have not converted before",
+    limits: { free: 1, apply: null },
+  },
+  smart_resume_pdf: {
+    key: "smart_resume_pdf",
+    label: "Smart Resume PDF export",
+    description: "Print or save a Smart Resume as a PDF. Free can view a conversion on screen.",
+    status: "live",
     meter: "none",
     limits: { free: 0, apply: null },
   },

@@ -38,7 +38,8 @@ const FIT: FitResult = {
 test("a coming_soon feature is unusable on every tier, including the one that pays for it", () => {
   /*
    * The most important test in this file. Five features back the Apply tier
-   * and are not built; two more (smart_resume, priority_freshest_listings)
+   * and are not built; two more (smart_resume, priority_freshest_listings,
+   * both since built)
    * turned out to be in the same state. A student paying $14.99 must not be
    * shown a working control for any of them — "reserved" has to mean
    * *disabled*, not merely *gated*, or the top tier advertises capabilities
@@ -362,7 +363,7 @@ test("the approved Free/Pro matrix", () => {
 });
 
 test("unbuilt and unverified features are not sold as current benefits", () => {
-  for (const key of ["smart_resume", "answer_bank", "one_click_reapply", "deadline_triage", "semester_recap"] as const) {
+  for (const key of ["answer_bank", "one_click_reapply", "deadline_triage", "semester_recap"] as const) {
     assert.equal(FEATURES[key].status, "coming_soon");
     assert.equal(isCurrentBenefit(key), false);
   }
@@ -370,4 +371,17 @@ test("unbuilt and unverified features are not sold as current benefits", () => {
   assert.equal(FEATURES.extension_autofill_scholarships.status, "unverified");
   assert.equal(isCurrentBenefit("extension_autofill_scholarships"), false);
   assert.equal(isCurrentBenefit("cover_letter"), true);
+});
+
+test("Smart Resume: Free gets one conversion per period, on screen only; Pro gets both unlimited", () => {
+  // The owner's rule (2026-11-15): Free is limited on BOTH axes.
+  assert.equal(FEATURES.smart_resume.meter, "period");
+  assert.equal(evaluateFeature("free", "smart_resume", 0).usable, true);
+  assert.equal(evaluateFeature("free", "smart_resume", 1).usable, false);
+  assert.equal(evaluateFeature("apply", "smart_resume", 10_000).usable, true);
+
+  assert.equal(evaluateFeature("free", "smart_resume_pdf", 0).usable, false);
+  assert.equal(evaluateFeature("free", "smart_resume_pdf", 0).reason, "not_included");
+  assert.equal(evaluateFeature("apply", "smart_resume_pdf", 0).usable, true);
+  assert.equal(isCurrentBenefit("smart_resume"), true);
 });

@@ -5,10 +5,10 @@ import type { ParsedResume } from "@/lib/resume/types";
  *
  * Renders the structure and nothing else. There is no template voice here, no
  * summary we compose, no bullet we rewrite: every string on the page came from
- * the student's document or from their own edit. That boundary is what keeps
- * this line separate from the Smart Resume converter, which is still blocked
- * on structuring logic we have not been given — inventing one here is exactly
- * what that block exists to prevent.
+ * the student's document or from their own edit, in the order they wrote it.
+ * Reordering and trimming to one page is the Smart Resume converter's job
+ * (`lib/resume/smart.ts`, `SmartResumeSheet`), which is metered; this sheet
+ * stays free on every plan.
  *
  * A section with no content is omitted rather than printed as an empty
  * heading, for the same reason a null renders as an honest slot everywhere

@@ -54,6 +54,7 @@ export const BROWSER_WORKFLOW_MS = 72 * 3_600_000;
  *  definition. */
 export const ALLOWANCE_FEATURES = [
   "resume_critique",
+  "smart_resume",
   "cover_letter",
   "github_tools",
   "linkedin_tools",

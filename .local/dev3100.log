@@ -14,3 +14,7 @@
  GET /explore?view=list&kind=internship 200 in 9.2s (next.js: 113ms, proxy.ts: 83ms, application-code: 9.0s)
  GET /live 200 in 4.0s (next.js: 143ms, proxy.ts: 27ms, application-code: 3.8s)
  GET /live 200 in 510ms (next.js: 23ms, proxy.ts: 287ms, application-code: 199ms)
+✓ Finished filesystem cache database compaction in 12.1s
+ GET /resume/smart 200 in 4.7s (next.js: 3.5s, proxy.ts: 228ms, application-code: 920ms)
+ GET /resume/smart 200 in 266ms (next.js: 29ms, proxy.ts: 9ms, application-code: 228ms)
+ GET /resume/smart?listing=nope 200 in 238ms (next.js: 9ms, proxy.ts: 9ms, application-code: 220ms)

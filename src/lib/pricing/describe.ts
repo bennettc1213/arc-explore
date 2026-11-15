@@ -51,6 +51,8 @@ export const COMPARISON_ROWS: readonly FeatureKey[] = [
   "weekly_digest",
   "saved_search_alerts",
   "resume_critique",
+  "smart_resume",
+  "smart_resume_pdf",
   "cover_letter",
   "github_tools",
   "linkedin_tools",

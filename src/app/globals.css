@@ -1058,6 +1058,39 @@ html {
   margin-bottom: 3px;
 }
 
+/* Smart Resume: critique flags beside a bullet (screen only, `print-hide`). */
+.smart-flags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+.smart-flag {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.6875rem;
+  color: #8a5a00;
+  border: 1px solid #e0c48a;
+  padding: 0 5px;
+  border-radius: 2px;
+}
+/* Free views a conversion on screen; PDF export is Pro. The notice is
+   print-only, the sheet is screen-only. A browser-side lock, not a server
+   one: someone can still screenshot the page (FIXES.md §5b). */
+.smart-print-notice {
+  display: none;
+}
+@media print {
+  .smart-print-locked .resume-sheet {
+    display: none !important;
+  }
+  .smart-print-locked .smart-print-notice {
+    display: block !important;
+    font-size: 14pt;
+    padding: 48px 0;
+  }
+}
+
 @media print {
   /* screen-only chrome: editor, buttons, page furniture */
   .print-hide {

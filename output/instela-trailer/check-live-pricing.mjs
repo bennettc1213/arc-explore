@@ -1,0 +1,10 @@
+import { chromium } from 'playwright-core';
+import fs from 'node:fs/promises';
+const b=await chromium.launch({executablePath:'C:/Users/benne/AppData/Local/ms-playwright/chromium-1248/chrome-win64/chrome.exe',headless:true});
+const p=await b.newPage();
+await p.goto('https://instela.org/pricing',{waitUntil:'domcontentloaded',timeout:60000});
+await p.waitForTimeout(1500);
+const t=await p.locator('body').innerText();
+await fs.writeFile('assets/live-pricing-text.txt',t);
+console.log(t);
+await b.close();

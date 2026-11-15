@@ -31,7 +31,7 @@ function grant(over: Partial<GrantRow> = {}): GrantRow {
 
 test("the period is 30 days and every allowance tool is metered per period", () => {
   assert.equal(ALLOWANCE_PERIOD_DAYS, 30);
-  for (const f of ["resume_critique", "cover_letter", "github_tools", "linkedin_tools", "essay_reviewer"] as const) {
+  for (const f of ["resume_critique", "smart_resume", "cover_letter", "github_tools", "linkedin_tools", "essay_reviewer"] as const) {
     assert.equal(FEATURES[f].meter, "period");
     assert.equal(FEATURES[f].limits.free, 1);
     assert.equal(FEATURES[f].limits.apply, null);
