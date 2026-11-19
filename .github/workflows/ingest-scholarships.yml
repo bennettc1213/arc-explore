@@ -35,8 +35,8 @@
 name: ingest-scholarships
 
 on:
-  schedule:
-    - cron: "9 8 * * 0" # Sundays 08:09 UTC — off the hour, low scheduler load
+  # Scheduled scraping is paused while the Supabase organization is under a
+  # database-size and egress restriction. Manual recovery runs remain possible.
   workflow_dispatch: {}
 
 concurrency:

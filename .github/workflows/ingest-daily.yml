@@ -35,8 +35,8 @@
 name: ingest-daily
 
 on:
-  schedule:
-    - cron: "17 7 * * *" # 07:17 UTC — off the hour, where scheduler load is lower
+  # Scheduled discovery is paused while the Supabase organization is under a
+  # database-size and egress restriction. Manual recovery runs remain possible.
   workflow_dispatch:
     inputs:
       maxNew:

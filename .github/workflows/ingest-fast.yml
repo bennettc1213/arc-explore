@@ -36,12 +36,9 @@
 name: ingest-fast
 
 on:
-  schedule:
-    # Every 20 minutes. GitHub queues scheduled runs on a best-effort basis and
-    # can delay them under load, so the freshness claim in the UI is written
-    # against `last_seen_at` — what we actually observed — never against the
-    # cadence we intended.
-    - cron: "*/20 * * * *"
+  # Scheduled polling is paused while the Supabase organization is under a
+  # database-size and egress restriction. Keep manual dispatch available for
+  # a measured recovery run after usage has been brought back under quota.
   workflow_dispatch:
     inputs:
       limit:
